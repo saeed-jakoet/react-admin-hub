@@ -4,13 +4,14 @@
 
 @layer base {
   :root {
+    /* Dynamic Modern Theme */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+    --primary: 199 89% 48%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -22,27 +23,28 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --ring: 199 89% 48%;
+    --radius: 0.75rem;
 
-    /* Semantic status colors - Light */
-    --status-planned: 215 16% 47%;        /* slate-600 */
-    --status-in-progress: 217 91% 60%;    /* blue-500 */
-    --status-blocked: 38 92% 50%;         /* amber-500 */
-    --status-completed: 142 71% 45%;      /* emerald-600 */
-    --status-open: 0 84% 60%;             /* rose-500 */
-    --status-resolved: 142 76% 36%;       /* emerald-700 */
+    /* Status colors */
+    --status-planned: 215 16% 47%;
+    --status-in-progress: 217 91% 60%;
+    --status-blocked: 38 92% 50%;
+    --status-completed: 142 71% 45%;
+    --status-open: 0 84% 60%;
+    --status-resolved: 142 76% 36%;
   }
 
   .dark {
+    /* Fresh Modern Dark Theme */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 263 70% 50%;
+    --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
@@ -53,15 +55,15 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 263 70% 50%;
 
-    /* Semantic status colors - Dark */
-    --status-planned: 215 20% 65%;        /* slate-400 */
-    --status-in-progress: 213 97% 87%;    /* blue-300 */
-    --status-blocked: 43 96% 56%;         /* amber-400 */
-    --status-completed: 141 69% 58%;      /* emerald-400 */
-    --status-open: 0 91% 71%;             /* rose-400 */
-    --status-resolved: 140 61% 48%;       /* emerald-500 */
+    /* Status colors - Dark */
+    --status-planned: 215 20% 65%;
+    --status-in-progress: 213 97% 87%;
+    --status-blocked: 43 96% 56%;
+    --status-completed: 141 69% 58%;
+    --status-open: 0 91% 71%;
+    --status-resolved: 140 61% 48%;
   }
 }
 
@@ -71,5 +73,27 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image: 
+      radial-gradient(at 40% 20%, hsl(199 89% 48% / 0.05) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsl(142 71% 45% / 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsl(25 95% 53% / 0.05) 0px, transparent 50%);
+  }
+}
+
+@layer components {
+  .gradient-card {
+    @apply bg-gradient-to-br from-card via-card to-primary/5 border shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  .accent-border {
+    @apply border-l-4 border-primary/50;
+  }
+  
+  .stat-card {
+    @apply gradient-card hover:scale-[1.02] transition-all duration-300;
+  }
+  
+  .action-button {
+    @apply bg-gradient-to-r from-primary to-cyan-500 text-white hover:from-primary/90 hover:to-cyan-500/90 shadow-lg hover:shadow-xl transition-all duration-300;
   }
 }

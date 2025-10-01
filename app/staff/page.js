@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { DataTable } from "@/components/shared/DataTable";
+import { DataTable } from "@/components/shared/DataTable.js";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, UserPlus } from "lucide-react";
+import { MoreHorizontal, UserPlus, CheckCircle, XCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,8 +14,16 @@ import {
 import { mockStaff, mockRegions } from "@/lib/mock-data";
 
 const columns = [
-  { accessorKey: "name", header: "Name" },
-  { accessorKey: "email", header: "Email" },
+  { 
+    accessorKey: "name", 
+    header: "Name",
+    cell: ({ row }) => (
+      <div>
+        <div className="font-medium">{row.original.name}</div>
+        <div className="text-sm text-muted-foreground">{row.original.email}</div>
+      </div>
+    )
+  },
   { accessorKey: "phone", header: "Phone" },
   {
     accessorKey: "type",
@@ -45,7 +53,17 @@ const columns = [
     header: "Available",
     cell: ({ row }) => (
       <Badge variant={row.original.available ? "default" : "secondary"}>
-        {row.original.available ? "Yes" : "No"}
+        {row.original.available ? (
+          <>
+            <CheckCircle className="mr-1 h-3 w-3" />
+            Yes
+          </>
+        ) : (
+          <>
+            <XCircle className="mr-1 h-3 w-3" />
+            No
+          </>
+        )}
       </Badge>
     ),
   },
@@ -68,16 +86,15 @@ const columns = [
   },
 ];
 
-
 const clickButton = () => {
-  console.log('button clicked')
+  console.log('add staff button clicked')
 }
 
 export default function StaffPage() {
   const [staff] = React.useState(mockStaff);
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Staff Members</h1>

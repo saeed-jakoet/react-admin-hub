@@ -6,9 +6,9 @@ export function KPIStatCard({ label, value, icon: Icon, change, trend, status })
   const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
 
   const statusColors = {
-    good: "text-status-completed",
-    warning: "text-status-blocked",
-    critical: "text-status-open",
+    good: "text-green-600",
+    warning: "text-amber-600",
+    critical: "text-red-600",
   };
 
   return (

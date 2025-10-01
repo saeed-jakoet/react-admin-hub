@@ -50,6 +50,14 @@ module.exports = {
           open: "hsl(var(--status-open))",
           resolved: "hsl(var(--status-resolved))",
         },
+        business: {
+          panel: "hsl(var(--business-panel))",
+          "panel-foreground": "hsl(var(--business-panel-foreground))",
+          accent: "hsl(var(--business-accent))",
+          warning: "hsl(var(--business-warning))",
+          success: "hsl(var(--business-success))",
+          critical: "hsl(var(--business-critical))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
