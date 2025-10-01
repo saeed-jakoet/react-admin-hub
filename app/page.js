@@ -1,38 +1,29 @@
 import { 
   MapPin,
   Users,
-  Calendar,
-  Wrench,
   DollarSign,
-  BarChart3,
-  Clock,
-  ArrowRight,
   CheckCircle2,
   AlertTriangle,
-  Zap,
   Activity,
-  TrendingUp,
   Signal,
   Wifi,
-  Server
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 export default function OverviewPage() {
   const liveMetrics = [
     { label: "Active Installations", value: "8", change: "+2", icon: MapPin, color: "blue" },
     { label: "Field Teams", value: "5", change: "0", icon: Users, color: "green" },
     { label: "Network Health", value: "98%", change: "+1%", icon: Signal, color: "emerald" },
-    { label: "Daily Revenue", value: "$12.4K", change: "+23%", icon: DollarSign, color: "purple" }
+    { label: "Daily Revenue", value: "R12.4K", change: "+23%", icon: DollarSign, color: "purple" }
   ];
 
   const activeOperations = [
     { 
       id: "OP-2024-001", 
       title: "Downtown Fiber Backbone", 
-      client: "TechCorp HQ", 
+      client: "TechCorp HQ",
       status: "Installing", 
       team: "Alpha Squad",
       progress: 75,
@@ -68,28 +59,22 @@ export default function OverviewPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background p-6 space-y-8">
-      {/* Command Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-background via-muted/30 to-primary/5 border border-border p-8">
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl" />
-        
-        <div className="relative flex items-center justify-between">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground via-primary to-cyan-600 bg-clip-text text-transparent">
-              Operations Control
-            </h1>
-            <p className="text-muted-foreground text-lg">Fiber installation command center</p>
+    <div className="p-6 space-y-6 bg-background">
+      {/* Header */}
+      <div className="bg-white dark:bg-card rounded-lg border border-gray-200 dark:border-border p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-foreground">Control Center</h1>
+            <p className="text-gray-600 dark:text-muted-foreground mt-1">Fibre network operations overview</p>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-green-600 dark:text-green-400 font-medium text-sm">All Systems Online</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg">
+              <div className="h-2 w-2 rounded-full bg-green-500 dark:bg-green-300" />
+              <span className="text-sm font-medium text-green-700 dark:text-green-200">All Systems Online</span>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-              <Wifi className="h-3 w-3 text-blue-500" />
-              <span className="text-blue-600 dark:text-blue-400 font-medium text-sm">5 Teams Active</span>
+            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg">
+              <Wifi className="h-3 w-3 text-blue-600 dark:text-blue-300" />
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-200">5 Teams Active</span>
             </div>
           </div>
         </div>
@@ -105,28 +90,24 @@ export default function OverviewPage() {
             emerald: "from-emerald-500 to-teal-500",
             purple: "from-purple-500 to-pink-500"
           };
-          
           return (
-            <Card key={metric.label} className="group relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] bg-card">
-              <div className="absolute inset-0 bg-gradient-to-br from-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
-              <CardContent className="p-6 relative">
+            <Card key={metric.label} className="bg-white dark:bg-card border border-gray-200 dark:border-border hover:shadow-md transition-shadow duration-200">
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${colorClasses[metric.color]} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className="h-6 w-6 text-white" />
+                  <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                    <Icon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                   </div>
                   <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    metric.change.startsWith('+') ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 
-                    metric.change === '0' ? 'bg-gray-500/10 text-gray-600 dark:text-gray-400' :
-                    'bg-red-500/10 text-red-600 dark:text-red-400'
+                    metric.change.startsWith('+') ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200' : 
+                    metric.change === '0' ? 'bg-gray-100 text-gray-600 dark:bg-muted dark:text-muted-foreground' :
+                    'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200'
                   }`}>
                     {metric.change}
                   </div>
                 </div>
-                
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-1">{metric.label}</p>
-                  <p className="text-3xl font-bold text-foreground">{metric.value}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-muted-foreground mb-1">{metric.label}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-foreground">{metric.value}</p>
                 </div>
               </CardContent>
             </Card>
@@ -134,127 +115,143 @@ export default function OverviewPage() {
         })}
       </div>
 
-      {/* Main Operations Grid */}
-      <div className="grid lg:grid-cols-4 gap-8">
-        {/* Active Operations */}
-        <div className="lg:col-span-3">
-          <Card className="border-0 shadow-xl bg-card">
-            <CardHeader className="border-b border-border bg-muted/30">
+      {/* Main Content Grid */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Left Content - Main Operations */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Active Projects */}
+          <Card className="bg-white dark:bg-card border border-gray-200 dark:border-border">
+            <CardHeader className="border-b border-gray-100 dark:border-border p-6">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" />
-                  Live Field Operations
+                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-foreground">
+                  Active Projects
                 </CardTitle>
-                <Button variant="outline" size="sm">
-                  <Server className="h-4 w-4 mr-2" />
-                  Control Panel
+                <Button variant="outline" size="sm" className="text-sm">
+                  View All
                 </Button>
               </div>
             </CardHeader>
-            
-            <CardContent className="p-6 space-y-6">
-              {activeOperations.map((op) => {
-                const statusColors = {
-                  'Installing': 'from-blue-500 to-cyan-500',
-                  'Testing': 'from-green-500 to-emerald-500',
-                  'Planning': 'from-purple-500 to-pink-500'
-                };
-                
-                const priorityColors = {
-                  'high': 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
-                  'medium': 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20',
-                  'low': 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
-                };
-                
-                return (
-                  <div key={op.id} className="group p-6 border border-border rounded-xl hover:bg-muted/30 transition-all duration-300">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-lg text-foreground">{op.title}</h3>
-                          <Badge className={`${priorityColors[op.priority]} border`}>
-                            {op.priority} priority
-                          </Badge>
-                        </div>
-                        <p className="text-muted-foreground text-sm">{op.id} • {op.client} • {op.location}</p>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {activeOperations.slice(0, 3).map((op) => (
+                  <div key={op.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-muted rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                        <Activity className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                       </div>
-                      
-                      <div className="text-right">
-                        <Badge className={`bg-gradient-to-r ${statusColors[op.status]} text-white border-0 mb-2`}>
-                          {op.status}
-                        </Badge>
-                        <p className="text-sm font-medium text-foreground">{op.team}</p>
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-foreground">{op.title}</h4>
+                        <p className="text-sm text-gray-500 dark:text-muted-foreground">{op.client} • {op.location}</p>
                       </div>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Progress</span>
-                        <span className="text-sm font-medium text-foreground">{op.progress}%</span>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-3">
-                        <div 
-                          className={`bg-gradient-to-r ${statusColors[op.status]} h-3 rounded-full transition-all duration-700 shadow-sm`}
-                          style={{ width: `${op.progress}%` }}
-                        />
-                      </div>
+                    <div className="text-right">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        {op.status}
+                      </span>
+                      <p className="text-sm text-gray-500 dark:text-muted-foreground mt-1">{op.team}</p>
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activity */}
+          <Card className="bg-white dark:bg-card border border-gray-200 dark:border-border">
+            <CardHeader className="border-b border-gray-100 dark:border-border p-6">
+              <CardTitle className="text-lg font-semibold text-gray-900 dark:text-foreground">
+                Recent Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-300" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-foreground">Project completed</p>
+                    <p className="text-xs text-gray-500 dark:text-muted-foreground">Fiber installation at Tech Park - 2 hours ago</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                    <Users className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-foreground">Team assigned</p>
+                    <p className="text-xs text-gray-500 dark:text-muted-foreground">Alpha Squad assigned to new project - 4 hours ago</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                    <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-300" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-foreground">Maintenance required</p>
+                    <p className="text-xs text-gray-500 dark:text-muted-foreground">Network issue reported at Site B - 6 hours ago</p>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* System Status & Controls */}
-        <div className="space-y-6">
+        {/* Right Sidebar */}
+        <div className="lg:col-span-1 space-y-6">
           {/* System Health */}
-          <Card className="border-0 shadow-xl bg-card">
-            <CardHeader className="border-b border-border bg-muted/30">
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-green-500" />
+          <Card className="bg-white dark:bg-card border border-gray-200 dark:border-border">
+            <CardHeader className="border-b border-gray-100 dark:border-border p-6">
+              <CardTitle className="text-lg font-semibold text-gray-900 dark:text-foreground">
                 System Health
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              {systemStatus.map((system) => (
-                <div key={system.name} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-foreground">{system.name}</p>
-                    <p className="text-xs text-muted-foreground">{system.uptime} uptime</p>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {systemStatus.map((system) => (
+                  <div key={system.name} className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-foreground">{system.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-muted-foreground">{system.uptime} uptime</p>
+                    </div>
+                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      system.status === 'optimal' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200' :
+                      'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200'
+                    }`}>
+                      {system.status}
+                    </div>
                   </div>
-                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    system.status === 'optimal' ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
-                    'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
-                  }`}>
-                    {system.status}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Quick Deploy */}
-          <Card className="border-0 shadow-xl bg-card">
-            <CardHeader className="border-b border-border bg-muted/30">
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-yellow-500" />
-                Quick Deploy
+          {/* Quick Stats */}
+          <Card className="bg-white dark:bg-card border border-gray-200 dark:border-border">
+            <CardHeader className="border-b border-gray-100 dark:border-border p-6">
+              <CardTitle className="text-lg font-semibold text-gray-900 dark:text-foreground">
+                Today's Stats
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-3">
-              <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg">
-                <Users className="mr-2 h-4 w-4" />
-                Deploy Team
-              </Button>
-              <Button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg">
-                <MapPin className="mr-2 h-4 w-4" />
-                New Installation
-              </Button>
-              <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg">
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule Job
-              </Button>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-muted-foreground">Active Teams</span>
+                  <span className="font-semibold text-gray-900 dark:text-foreground">5</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-muted-foreground">Completed Jobs</span>
+                  <span className="font-semibold text-gray-900 dark:text-foreground">12</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-muted-foreground">Revenue</span>
+                  <span className="font-semibold text-gray-900 dark:text-foreground">R24,680</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-muted-foreground">Efficiency</span>
+                  <span className="font-semibold text-green-600 dark:text-green-300">94%</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

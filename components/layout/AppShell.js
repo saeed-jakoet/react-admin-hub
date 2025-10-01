@@ -19,11 +19,11 @@ export function AppShell({ children }) {
     <div className="flex h-screen overflow-hidden bg-background">
       <AppSidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
       <div className={cn(
-        "flex flex-1 flex-col overflow-hidden transition-all duration-300", 
-        sidebarOpen ? "ml-72" : "ml-16"
+        "flex flex-1 flex-col overflow-hidden transition-all duration-300",
+        sidebarOpen ? "ml-64" : "ml-16"
       )}>
         <Topbar />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-background">
           {children}
         </main>
       </div>
