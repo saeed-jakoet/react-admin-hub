@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Zap, Eye, EyeOff, AlertCircle, Shield, Network } from "lucide-react";
+import Link from "next/link";
 
 // Hardcoded credentials
 const ADMIN_CREDENTIALS = {
@@ -32,12 +33,34 @@ export default function LoginPage() {
 
     // Check credentials
     if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+      // Simulate API response
+      const apiResponse = {
+        status: "success",
+        message: "Success",
+        data: {
+          user: {
+            user_metadata: {
+              firstName: "saeed",
+              role: "super_admin",
+              email: "jakoetsaeed@gmail.com"
+            }
+          },
+          session: {
+            access_token: "eyJhbGciOiJIUzI1NiIsImtpZCI6Ii9HTDRaNFhjS2x6UXJOYWUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL21uc3dvZHlhcGxncWFoYW1wbHlmLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI1NWZhMDNiMC1jYWU2LTQyOGYtOTg2Ny00MTEzNDJkNDhjMmIiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzU5MzQ1ODIyLCJpYXQiOjE3NTkzNDIyMjIsImVtYWlsIjoiamFrb2V0c2FlZWRAZ21haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJlbWFpbCI6Impha29ldHNhZWVkQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJzdE5hbWUiOiJzYWVlZCIsInBob25lTnVtYmVyIjoiKzI3Nzk2OTU3OTMiLCJwaG9uZV92ZXJpZmllZCI6ZmFsc2UsInJvbGUiOiJzdXBlcl9hZG1pbiIsInN1YiI6IjU1ZmEwM2IwLWNhZTYtNDI4Zi05ODY3LTQxMTM0MmQ0OGMyYiIsInN1cm5hbWUiOiJqYWtvZXQifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTc1OTM0MjIyMn1dLCJzZXNzaW9uX2lkIjoiZjM1YWY1ZTctNDgzZS00ZmRkLWJiZTEtNzBjYzRjM2Q2OWI0IiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.Qf3QEbUKReyIQEfkU4EcsyfTwkzkYhQSZtFFQJRg5Do"
+          }
+        }
+      };
+      const { firstName, email: userEmail, role } = apiResponse.data.user.user_metadata;
+      const accessToken = apiResponse.data.session.access_token;
+      console.log("First Name:", firstName);
+      console.log("Email:", userEmail);
+      console.log("Role:", role);
+      console.log("Access Token:", accessToken);
       // Use auth context to login
-      login(email);
+      login(userEmail);
     } else {
       setError("Invalid email or password. Please try again.");
     }
-    
     setIsLoading(false);
   };
 
@@ -63,7 +86,7 @@ export default function LoginPage() {
           {/* Title */}
           <div className="space-y-2">
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-              Fibre Africa
+              Fiber Africa
             </CardTitle>
             <CardDescription className="text-base text-muted-foreground">
               Business Command Center
@@ -150,12 +173,21 @@ export default function LoginPage() {
             </Button>
           </form>
           
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl">
-            <p className="text-xs text-muted-foreground text-center mb-2 font-medium">Demo Credentials:</p>
-            <div className="text-xs text-center space-y-1">
-              <p className="font-mono text-blue-600">admin@fibre.africa</p>
-              <p className="font-mono text-blue-600">FibreAdmin2024!</p>
+          {/* Forgot Password Link */}
+          <div className="flex flex-col gap-4 mt-2">
+            <Link
+              href="/auth/forgot-password"
+              className="text-sm text-blue-600 hover:underline text-center font-medium transition-colors"
+            >
+              Forgot password?
+            </Link>
+            {/* Demo Credentials */}
+            <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl">
+              <p className="text-xs text-muted-foreground text-center mb-2 font-medium">Demo Credentials:</p>
+              <div className="text-xs text-center space-y-1">
+                <p className="font-mono text-blue-600">admin@fibre.africa</p>
+                <p className="font-mono text-blue-600">FibreAdmin2024!</p>
+              </div>
             </div>
           </div>
         </CardContent>

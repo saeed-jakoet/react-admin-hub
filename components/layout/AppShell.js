@@ -10,8 +10,8 @@ export function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const pathname = usePathname();
 
-  // Don't render AppShell for login page
-  if (pathname === "/login") {
+  // Don't render AppShell for login or forgot password pages
+  if (pathname === "/auth/login" || pathname === "/auth/forgot-password") {
     return <>{children}</>;
   }
 

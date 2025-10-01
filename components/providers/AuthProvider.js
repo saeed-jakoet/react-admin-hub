@@ -35,9 +35,10 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Handle routing based on auth status
     if (!isLoading) {
-      if (!isAuthenticated && pathname !== "/login") {
-        router.push("/login");
-      } else if (isAuthenticated && pathname === "/login") {
+      const publicAuthPages = ["/auth/login", "/auth/forgot-password"];
+      if (!isAuthenticated && !publicAuthPages.includes(pathname)) {
+        router.push("/auth/login");
+      } else if (isAuthenticated && publicAuthPages.includes(pathname)) {
         router.push("/");
       }
     }
@@ -56,7 +57,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("userEmail");
     setIsAuthenticated(false);
     setUserEmail("");
-    router.push("/login");
+    router.push("/auth/login");
   };
 
   // Show loading screen while checking auth
