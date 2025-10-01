@@ -9,11 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Zap, Eye, EyeOff, AlertCircle, Shield, Network } from "lucide-react";
 import Link from "next/link";
 
-// Hardcoded credentials
-const ADMIN_CREDENTIALS = {
-  email: "admin@fibre.africa",
-  password: "FibreAdmin2024!"
-};
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -28,38 +23,12 @@ export default function LoginPage() {
     setError("");
     setIsLoading(true);
 
-    // Simulate loading delay for professional feel
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // Check credentials
-    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-      // Simulate API response
-      const apiResponse = {
-        status: "success",
-        message: "Success",
-        data: {
-          user: {
-            user_metadata: {
-              firstName: "saeed",
-              role: "super_admin",
-              email: "jakoetsaeed@gmail.com"
-            }
-          },
-          session: {
-            access_token: "eyJhbGciOiJIUzI1NiIsImtpZCI6Ii9HTDRaNFhjS2x6UXJOYWUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL21uc3dvZHlhcGxncWFoYW1wbHlmLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI1NWZhMDNiMC1jYWU2LTQyOGYtOTg2Ny00MTEzNDJkNDhjMmIiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzU5MzQ1ODIyLCJpYXQiOjE3NTkzNDIyMjIsImVtYWlsIjoiamFrb2V0c2FlZWRAZ21haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJlbWFpbCI6Impha29ldHNhZWVkQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJzdE5hbWUiOiJzYWVlZCIsInBob25lTnVtYmVyIjoiKzI3Nzk2OTU3OTMiLCJwaG9uZV92ZXJpZmllZCI6ZmFsc2UsInJvbGUiOiJzdXBlcl9hZG1pbiIsInN1YiI6IjU1ZmEwM2IwLWNhZTYtNDI4Zi05ODY3LTQxMTM0MmQ0OGMyYiIsInN1cm5hbWUiOiJqYWtvZXQifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTc1OTM0MjIyMn1dLCJzZXNzaW9uX2lkIjoiZjM1YWY1ZTctNDgzZS00ZmRkLWJiZTEtNzBjYzRjM2Q2OWI0IiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.Qf3QEbUKReyIQEfkU4EcsyfTwkzkYhQSZtFFQJRg5Do"
-          }
-        }
-      };
-      const { firstName, email: userEmail, role } = apiResponse.data.user.user_metadata;
-      const accessToken = apiResponse.data.session.access_token;
-      console.log("First Name:", firstName);
-      console.log("Email:", userEmail);
-      console.log("Role:", role);
-      console.log("Access Token:", accessToken);
-      // Use auth context to login
-      login(userEmail);
-    } else {
-      setError("Invalid email or password. Please try again.");
+    try {
+      await login(email, password);
+    } catch (err) {
+      // Always show the backend error message if present
+      let backendMsg = err?.response?.data?.message || err?.message || "Login failed.";
+      setError(backendMsg);
     }
     setIsLoading(false);
   };
@@ -152,7 +121,6 @@ export default function LoginPage() {
                 </Button>
               </div>
             </div>
-            
             {/* Login Button */}
             <Button 
               type="submit" 

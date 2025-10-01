@@ -1,67 +1,151 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { useRouter, usePathname } from "next/navigation";
+import axios from "axios";
+import { isAllowed } from "./accessControl";
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASEURL;
 
 const AuthContext = createContext(undefined);
 
 export function AuthProvider({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState("");
+  const [user, setUser] = useState(null);
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const [showLoader, setShowLoader] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    // Check authentication status on mount
-    const checkAuth = () => {
-      const authStatus = localStorage.getItem("isAuthenticated");
-      const email = localStorage.getItem("userEmail");
-      
-      if (authStatus === "true" && email) {
-        setIsAuthenticated(true);
-        setUserEmail(email);
+  // ---------------------------
+  // Fetch user info from /auth/me/:id
+  // ---------------------------
+  const fetchCurrentUser = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/auth/me`, {
+        withCredentials: true, // send cookies
+      });
+      if (res.status === 200 && res.data?.data) {
+        setUser(res.data.data);
       } else {
-        setIsAuthenticated(false);
-        setUserEmail("");
+        setUser(null);
       }
-      
-      setIsLoading(false);
-    };
-
-    checkAuth();
-  }, []);
-
-  useEffect(() => {
-    // Handle routing based on auth status
-    if (!isLoading) {
-      const publicAuthPages = ["/auth/login", "/auth/forgot-password"];
-      if (!isAuthenticated && !publicAuthPages.includes(pathname)) {
-        router.push("/auth/login");
-      } else if (isAuthenticated && publicAuthPages.includes(pathname)) {
-        router.push("/");
-      }
+    } catch {
+      setUser(null);
     }
-  }, [isAuthenticated, isLoading, pathname, router]);
-
-  const login = (email) => {
-    localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("userEmail", email);
-    setIsAuthenticated(true);
-    setUserEmail(email);
-    router.push("/");
   };
 
-  const logout = () => {
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("userEmail");
-    setIsAuthenticated(false);
-    setUserEmail("");
+  // ---------------------------
+  // Login
+  // ---------------------------
+  const login = async (email, password) => {
+    setIsLoading(true);
+    try {
+      const res = await axios.post(
+        `${BASE_URL}/auth/signin`,
+        { email, password },
+        { withCredentials: true }
+      );
+      console.log(res);
+      if (res.status !== 200) {
+        throw new Error("Invalid email or password");
+      }
+
+  await fetchCurrentUser(); // cookies are set; fetch profile
+
+      setIsLoading(false);
+      router.push("/"); // redirect after login
+      return true;
+    } catch (err) {
+      setIsLoading(false);
+      throw err;
+    }
+  };
+
+  // ---------------------------
+  // Logout
+  // ---------------------------
+  const logout = async () => {
+    try {
+      await axios.post(
+        `${BASE_URL}/auth/logout`,
+        {},
+        { withCredentials: true }
+      );
+    } catch {}
+    setUser(null);
+    setIsLoading(false);
     router.push("/auth/login");
   };
 
-  // Show loading screen while checking auth
-  if (isLoading) {
+  // ---------------------------
+  // On mount, check for existing session
+  // ---------------------------
+  useEffect(() => {
+    let loaderTimeout;
+    const publicPages = ["/auth/login", "/auth/forgot-password"];
+
+    if (publicPages.includes(pathname)) {
+      setIsBootstrapping(false);
+      setShowLoader(false);
+      return;
+    }
+
+    loaderTimeout = setTimeout(() => setShowLoader(true), 200);
+
+    const checkSession = async () => {
+      try {
+        await fetchCurrentUser();
+      } catch {
+        setUser(null);
+      } finally {
+        setIsBootstrapping(false);
+        setShowLoader(false);
+        clearTimeout(loaderTimeout);
+      }
+    };
+
+    checkSession();
+    return () => clearTimeout(loaderTimeout);
+  }, [pathname]);
+
+  // ---------------------------
+  // Route protection
+  // ---------------------------
+  useEffect(() => {
+    if (isBootstrapping || isLoading) return;
+
+    const publicPages = ["/auth/login", "/auth/forgot-password", "/403"];
+    const onPublic = publicPages.includes(pathname);
+
+    if (!user) {
+      if (!onPublic) router.push("/auth/login");
+      return;
+    }
+
+    // If user is logged in and on public login page, redirect home
+    if (onPublic && pathname === "/auth/login") {
+      router.push("/");
+      return;
+    }
+
+    // Enforce RBAC on non-public pages
+    const role = user?.role || user?.user_metadata?.role;
+    if (!isAllowed(role, pathname)) {
+      router.push("/403");
+    }
+  }, [user, isBootstrapping, isLoading, pathname, router]);
+
+  // ---------------------------
+  // Loader screen during bootstrap
+  // ---------------------------
+  if (isBootstrapping && showLoader) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -73,7 +157,14 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userEmail, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated: !!user,
+        user,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
