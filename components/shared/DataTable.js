@@ -65,26 +65,27 @@ export function DataTable({ columns, data, searchKey, searchPlaceholder = "Searc
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+    <div className="space-y-6">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-4">
         {searchKey && (
           <Input
             placeholder={searchPlaceholder}
             value={(table.getColumn(searchKey)?.getFilterValue()) ?? ""}
             onChange={(e) => table.getColumn(searchKey)?.setFilterValue(e.target.value)}
-            className="max-w-sm"
+            className="max-w-md"
           />
         )}
         <div className="flex items-center gap-2 ml-auto">
           <Button variant="outline" size="sm" onClick={exportToCSV}>
             <Download className="mr-2 h-4 w-4" />
-            Export CSV
+            Export
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <Settings2 className="mr-2 h-4 w-4" />
-                Columns
+                View
                 <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -107,13 +108,14 @@ export function DataTable({ columns, data, searchKey, searchPlaceholder = "Searc
         </div>
       </div>
 
-      <div className="rounded-md border">
+      {/* Table */}
+      <div className="rounded-xl border bg-card overflow-hidden">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="border-b bg-muted/30 hover:bg-muted/30">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead key={header.id} className="h-12">
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
@@ -123,16 +125,24 @@ export function DataTable({ columns, data, searchKey, searchPlaceholder = "Searc
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className="border-b last:border-b-0 hover:bg-muted/5 transition-colors"
+                >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    <TableCell key={cell.id} className="py-4">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  No results.
+                <TableCell colSpan={columns.length} className="h-40 text-center">
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <p className="text-sm">No results found</p>
+                  </div>
                 </TableCell>
               </TableRow>
             )}
@@ -140,10 +150,11 @@ export function DataTable({ columns, data, searchKey, searchPlaceholder = "Searc
         </Table>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
+      {/* Pagination */}
+      <div className="flex items-center justify-between text-sm">
+        <p className="text-muted-foreground">
+          {table.getFilteredRowModel().rows.length} {table.getFilteredRowModel().rows.length === 1 ? 'result' : 'results'}
+        </p>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -153,6 +164,9 @@ export function DataTable({ columns, data, searchKey, searchPlaceholder = "Searc
           >
             Previous
           </Button>
+          <span className="text-muted-foreground px-2">
+            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+          </span>
           <Button
             variant="outline"
             size="sm"

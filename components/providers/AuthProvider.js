@@ -5,7 +5,6 @@ import React, {
   useContext,
   useEffect,
   useState,
-  useCallback,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import axios from "axios";
@@ -18,7 +17,6 @@ const AuthContext = createContext(undefined);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
-  const [showLoader, setShowLoader] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -88,16 +86,12 @@ export function AuthProvider({ children }) {
   // On mount, check for existing session
   // ---------------------------
   useEffect(() => {
-    let loaderTimeout;
     const publicPages = ["/auth/login", "/auth/forgot-password"];
 
     if (publicPages.includes(pathname)) {
       setIsBootstrapping(false);
-      setShowLoader(false);
       return;
     }
-
-    loaderTimeout = setTimeout(() => setShowLoader(true), 200);
 
     const checkSession = async () => {
       try {
@@ -106,13 +100,10 @@ export function AuthProvider({ children }) {
         setUser(null);
       } finally {
         setIsBootstrapping(false);
-        setShowLoader(false);
-        clearTimeout(loaderTimeout);
       }
     };
 
     checkSession();
-    return () => clearTimeout(loaderTimeout);
   }, [pathname]);
 
   // ---------------------------
@@ -143,24 +134,16 @@ export function AuthProvider({ children }) {
   }, [user, isBootstrapping, isLoading, pathname, router]);
 
   // ---------------------------
-  // Loader screen during bootstrap
+  // No loader on page refresh - better UX
+  // Content renders immediately, auth happens in background
   // ---------------------------
-  if (isBootstrapping && showLoader) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-          <p className="text-white/70 text-sm">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <AuthContext.Provider
       value={{
         isAuthenticated: !!user,
         user,
+        isBootstrapping,
         login,
         logout,
       }}

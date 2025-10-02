@@ -108,44 +108,41 @@ export function AppSidebar({ open, onToggle }) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-white dark:bg-background border-r border-gray-100 dark:border-border transition-all duration-300",
+        "fixed left-0 top-0 z-40 h-screen bg-white dark:bg-card border-r border-gray-100/50 dark:border-border/50 transition-all duration-300 shadow-sm",
         open ? "w-64" : "w-16"
       )}
     >
-      {/* Header */}
-      <div className="flex h-16 items-center px-4 border-b border-gray-100 dark:border-border relative">
+      {/* Header - Sneat Style */}
+      <div className="flex h-16 items-center px-4 border-b border-gray-100/50 dark:border-border/50 relative">
         {open ? (
           <>
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                <Zap className="h-4 w-4 text-white" />
+              <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
+                <Zap className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="font-semibold text-gray-900 dark:text-foreground">
+                <h1 className="font-bold text-gray-900 dark:text-foreground text-base">
                   Fiber Africa
                 </h1>
-                <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                  Command Center
-                </p>
               </div>
             </div>
             {/* Collapse button when open */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2">
+            <div className="absolute right-2 top-1/2 -translate-y-1/2">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={onToggle}
-                className="h-6 w-6 rounded-full"
+                className="h-7 w-7 rounded-md hover:bg-gray-100 dark:hover:bg-muted"
                 aria-label="Collapse sidebar"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 text-gray-500" />
               </Button>
             </div>
           </>
         ) : (
           <div className="w-full flex justify-center">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
-              <Zap className="h-4 w-4 text-white" />
+            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
+              <Zap className="h-5 w-5 text-white" />
             </div>
           </div>
         )}
@@ -158,16 +155,16 @@ export function AppSidebar({ open, onToggle }) {
             variant="default"
             size="icon"
             onClick={onToggle}
-            className="h-6 w-6 rounded-full shadow-lg"
+            className="h-6 w-6 rounded-full shadow-md bg-white dark:bg-card border border-gray-200 dark:border-border hover:bg-gray-50"
             aria-label="Expand sidebar"
           >
-            <ChevronLeft className="h-3 w-3 rotate-180" />
+            <ChevronLeft className="h-3 w-3 rotate-180 text-gray-600" />
           </Button>
         </div>
       )}
 
-      {/* Navigation */}
-      <nav className="px-3 py-4 space-y-1">
+      {/* Navigation - Clean Sneat Style */}
+      <nav className="px-3 py-6 space-y-1.5">
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -177,24 +174,29 @@ export function AppSidebar({ open, onToggle }) {
             <Link key={item.id} href={item.href}>
               <div
                 className={cn(
-                  "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200",
+                  "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
                   isActive
-                    ? "bg-blue-50 text-blue-700 dark:bg-primary/10 dark:text-primary"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-muted-foreground dark:hover:bg-muted/50 dark:hover:text-foreground",
+                    ? "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 dark:from-indigo-950/30 dark:to-purple-950/30 dark:text-indigo-400 shadow-sm"
+                    : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-muted/50",
                   !open && "justify-center px-2"
                 )}
               >
-                <Icon className={cn("h-5 w-5", item.iconColor)} />
+                <div className={cn(
+                  "h-8 w-8 rounded-lg flex items-center justify-center transition-colors",
+                  isActive ? "bg-white dark:bg-card shadow-sm" : ""
+                )}>
+                  <Icon className={cn(
+                    "h-4.5 w-4.5 transition-colors",
+                    isActive ? "text-indigo-600 dark:text-indigo-400" : "text-gray-500 dark:text-gray-400"
+                  )} />
+                </div>
                 {open && <span className="ml-3 truncate">{item.label}</span>}
                 {open && item.notification && (
                   <div className="ml-auto">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500 text-white">
                       {item.notification}
                     </span>
                   </div>
-                )}
-                {open && isActive && !item.notification && (
-                  <div className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-primary" />
                 )}
               </div>
             </Link>
@@ -202,25 +204,24 @@ export function AppSidebar({ open, onToggle }) {
         })}
       </nav>
 
-      {/* Bottom Status and Logout */}
+      {/* Bottom Card - Sneat Style */}
       {open && (
-        <div className="absolute bottom-4 left-3 right-3 flex flex-col gap-2">
-          <div className="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg p-3">
-            <div className="flex items-center gap-3">
-              <div className="h-6 w-6 rounded-full bg-green-500 dark:bg-green-700 flex items-center justify-center">
-                <div className="h-2 w-2 rounded-full bg-white dark:bg-green-300" />
+        <div className="absolute bottom-6 left-3 right-3">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200/50 dark:border-green-800/50 rounded-xl p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="h-8 w-8 rounded-lg bg-green-500 dark:bg-green-600 flex items-center justify-center shadow-sm">
+                <div className="h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                  Network Online
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-green-900 dark:text-green-200">
+                  All Systems Online
                 </p>
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  All systems operational
+                <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
+                  99.9% uptime today
                 </p>
               </div>
             </div>
           </div>
-          {/* Logout button removed as it exists in the top bar */}
         </div>
       )}
     </aside>

@@ -24,9 +24,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function Topbar() {
+export function Topbar({ sidebarOpen }) {
   const { logout, user } = useAuth();
-  console.log(user);
 
   // Avatar fallback: SP for super_admin, initials for others
   let avatarText = "U";
@@ -53,82 +52,107 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white dark:bg-background border-b border-gray-200 dark:border-border">
+    <header className="h-16 bg-white dark:bg-card border border-gray-100/50 dark:border-border/50 rounded-xl shadow-sm mb-6">
       <div className="flex h-full items-center justify-between px-6">
-        {/* Search */}
-        <div className="flex-1 max-w-lg">
+        {/* Search - Sneat Style */}
+        <div className="flex-1 max-w-xl">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <Input
-              placeholder="Search projects, clients, teams..."
-              className="pl-10 pr-4 h-9 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+              placeholder="Search anything... ⌘K"
+              className="pl-10 pr-4 h-10 rounded-lg border-gray-200 dark:border-border bg-gray-50 dark:bg-muted/50 focus:bg-white dark:focus:bg-card focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 text-sm transition-all"
             />
           </div>
         </div>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-3">
+        {/* Right Actions - Sneat Style */}
+        <div className="flex items-center gap-2">
           {/* Notifications */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            className="h-9 w-9 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-muted relative"
           >
-            <Bell className="h-4 w-4" />
+            <Bell className="h-4.5 w-4.5" />
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border-2 border-white dark:border-card"></span>
           </Button>
 
           {/* Theme Toggle */}
           <ThemeToggle />
 
-          {/* User Menu */}
+          {/* User Menu - Sneat Style */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-blue-600 text-white text-xs font-medium">
+              <Button
+                variant="ghost"
+                className="relative h-9 pl-2 pr-3 rounded-lg hover:bg-gray-100 dark:hover:bg-muted gap-2"
+              >
+                <Avatar className="h-8 w-8 border-2 border-gray-100 dark:border-border">
+                  <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xs font-semibold">
                     {avatarText}
                   </AvatarFallback>
                 </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-56 bg-white border-gray-200 shadow-lg"
-            >
-              <DropdownMenuLabel>
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium text-gray-900">
+                <div className="hidden md:flex flex-col items-start">
+                  <span className="text-xs font-semibold text-gray-900 dark:text-foreground leading-tight">
                     {user?.user_metadata?.firstName
                       ? user.user_metadata.firstName.charAt(0).toUpperCase() +
                         user.user_metadata.firstName.slice(1)
                       : ""}
-                    {user?.user_metadata?.firstName &&
-                    user?.user_metadata?.surname
-                      ? " "
-                      : ""}
-                    {user?.user_metadata?.surname
-                      ? user.user_metadata.surname.charAt(0).toUpperCase() +
-                        user.user_metadata.surname.slice(1)
-                      : ""}
-                  </p>
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-muted-foreground leading-tight">
+                    {user?.role?.replace(/_/g, " ") || "Admin"}
+                  </span>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-60 bg-white dark:bg-card border-gray-100 dark:border-border shadow-xl rounded-xl p-2"
+            >
+              <DropdownMenuLabel className="px-3 py-2">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10 border-2 border-gray-100 dark:border-border">
+                    <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-sm font-semibold">
+                      {avatarText}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-foreground">
+                      {user?.user_metadata?.firstName
+                        ? user.user_metadata.firstName.charAt(0).toUpperCase() +
+                          user.user_metadata.firstName.slice(1)
+                        : ""}
+                      {user?.user_metadata?.firstName &&
+                      user?.user_metadata?.surname
+                        ? " "
+                        : ""}
+                      {user?.user_metadata?.surname
+                        ? user.user_metadata.surname.charAt(0).toUpperCase() +
+                          user.user_metadata.surname.slice(1)
+                        : ""}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-muted-foreground">
+                      {user?.email || ""}
+                    </p>
+                  </div>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-gray-100" />
-              <DropdownMenuItem className="text-gray-700 hover:bg-gray-50">
-                <User className="mr-2 h-4 w-4" />
-                Profile
+              <DropdownMenuSeparator className="bg-gray-100 dark:bg-border my-2" />
+              <DropdownMenuItem className="px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-muted rounded-lg cursor-pointer">
+                <User className="mr-3 h-4 w-4" />
+                <span className="text-sm font-medium">My Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-gray-700 hover:bg-gray-50">
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
+              <DropdownMenuItem className="px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-muted rounded-lg cursor-pointer">
+                <Settings className="mr-3 h-4 w-4" />
+                <span className="text-sm font-medium">Settings</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-gray-100" />
+              <DropdownMenuSeparator className="bg-gray-100 dark:bg-border my-2" />
               <DropdownMenuItem
-                className="text-red-600 hover:bg-red-50"
+                className="px-3 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg cursor-pointer"
                 onClick={logout}
               >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
+                <LogOut className="mr-3 h-4 w-4" />
+                <span className="text-sm font-medium">Sign Out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
