@@ -243,112 +243,53 @@ export default function InventoryPage() {
     return { label: "In Stock", color: "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" };
   };
 
-  if (loading) {
-    return <Loader text="Loading inventory system..." />;
-  }
+  if (loading) return <Loader text="Loading inventory system..." />;
 
-  // Define all possible columns
   const allColumns = [
-    {
-      accessorKey: "item_name",
-      header: "Item Details",
-      cell: ({ row }) => (
+    { accessorKey: "item_name", header: "Item Details", cell: ({ row }) => (
+      <div className="flex items-center space-x-3">
+        <div className={`w-3 h-3 rounded-full ${getCategoryDotColor(row.original.category)}`}></div>
+        <div>
+          <div className="font-semibold text-gray-900 dark:text-white">{row.original.item_name}</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400">{row.original.item_code}</div>
+        </div>
+      </div>
+    )},
+    { accessorKey: "category", header: "Category", cell: ({ row }) => (
+      <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-medium ${getCategoryColor(row.original.category)}`}>{row.original.category}</span>
+    )},
+    { accessorKey: "quantity", header: "Stock Status", cell: ({ row }) => {
+      const { quantity, minimum_quantity, unit } = row.original;
+      const status = getStockStatus(quantity, minimum_quantity);
+      return (
         <div className="flex items-center space-x-3">
-          <div className={`w-3 h-3 rounded-full ${getCategoryDotColor(row.original.category)}`}></div>
+          {getStockIcon(quantity, minimum_quantity)}
           <div>
-            <div className="font-semibold text-gray-900 dark:text-white">{row.original.item_name}</div>
-            <div className="text-sm text-gray-500 dark:text-slate-400">{row.original.item_code}</div>
+            <div className="font-semibold text-gray-900 dark:text-white">{quantity} {unit}</div>
+            <div className={`inline-flex px-2 py-1 rounded-md text-xs font-medium ${status.color}`}>{status.label}</div>
           </div>
         </div>
-      ),
-    },
-    {
-      accessorKey: "category",
-      header: "Category",
-      cell: ({ row }) => (
-        <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-medium ${getCategoryColor(row.original.category)}`}>
-          {row.original.category}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "quantity",
-      header: "Stock Status",
-      cell: ({ row }) => {
-        const { quantity, minimum_quantity, unit } = row.original;
-        const status = getStockStatus(quantity, minimum_quantity);
-        return (
-          <div className="flex items-center space-x-3">
-            {getStockIcon(quantity, minimum_quantity)}
-            <div>
-              <div className="font-semibold text-gray-900 dark:text-white">
-                {quantity} {unit}
-              </div>
-              <div className={`inline-flex px-2 py-1 rounded-md text-xs font-medium ${status.color}`}>
-                {status.label}
-              </div>
-            </div>
-          </div>
-        );
-      },
-    },
-    { 
-      accessorKey: "location", 
-      header: "Location",
-      cell: ({ row }) => (
-        <div className="flex items-center space-x-2">
-          <MapPin className="w-4 h-4 text-gray-400 dark:text-slate-400" />
-          <span className="text-gray-900 dark:text-white font-medium">{row.original.location}</span>
-        </div>
-      )
-    },
-    { 
-      accessorKey: "supplier_name", 
-      header: "Supplier",
-      cell: ({ row }) => (
-        <span className="text-gray-600 dark:text-slate-400">{row.original.supplier_name || "—"}</span>
-      )
-    },
-    {
-      accessorKey: "cost_price",
-      header: "Unit Price",
-      cell: ({ row }) =>
-        row.original.cost_price ? (
-          <span className="font-semibold text-gray-900 dark:text-white">R {row.original.cost_price}</span>
-        ) : (
-          <span className="text-gray-400 dark:text-slate-400">—</span>
-        ),
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <Eye className="h-4 w-4 mr-2" />
-              View Details
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Item
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Package className="h-4 w-4 mr-2" />
-              Update Stock
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Truck className="h-4 w-4 mr-2" />
-              Reorder
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
-    },
+      );
+    }},
+    { accessorKey: "location", header: "Location", cell: ({ row }) => (
+      <div className="flex items-center space-x-2"><MapPin className="w-4 h-4 text-gray-400" /><span className="text-gray-900 dark:text-white font-medium">{row.original.location}</span></div>
+    )},
+    { accessorKey: "supplier_name", header: "Supplier", cell: ({ row }) => (
+      <span className="text-gray-600 dark:text-slate-400">{row.original.supplier_name || "—"}</span>
+    )},
+    { accessorKey: "cost_price", header: "Unit Price", cell: ({ row }) => row.original.cost_price ? (
+      <span className="font-semibold text-gray-900 dark:text-white">R {row.original.cost_price}</span>
+    ) : <span className="text-gray-400 dark:text-slate-400">—</span>},
+    { id: "actions", cell: () => (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {[{icon: Eye, label: "View Details"}, {icon: Edit, label: "Edit Item"}, {icon: Package, label: "Update Stock"}, {icon: Truck, label: "Reorder"}].map((item, i) => (
+            <DropdownMenuItem key={i}><item.icon className="h-4 w-4 mr-2" />{item.label}</DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )}
   ];
 
   // Filter columns based on visibility settings
@@ -383,85 +324,29 @@ export default function InventoryPage() {
       <div className="space-y-6">
         {/* Inventory Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                  <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          {[
+            { label: "Total Items", value: stockStats.total, desc: "Across all categories", icon: Package, color: "blue", trend: TrendingUp },
+            { label: "In Stock", value: stockStats.inStock, desc: "Items available", icon: CheckCircle, color: "green", trend: TrendingUp },
+            { label: "Low Stock", value: stockStats.lowStock, desc: "Need reorder", icon: AlertTriangle, color: "orange", trend: TrendingDown },
+            { label: "Out of Stock", value: stockStats.outOfStock, desc: "Critical items", icon: XCircle, color: "red", trend: Minus },
+            { label: "Total Value", value: `R${(stockStats.totalValue / 1000).toFixed(1)}K`, desc: "Stock valuation", icon: Truck, color: "purple", trend: TrendingUp }
+          ].map((stat, i) => (
+            <Card key={i} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`w-12 h-12 bg-${stat.color}-50 dark:bg-${stat.color}-900/20 rounded-lg flex items-center justify-center`}>
+                    <stat.icon className={`w-6 h-6 text-${stat.color}-600 dark:text-${stat.color}-400`} />
+                  </div>
+                  <stat.trend className={`w-5 h-5 ${stat.color === 'red' ? 'text-red-500' : stat.color === 'orange' ? 'text-orange-500' : 'text-green-500'}`} />
                 </div>
-                <TrendingUp className="w-5 h-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-gray-600 dark:text-slate-400 text-sm font-medium mb-1">Total Items</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stockStats.total}</p>
-                <p className="text-gray-600 dark:text-slate-400 text-sm">Across all categories</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                <div>
+                  <p className="text-gray-600 dark:text-slate-400 text-sm font-medium mb-1">{stat.label}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                  <p className={`text-sm font-medium ${stat.color === 'green' ? 'text-green-600 dark:text-green-400' : stat.color === 'orange' ? 'text-orange-600 dark:text-orange-400' : stat.color === 'red' ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-slate-400'}`}>{stat.desc}</p>
                 </div>
-                <TrendingUp className="w-5 h-5 text-green-500" />
               </div>
-              <div>
-                <p className="text-gray-600 dark:text-slate-400 text-sm font-medium mb-1">In Stock</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stockStats.inStock}</p>
-                <p className="text-green-600 dark:text-green-400 text-sm font-medium">Items available</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <TrendingDown className="w-5 h-5 text-orange-500" />
-              </div>
-              <div>
-                <p className="text-gray-600 dark:text-slate-400 text-sm font-medium mb-1">Low Stock</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stockStats.lowStock}</p>
-                <p className="text-orange-600 dark:text-orange-400 text-sm font-medium">Need reorder</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
-                  <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
-                </div>
-                <Minus className="w-5 h-5 text-red-500" />
-              </div>
-              <div>
-                <p className="text-gray-600 dark:text-slate-400 text-sm font-medium mb-1">Out of Stock</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stockStats.outOfStock}</p>
-                <p className="text-red-600 dark:text-red-400 text-sm font-medium">Critical items</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                  <Truck className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                </div>
-                <TrendingUp className="w-5 h-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-gray-600 dark:text-slate-400 text-sm font-medium mb-1">Total Value</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">R{(stockStats.totalValue / 1000).toFixed(1)}K</p>
-                <p className="text-gray-600 dark:text-slate-400 text-sm">Stock valuation</p>
-              </div>
-            </div>
-          </Card>
+            </Card>
+          ))}
         </div>
 
         {/* Comprehensive Inventory Controls */}
@@ -485,23 +370,11 @@ export default function InventoryPage() {
                 Filter
               </Button>
               
-              <Button 
-                variant="outline" 
-                onClick={exportToCSV}
-                className="px-4 py-2 text-gray-700 dark:text-slate-300 border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
-
-              <Button 
-                variant="outline" 
-                onClick={exportToPDF}
-                className="px-4 py-2 text-gray-700 dark:text-slate-300 border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export PDF
-              </Button>
+              {[{type: 'csv', label: 'Export CSV'}, {type: 'pdf', label: 'Export PDF'}].map((exp, i) => (
+                <Button key={i} variant="outline" onClick={() => exportData(exp.type)} className="px-4 py-2 text-gray-700 dark:text-slate-300 border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700">
+                  <Download className="w-4 h-4 mr-2" />{exp.label}
+                </Button>
+              ))}
             </div>
 
             {/* Right Side - View Options */}

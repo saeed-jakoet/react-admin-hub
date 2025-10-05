@@ -14,27 +14,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
 
 export function Topbar() {
-  const { logout, user, refreshToken } = useAuth();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const handleManualRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      const success = await refreshToken();
-      if (success) {
-        console.log("Token refreshed successfully!");
-      } else {
-        console.error("Token refresh failed");
-      }
-    } catch (error) {
-      console.error("Error refreshing token:", error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+  const { logout, user } = useAuth();
 
   return (
     <header className="h-16 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm">
@@ -52,18 +34,6 @@ export function Topbar() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-3">
-          {/* Manual Token Refresh (Testing) */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleManualRefresh}
-            disabled={isRefreshing}
-            className="h-9 w-9 rounded-lg text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700"
-            title="Refresh Token (Testing)"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </Button>
-
           {/* Notifications */}
           <Button
             variant="ghost"
