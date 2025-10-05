@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Search,
-  Bell,
-  Settings,
-  User,
-  LogOut,
-} from "lucide-react";
+import { Search, Bell, Settings, User, LogOut, RefreshCw } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,19 +14,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 
 export function Topbar() {
-  const { logout, user } = useAuth();
+  const { logout, user, refreshToken } = useAuth();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Avatar fallback: SP for super_admin, initials for others
-  let avatarText = "U";
-  if (user?.role === "super_admin") {
-    avatarText = "SP";
-  } else if (user?.firstname && user?.surname) {
-    avatarText = `${user.firstname.charAt(0)}${user.surname.charAt(0)}`.toUpperCase();
-  } else if (user?.email) {
-    avatarText = user.email.charAt(0).toUpperCase();
-  }
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const success = await refreshToken();
+      if (success) {
+        console.log("Token refreshed successfully!");
+      } else {
+        console.error("Token refresh failed");
+      }
+    } catch (error) {
+      console.error("Error refreshing token:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <header className="h-16 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm">
@@ -50,6 +52,18 @@ export function Topbar() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-3">
+          {/* Manual Token Refresh (Testing) */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="h-9 w-9 rounded-lg text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+            title="Refresh Token (Testing)"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
+
           {/* Notifications */}
           <Button
             variant="ghost"
@@ -71,18 +85,11 @@ export function Topbar() {
                 className="relative h-9 pl-2 pr-3 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 gap-2"
               >
                 <Avatar className="h-7 w-7">
-                  <AvatarFallback className="bg-blue-600 text-white text-xs font-semibold">
-                    {avatarText}
+                  <AvatarFallback className="bg-green-600 text-white text-xs font-semibold">
+                    {user?.user_metadata.firstName.charAt(0).toUpperCase()}
+                    {user?.user_metadata.surname.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="hidden md:flex flex-col items-start">
-                  <span className="text-xs font-semibold text-gray-900 dark:text-white leading-tight">
-                    {user?.user_metadata?.firstName || "User"}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-slate-400 leading-tight">
-                    {user?.role?.replace(/_/g, " ") || "Admin"}
-                  </span>
-                </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -92,14 +99,27 @@ export function Topbar() {
               <DropdownMenuLabel className="px-3 py-2">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-blue-600 text-white text-sm font-semibold">
-                      {avatarText}
+                    <AvatarFallback className="bg-green-600 text-white text-sm font-semibold">
+                      {user?.user_metadata.firstName.charAt(0).toUpperCase()}
+                      {user?.user_metadata.surname.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {user?.user_metadata?.firstName || "User"}
-                      {user?.user_metadata?.surname && ` ${user.user_metadata.surname}`}
+                      {user?.user_metadata?.firstName
+                        ? `${user.user_metadata.firstName
+                            .charAt(0)
+                            .toUpperCase()}${user.user_metadata.firstName.slice(
+                            1
+                          )}`
+                        : "User"}{" "}
+                      {user?.user_metadata?.surname
+                        ? `${user.user_metadata.surname
+                            .charAt(0)
+                            .toUpperCase()}${user.user_metadata.surname.slice(
+                            1
+                          )}`
+                        : ""}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-slate-400">
                       {user?.email || ""}

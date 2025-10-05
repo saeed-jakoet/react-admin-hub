@@ -16,6 +16,7 @@ import {
   Truck,
   Zap,
   ChevronRight,
+  Wifi
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -118,7 +119,7 @@ export function AppSidebar() {
           <div className="flex items-center space-x-3">
             <div className="relative">
               <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center shadow-sm">
-                <Zap className="w-5 h-5 text-white" />
+                <Wifi className="w-5 h-5 text-white" />
               </div>
               <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-slate-900"></div>
             </div>

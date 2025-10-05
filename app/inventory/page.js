@@ -215,8 +215,8 @@ export default function InventoryPage() {
                 <td>${item.category || ''}</td>
                 <td>${item.quantity || 0}</td>
                 <td>${item.min_quantity || 0}</td>
-                <td>$${item.unit_price || 0}</td>
-                <td>$${(item.quantity * item.unit_price) || 0}</td>
+                <td>R${item.unit_price || 0}</td>
+                <td>R${(item.quantity * item.unit_price) || 0}</td>
                 <td>${item.supplier_name || ''}</td>
                 <td>${item.location || ''}</td>
                 <td class="${item.quantity === 0 ? 'status-out' : item.quantity <= item.min_quantity ? 'status-low' : 'status-in'}">

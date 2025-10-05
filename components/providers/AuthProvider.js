@@ -1,11 +1,6 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import axios from "axios";
 import { isAllowed } from "./accessControl";
@@ -20,6 +15,32 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  let isRefreshing = false;
+  let failedQueue = [];
+
+  const processQueue = (error, token = null) => {
+    failedQueue.forEach(({ resolve, reject }) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(token);
+      }
+    });
+    failedQueue = [];
+  };
+
+  // ---------------------------
+  // Refresh token function
+  // ---------------------------
+  const refreshToken = async () => {
+    const res = await fetch(`${BASE_URL}/refresh/refresh-token`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new Error("Refresh failed");
+    return res.json();
+  };
 
   // ---------------------------
   // Fetch user info from /auth/me/:id
@@ -50,12 +71,11 @@ export function AuthProvider({ children }) {
         { email, password },
         { withCredentials: true }
       );
-      console.log(res);
       if (res.status !== 200) {
         throw new Error("Invalid email or password");
       }
 
-  await fetchCurrentUser(); // cookies are set; fetch profile
+      await fetchCurrentUser(); // cookies are set; fetch profile
 
       setIsLoading(false);
       router.push("/"); // redirect after login
@@ -81,6 +101,55 @@ export function AuthProvider({ children }) {
     setIsLoading(false);
     router.push("/auth/login");
   };
+
+  // ---------------------------
+  // Setup axios interceptor for 401 handling
+  // ---------------------------
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          !originalRequest.url?.includes("/refresh/")
+        ) {
+          if (isRefreshing) {
+            return new Promise((resolve, reject) => {
+              failedQueue.push({ resolve, reject });
+            })
+              .then(() => {
+                return axios(originalRequest);
+              })
+              .catch((err) => {
+                return Promise.reject(err);
+              });
+          }
+
+          originalRequest._retry = true;
+          isRefreshing = true;
+
+          try {
+            await refreshToken();
+            processQueue(null);
+            return axios(originalRequest);
+          } catch (refreshError) {
+            processQueue(refreshError);
+            setUser(null);
+            router.push("/auth/login");
+            return Promise.reject(refreshError);
+          } finally {
+            isRefreshing = false;
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => axios.interceptors.response.eject(interceptor);
+  }, [router]);
 
   // ---------------------------
   // On mount, check for existing session
