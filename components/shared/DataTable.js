@@ -20,7 +20,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function DataTable({ columns, data, searchKey, searchPlaceholder = "Search..." }) {
+export function DataTable({ 
+  columns, 
+  data, 
+  searchKey, 
+  searchPlaceholder = "Search...", 
+  showToolbar = true,
+  showExportButton = true,
+  showViewToggle = true 
+}) {
   const [sorting, setSorting] = React.useState([]);
   const [columnFilters, setColumnFilters] = React.useState([]);
   const [columnVisibility, setColumnVisibility] = React.useState({});
@@ -66,47 +74,53 @@ export function DataTable({ columns, data, searchKey, searchPlaceholder = "Searc
 
   return (
     <div className="space-y-6">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
-        {searchKey && (
-          <Input
-            placeholder={searchPlaceholder}
-            value={(table.getColumn(searchKey)?.getFilterValue()) ?? ""}
-            onChange={(e) => table.getColumn(searchKey)?.setFilterValue(e.target.value)}
-            className="max-w-md"
-          />
-        )}
-        <div className="flex items-center gap-2 ml-auto">
-          <Button variant="outline" size="sm" onClick={exportToCSV}>
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Settings2 className="mr-2 h-4 w-4" />
-                View
-                <ChevronDown className="ml-2 h-4 w-4" />
+      {/* Toolbar - conditionally rendered */}
+      {showToolbar && (
+        <div className="flex items-center justify-between gap-4">
+          {searchKey && (
+            <Input
+              placeholder={searchPlaceholder}
+              value={(table.getColumn(searchKey)?.getFilterValue()) ?? ""}
+              onChange={(e) => table.getColumn(searchKey)?.setFilterValue(e.target.value)}
+              className="max-w-md"
+            />
+          )}
+          <div className="flex items-center gap-2 ml-auto">
+            {showExportButton && (
+              <Button variant="outline" size="sm" onClick={exportToCSV}>
+                <Download className="mr-2 h-4 w-4" />
+                Export
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            )}
+            {showViewToggle && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings2 className="mr-2 h-4 w-4" />
+                    View
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {table
+                    .getAllColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Table */}
       <div className="rounded-xl border bg-card overflow-hidden">
