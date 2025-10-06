@@ -125,9 +125,7 @@ export function AppSidebar({ collapsed = false, onToggle }) {
     const checkSupabaseStatus = async () => {
       try {
         // Check Supabase public status API
-        const response = await axios.get('https://status.supabase.com/api/v2/status.json', {
-          timeout: 5000
-        });
+        const response = await axios.get('https://status.supabase.com/api/v2/status.json');
         
         if (response.data?.status?.indicator === 'none') {
           setSupabaseStatus({

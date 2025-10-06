@@ -51,36 +51,9 @@ export default function ClientDetailPage({ params }) {
   const [formData, setFormData] = React.useState({});
   const [activeTab, setActiveTab] = React.useState("overview");
 
-  // Mock jobs data - will be replaced with real API call
-  const [jobs] = React.useState([
-    {
-      id: 1,
-      title: "Network Infrastructure Setup",
-      status: "completed",
-      startDate: "2024-01-15",
-      endDate: "2024-02-28",
-      value: 25000,
-      description: "Complete office network setup with fiber connections",
-    },
-    {
-      id: 2,
-      title: "Security System Installation",
-      status: "ongoing",
-      startDate: "2024-03-01",
-      endDate: null,
-      value: 15000,
-      description: "CCTV and access control system installation",
-    },
-    {
-      id: 3,
-      title: "Server Room Setup",
-      status: "pending",
-      startDate: "2024-04-01",
-      endDate: null,
-      value: 18000,
-      description: "Climate controlled server room with backup systems",
-    },
-  ]);
+  // Drop cable jobs data
+  const [dropCableJobs, setDropCableJobs] = React.useState([]);
+  const [jobsLoading, setJobsLoading] = React.useState(false);
 
   React.useEffect(() => {
     const fetchClient = async () => {
@@ -96,8 +69,22 @@ export default function ClientDetailPage({ params }) {
       }
     };
 
+    const fetchDropCableJobs = async () => {
+      try {
+        setJobsLoading(true);
+        const response = await get(`/drop-cable/client/${resolvedParams.id}`);
+        setDropCableJobs(response.data || []);
+      } catch (error) {
+        console.error("Error fetching drop cable jobs:", error);
+        setDropCableJobs([]);
+      } finally {
+        setJobsLoading(false);
+      }
+    };
+
     if (resolvedParams.id) {
       fetchClient();
+      fetchDropCableJobs();
     }
   }, [resolvedParams.id]);
 
@@ -128,48 +115,146 @@ export default function ClientDetailPage({ params }) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const getJobStatusColor = (status) => {
+  const getDropCableStatusColor = (status) => {
     switch (status) {
-      case "completed":
+      case "closed":
         return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
-      case "ongoing":
+      case "installation_completed":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "installation_scheduled":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
-      case "pending":
+      case "survey_scheduled":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "survey_completed":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "survey_required":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
+      case "awaiting_client_installation_date":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
+      case "lla_required":
+      case "awaiting_lla_approval":
+      case "lla_received":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400";
+      case "new":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
     }
   };
 
-  const getJobStatusIcon = (status) => {
+  const getDropCableStatusIcon = (status) => {
     switch (status) {
-      case "completed":
+      case "closed":
+      case "installation_completed":
         return <CheckCircle className="w-4 h-4" />;
-      case "ongoing":
+      case "installation_scheduled":
+      case "survey_scheduled":
+      case "survey_completed":
         return <Activity className="w-4 h-4" />;
-      case "pending":
+      case "survey_required":
+      case "awaiting_client_installation_date":
+      case "new":
         return <Clock className="w-4 h-4" />;
+      case "lla_required":
+      case "awaiting_lla_approval":
+      case "lla_received":
+        return <FileText className="w-4 h-4" />;
       default:
         return <AlertTriangle className="w-4 h-4" />;
     }
   };
 
+  const formatDropCableStatus = (status) => {
+    return status.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
   const jobStats = React.useMemo(() => {
-    const completed = jobs.filter((job) => job.status === "completed");
-    const ongoing = jobs.filter((job) => job.status === "ongoing");
-    const pending = jobs.filter((job) => job.status === "pending");
-    const totalValue = jobs.reduce((sum, job) => sum + job.value, 0);
-    const completedValue = completed.reduce((sum, job) => sum + job.value, 0);
+    // Drop cable status stats
+    const dropCableStatusCounts = dropCableJobs.reduce((acc, job) => {
+      acc[job.status] = (acc[job.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Job categories with their respective data
+    const jobCategories = [
+      { 
+        name: "Drop Cable Installations", 
+        type: "drop_cable",
+        totalCount: dropCableJobs.length,
+        statusCounts: dropCableStatusCounts,
+        icon: Activity,
+        color: "blue"
+      },
+      { 
+        name: "Link Build", 
+        type: "link_build",
+        totalCount: 0,
+        statusCounts: {},
+        icon: Activity,
+        color: "purple"
+      },
+      { 
+        name: "Floating", 
+        type: "floating",
+        totalCount: 0,
+        statusCounts: {},
+        icon: Activity,
+        color: "green"
+      },
+      { 
+        name: "Civils (ADW)", 
+        type: "civils_adw",
+        totalCount: 0,
+        statusCounts: {},
+        icon: Activity,
+        color: "orange"
+      },
+      { 
+        name: "Access Build", 
+        type: "access_build",
+        totalCount: 0,
+        statusCounts: {},
+        icon: Activity,
+        color: "teal"
+      },
+      { 
+        name: "Root Build", 
+        type: "root_build",
+        totalCount: 0,
+        statusCounts: {},
+        icon: Activity,
+        color: "indigo"
+      },
+      { 
+        name: "Relocations", 
+        type: "relocations",
+        totalCount: 0,
+        statusCounts: {},
+        icon: Activity,
+        color: "pink"
+      },
+      { 
+        name: "Maintenance", 
+        type: "maintenance",
+        totalCount: 0,
+        statusCounts: {},
+        icon: Activity,
+        color: "red"
+      }
+    ];
+
+    const totalDropCables = dropCableJobs.length;
+    const completedDropCables = (dropCableStatusCounts.closed || 0) + (dropCableStatusCounts.installation_completed || 0);
 
     return {
-      total: jobs.length,
-      completed: completed.length,
-      ongoing: ongoing.length,
-      pending: pending.length,
-      totalValue,
-      completedValue,
+      jobCategories,
+      dropCableStatusCounts,
+      totalDropCables,
+      completedDropCables,
     };
-  }, [jobs]);
+  }, [dropCableJobs]);
 
   if (loading) {
     return <Loader variant="bars" text="Loading clients Data..." />;
@@ -280,43 +365,31 @@ export default function ClientDetailPage({ params }) {
         </div>
 
         {/* Simple Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
             {
-              label: "Total Projects",
-              value: jobStats.total,
+              label: "Total Jobs",
+              value: jobStats.totalDropCables,
               icon: Briefcase,
               color: "blue",
             },
             {
               label: "Completed",
-              value: jobStats.completed,
+              value: jobStats.completedDropCables,
               icon: CheckCircle,
               color: "green",
             },
             {
-              label: "Ongoing",
-              value: jobStats.ongoing,
+              label: "In Progress",
+              value: jobStats.totalDropCables - jobStats.completedDropCables,
               icon: Activity,
               color: "blue",
             },
             {
-              label: "Pending",
-              value: jobStats.pending,
-              icon: Clock,
-              color: "yellow",
-            },
-            {
-              label: "Total Value",
-              value: `R${jobStats.totalValue.toLocaleString()}`,
-              icon: DollarSign,
-              color: "gray",
-            },
-            {
               label: "Success Rate",
               value: `${
-                jobStats.total
-                  ? Math.round((jobStats.completed / jobStats.total) * 100)
+                jobStats.totalDropCables
+                  ? Math.round((jobStats.completedDropCables / jobStats.totalDropCables) * 100)
                   : 0
               }%`,
               icon: TrendingUp,
@@ -698,184 +771,91 @@ export default function ClientDetailPage({ params }) {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Projects & Jobs
+                  Job Categories
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Track project progress and deliverables
+                  Track different types of work and installations
                 </p>
               </div>
-              <Button
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                New Project
-              </Button>
             </div>
 
-            {/* Projects Grid - Full Width */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {jobs.map((job) => (
+            {/* Job Categories Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              {jobStats.jobCategories.map((category, index) => (
                 <Card
-                  key={job.id}
-                  className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-md cursor-pointer transition-all"
-                  onClick={() => router.push(`/projects/${job.id}`)}
+                  key={index}
+                  className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => {
+                    if (category.totalCount > 0) {
+                      router.push(`/clients/${resolvedParams.id}/${category.type}`);
+                    }
+                  }}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div
-                          className={`w-10 h-10 ${
-                            job.status === "completed"
-                              ? "bg-green-100 dark:bg-green-900/20"
-                              : job.status === "ongoing"
-                              ? "bg-blue-100 dark:bg-blue-900/20"
-                              : "bg-yellow-100 dark:bg-yellow-900/20"
-                          } rounded-lg flex items-center justify-center`}
-                        >
-                          {React.cloneElement(getJobStatusIcon(job.status), {
-                            className: `w-5 h-5 ${
-                              job.status === "completed"
-                                ? "text-green-600 dark:text-green-400"
-                                : job.status === "ongoing"
-                                ? "text-blue-600 dark:text-blue-400"
-                                : "text-yellow-600 dark:text-yellow-400"
-                            }`,
-                          })}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
-                            {job.title}
-                          </h3>
-                          <Badge
-                            variant="outline"
-                            className={getJobStatusColor(job.status)}
-                          >
-                            {job.status.charAt(0).toUpperCase() +
-                              job.status.slice(1)}
-                          </Badge>
-                        </div>
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        {job.description}
-                      </p>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                          <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              Started
-                            </p>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {new Date(job.startDate).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        {job.endDate && (
-                          <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <CheckCircle className="w-4 h-4 text-green-500" />
-                            <div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Completed
-                              </p>
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                {new Date(job.endDate).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center justify-between">
-                          <div className="text-right">
-                            <p className="text-xl font-bold text-gray-900 dark:text-white">
-                              R{job.value.toLocaleString()}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Project Value
-                            </p>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger
-                              asChild
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  router.push(`/projects/${job.id}`);
-                                }}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Edit3 className="h-4 w-4 mr-2" />
-                                Edit Project
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <FileText className="h-4 w-4 mr-2" />
-                                Generate Report
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-
-                      {/* Progress Bar for ongoing projects */}
-                      {job.status === "ongoing" && (
-                        <div className="mt-4">
-                          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-                            <span>Progress</span>
-                            <span>65%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                            <div
-                              className="bg-blue-600 h-2 rounded-full"
-                              style={{ width: "65%" }}
-                            ></div>
-                          </div>
-                        </div>
-                      )}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`w-12 h-12 bg-${category.color}-100 dark:bg-${category.color}-900/20 rounded-lg flex items-center justify-center`}>
+                      <category.icon className={`w-6 h-6 text-${category.color}-600 dark:text-${category.color}-400`} />
                     </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {category.totalCount}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Total Jobs
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                      {category.name}
+                    </h3>
+                    
+                    {/* Status breakdown */}
+                    {category.totalCount > 0 ? (
+                      <div className="space-y-2">
+                        {Object.entries(category.statusCounts).map(([status, count]) => (
+                          <div key={status} className="flex items-center justify-between text-sm">
+                            <div className="flex items-center space-x-2">
+                              <div className={`w-2 h-2 rounded-full ${getDropCableStatusColor(status).split(' ')[0]}`}></div>
+                              <span className="text-gray-600 dark:text-gray-400 capitalize">
+                                {formatDropCableStatus(status)}
+                              </span>
+                            </div>
+                            <span className="font-medium text-gray-900 dark:text-white">
+                              {count}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          No jobs in this category
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    {category.totalCount > 0 ? (
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className={`bg-${category.color}-50 text-${category.color}-700 border-${category.color}-200 dark:bg-${category.color}-900/20 dark:text-${category.color}-400 dark:border-${category.color}-700`}>
+                          Active
+                        </Badge>
+                        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                          <span>Click to view</span>
+                          <ArrowLeft className="w-3 h-3 ml-1 rotate-180" />
+                        </div>
+                      </div>
+                    ) : (
+                      <Badge variant="outline" className="bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600">
+                        No Jobs
+                      </Badge>
+                    )}
                   </div>
                 </Card>
               ))}
             </div>
-
-            {jobs.length === 0 && (
-              <Card className="p-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-center">
-                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Briefcase className="w-8 h-8 text-gray-500 dark:text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  No Projects Yet
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  This client doesn't have any projects assigned yet. Start by
-                  creating their first project.
-                </p>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create First Project
-                </Button>
-              </Card>
-            )}
           </div>
         )}
 
