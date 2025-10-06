@@ -13,13 +13,13 @@ import {
   XCircle,
   Eye,
   Edit,
-  Trash2,
   MapPin,
   Truck,
   TrendingUp,
   TrendingDown,
   Minus,
 } from "lucide-react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { get } from "@/lib/api/fetcher";
 import { AddInventoryDialog } from "@/components/inventory/AddInventoryDialog";
+import { InventoryGridView } from "@/components/inventory/InventoryGridView";
 import { Loader } from "@/components/shared/Loader";
 import { TableControls } from "@/components/shared/TableControls";
 
@@ -178,7 +179,7 @@ export default function InventoryPage() {
     };
   };
 
-  if (loading) return <Loader text="Loading inventory system..." />;
+  if (loading) return <Loader variant="bars" text="Loading inventory system..." />;
 
   const allColumns = [
     {
@@ -427,120 +428,13 @@ export default function InventoryPage() {
 
         {/* Inventory Display */}
         {viewMode === "grid" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredInventory.map((item) => {
-              const status = getStockStatus(
-                item.quantity,
-                item.minimum_quantity
-              );
-              return (
-                <Card
-                  key={item.id}
-                  className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md"
-                >
-                  <div className="p-5">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 dark:text-white text-base mb-1">
-                          {item.item_name}
-                        </h3>
-                        <p className="text-gray-500 dark:text-slate-400 text-sm">
-                          {item.item_code}
-                        </p>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit Item
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-slate-400 text-sm">
-                          Category
-                        </span>
-                        <span
-                          className={`px-2.5 py-1 rounded-md text-xs font-medium ${getCategoryColor(
-                            item.category
-                          )}`}
-                        >
-                          {item.category}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-slate-400 text-sm">
-                          Stock Level
-                        </span>
-                        <div className="flex items-center space-x-2">
-                          {getStockIcon(item.quantity, item.minimum_quantity)}
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            {item.quantity} {item.unit}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-slate-400 text-sm">
-                          Location
-                        </span>
-                        <span className="text-gray-900 dark:text-white font-medium">
-                          {item.location}
-                        </span>
-                      </div>
-
-                      {item.cost_price && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600 dark:text-slate-400 text-sm">
-                            Unit Price
-                          </span>
-                          <span className="text-gray-900 dark:text-white font-semibold">
-                            R {item.cost_price}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${status.color}`}
-                        >
-                          {status.label}
-                        </span>
-                        {item.supplier_name && (
-                          <span className="text-gray-500 dark:text-slate-400 text-xs">
-                            {item.supplier_name}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+          <InventoryGridView
+            items={filteredInventory}
+            getCategoryColor={getCategoryColor}
+            getCategoryDotColor={getCategoryDotColor}
+            getStockIcon={getStockIcon}
+            getStockStatus={getStockStatus}
+          />
         ) : (
           // Table View
           <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">

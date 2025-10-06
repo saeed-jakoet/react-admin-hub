@@ -29,7 +29,7 @@ import {
   DollarSign,
   MoreVertical,
   Eye,
-  Plus
+  Plus,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -37,7 +37,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import DocumentViewer from "@/components/clients/DocumentViewer";
 import { get, put } from "@/lib/api/fetcher";
+import { Loader } from "@/components/shared/Loader"; 
 
 export default function ClientDetailPage({ params }) {
   const resolvedParams = React.use(params);
@@ -47,6 +49,7 @@ export default function ClientDetailPage({ params }) {
   const [editing, setEditing] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [formData, setFormData] = React.useState({});
+  const [activeTab, setActiveTab] = React.useState("overview");
 
   // Mock jobs data - will be replaced with real API call
   const [jobs] = React.useState([
@@ -57,7 +60,7 @@ export default function ClientDetailPage({ params }) {
       startDate: "2024-01-15",
       endDate: "2024-02-28",
       value: 25000,
-      description: "Complete office network setup with fiber connections"
+      description: "Complete office network setup with fiber connections",
     },
     {
       id: 2,
@@ -66,7 +69,7 @@ export default function ClientDetailPage({ params }) {
       startDate: "2024-03-01",
       endDate: null,
       value: 15000,
-      description: "CCTV and access control system installation"
+      description: "CCTV and access control system installation",
     },
     {
       id: 3,
@@ -75,8 +78,8 @@ export default function ClientDetailPage({ params }) {
       startDate: "2024-04-01",
       endDate: null,
       value: 18000,
-      description: "Climate controlled server room with backup systems"
-    }
+      description: "Climate controlled server room with backup systems",
+    },
   ]);
 
   React.useEffect(() => {
@@ -122,7 +125,7 @@ export default function ClientDetailPage({ params }) {
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const getJobStatusColor = (status) => {
@@ -152,9 +155,9 @@ export default function ClientDetailPage({ params }) {
   };
 
   const jobStats = React.useMemo(() => {
-    const completed = jobs.filter(job => job.status === "completed");
-    const ongoing = jobs.filter(job => job.status === "ongoing");
-    const pending = jobs.filter(job => job.status === "pending");
+    const completed = jobs.filter((job) => job.status === "completed");
+    const ongoing = jobs.filter((job) => job.status === "ongoing");
+    const pending = jobs.filter((job) => job.status === "pending");
     const totalValue = jobs.reduce((sum, job) => sum + job.value, 0);
     const completedValue = completed.reduce((sum, job) => sum + job.value, 0);
 
@@ -164,16 +167,12 @@ export default function ClientDetailPage({ params }) {
       ongoing: ongoing.length,
       pending: pending.length,
       totalValue,
-      completedValue
+      completedValue,
     };
   }, [jobs]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin"></div>
-      </div>
-    );
+    return <Loader variant="bars" text="Loading clients Data..." />;
   }
 
   if (!client) {
@@ -200,7 +199,7 @@ export default function ClientDetailPage({ params }) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="h-full p-6">
         {/* Clean Header */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
           <div className="flex items-center justify-between">
@@ -213,12 +212,12 @@ export default function ClientDetailPage({ params }) {
               >
                 <ArrowLeft className="w-4 h-4" />
               </Button>
-              
+
               <div className="flex items-center space-x-4">
                 <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
                   <User className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                 </div>
-                
+
                 <div className="space-y-1">
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                     {client.first_name} {client.last_name}
@@ -227,7 +226,10 @@ export default function ClientDetailPage({ params }) {
                     <span className="text-gray-600 dark:text-gray-400">
                       {client.email}
                     </span>
-                    <Badge variant={client.is_active ? "default" : "secondary"} className="text-xs">
+                    <Badge
+                      variant={client.is_active ? "default" : "secondary"}
+                      className="text-xs"
+                    >
                       {client.is_active ? "Active" : "Inactive"}
                     </Badge>
                     {client.company_name && (
@@ -239,7 +241,7 @@ export default function ClientDetailPage({ params }) {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-3">
               {editing ? (
                 <>
@@ -265,8 +267,8 @@ export default function ClientDetailPage({ params }) {
                   </Button>
                 </>
               ) : (
-                <Button 
-                  onClick={handleEdit} 
+                <Button
+                  onClick={handleEdit}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <Edit3 className="w-4 h-4 mr-2" />
@@ -280,17 +282,58 @@ export default function ClientDetailPage({ params }) {
         {/* Simple Statistics */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           {[
-            { label: "Total Projects", value: jobStats.total, icon: Briefcase, color: "blue" },
-            { label: "Completed", value: jobStats.completed, icon: CheckCircle, color: "green" },
-            { label: "Ongoing", value: jobStats.ongoing, icon: Activity, color: "blue" },
-            { label: "Pending", value: jobStats.pending, icon: Clock, color: "yellow" },
-            { label: "Total Value", value: `R${jobStats.totalValue.toLocaleString()}`, icon: DollarSign, color: "gray" },
-            { label: "Success Rate", value: `${jobStats.total ? Math.round((jobStats.completed / jobStats.total) * 100) : 0}%`, icon: TrendingUp, color: "green" }
+            {
+              label: "Total Projects",
+              value: jobStats.total,
+              icon: Briefcase,
+              color: "blue",
+            },
+            {
+              label: "Completed",
+              value: jobStats.completed,
+              icon: CheckCircle,
+              color: "green",
+            },
+            {
+              label: "Ongoing",
+              value: jobStats.ongoing,
+              icon: Activity,
+              color: "blue",
+            },
+            {
+              label: "Pending",
+              value: jobStats.pending,
+              icon: Clock,
+              color: "yellow",
+            },
+            {
+              label: "Total Value",
+              value: `R${jobStats.totalValue.toLocaleString()}`,
+              icon: DollarSign,
+              color: "gray",
+            },
+            {
+              label: "Success Rate",
+              value: `${
+                jobStats.total
+                  ? Math.round((jobStats.completed / jobStats.total) * 100)
+                  : 0
+              }%`,
+              icon: TrendingUp,
+              color: "green",
+            },
           ].map((stat, i) => (
-            <Card key={i} className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+            <Card
+              key={i}
+              className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+            >
               <div className="flex items-center justify-between mb-2">
-                <div className={`w-8 h-8 bg-${stat.color}-100 dark:bg-${stat.color}-900/20 rounded-lg flex items-center justify-center`}>
-                  <stat.icon className={`w-4 h-4 text-${stat.color}-600 dark:text-${stat.color}-400`} />
+                <div
+                  className={`w-8 h-8 bg-${stat.color}-100 dark:bg-${stat.color}-900/20 rounded-lg flex items-center justify-center`}
+                >
+                  <stat.icon
+                    className={`w-4 h-4 text-${stat.color}-600 dark:text-${stat.color}-400`}
+                  />
                 </div>
               </div>
               <div>
@@ -305,187 +348,363 @@ export default function ClientDetailPage({ params }) {
           ))}
         </div>
 
-        {/* Content Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Client Info */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Contact Information */}
-            <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                  <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Contact Information
-                </h2>
-              </div>
+        {/* Tab Navigation */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
+          <div className="flex border-b border-gray-200 dark:border-gray-700">
+            {[
+              { id: "overview", label: "Overview", icon: User },
+              { id: "projects", label: "Projects", icon: Briefcase },
+              { id: "documents", label: "Documents", icon: FileText },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === tab.id
+                      ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                      : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-              <div className="space-y-4">
-                {[
-                  { label: "First Name", field: "first_name", value: client.first_name, type: "text" },
-                  { label: "Last Name", field: "last_name", value: client.last_name, type: "text" },
-                  { label: "Email", field: "email", value: client.email, type: "email", icon: Mail },
-                  { label: "Phone", field: "phone_number", value: client.phone_number || "Not provided", type: "tel", icon: Phone }
-                ].map((item, i) => (
-                  <div key={i} className="space-y-2">
+        {/* Tab Content */}
+        {activeTab === "overview" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Client Info */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Contact Information */}
+              <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                    <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Contact Information
+                  </h2>
+                </div>
+
+                <div className="space-y-4">
+                  {[
+                    {
+                      label: "First Name",
+                      field: "first_name",
+                      value: client.first_name,
+                      type: "text",
+                    },
+                    {
+                      label: "Last Name",
+                      field: "last_name",
+                      value: client.last_name,
+                      type: "text",
+                    },
+                    {
+                      label: "Email",
+                      field: "email",
+                      value: client.email,
+                      type: "email",
+                      icon: Mail,
+                    },
+                    {
+                      label: "Phone",
+                      field: "phone_number",
+                      value: client.phone_number || "Not provided",
+                      type: "tel",
+                      icon: Phone,
+                    },
+                  ].map((item, i) => (
+                    <div key={i} className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {item.label}
+                      </Label>
+                      {editing ? (
+                        <Input
+                          type={item.type}
+                          value={formData[item.field] || ""}
+                          onChange={(e) =>
+                            handleInputChange(item.field, e.target.value)
+                          }
+                          placeholder={`Enter ${item.label.toLowerCase()}`}
+                          className="border-gray-300 dark:border-gray-600"
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                          <div className="flex items-center space-x-2">
+                            {item.icon && (
+                              <item.icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                            )}
+                            <p className="text-gray-900 dark:text-white">
+                              {item.value}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Company Information */}
+              <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Company Details
+                  </h2>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {item.label}
+                      Company Name
                     </Label>
                     {editing ? (
                       <Input
-                        type={item.type}
-                        value={formData[item.field] || ""}
-                        onChange={(e) => handleInputChange(item.field, e.target.value)}
-                        placeholder={`Enter ${item.label.toLowerCase()}`}
+                        value={formData.company_name || ""}
+                        onChange={(e) =>
+                          handleInputChange("company_name", e.target.value)
+                        }
+                        placeholder="Enter company name"
                         className="border-gray-300 dark:border-gray-600"
                       />
                     ) : (
                       <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                        <div className="flex items-center space-x-2">
-                          {item.icon && <item.icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />}
+                        <p className="text-gray-900 dark:text-white">
+                          {client.company_name || "Not specified"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Address
+                    </Label>
+                    {editing ? (
+                      <textarea
+                        value={formData.address || ""}
+                        onChange={(e) =>
+                          handleInputChange("address", e.target.value)
+                        }
+                        placeholder="Enter address"
+                        className="w-full min-h-[80px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white resize-none"
+                        rows={3}
+                      />
+                    ) : (
+                      <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 min-h-[80px]">
+                        <div className="flex items-start space-x-2">
+                          <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400 mt-1" />
                           <p className="text-gray-900 dark:text-white">
-                            {item.value}
+                            {client.address || "Not provided"}
                           </p>
                         </div>
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
-            </Card>
 
-            {/* Company Information */}
-            <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                </div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Company Details
-                </h2>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Company Name
-                  </Label>
-                  {editing ? (
-                    <Input
-                      value={formData.company_name || ""}
-                      onChange={(e) => handleInputChange("company_name", e.target.value)}
-                      placeholder="Enter company name"
-                      className="border-gray-300 dark:border-gray-600"
-                    />
-                  ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                      <p className="text-gray-900 dark:text-white">
-                        {client.company_name || "Not specified"}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Address
-                  </Label>
-                  {editing ? (
-                    <textarea
-                      value={formData.address || ""}
-                      onChange={(e) => handleInputChange("address", e.target.value)}
-                      placeholder="Enter address"
-                      className="w-full min-h-[80px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white resize-none"
-                      rows={3}
-                    />
-                  ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 min-h-[80px]">
-                      <div className="flex items-start space-x-2">
-                        <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400 mt-1" />
-                        <p className="text-gray-900 dark:text-white">
-                          {client.address || "Not provided"}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Notes
-                  </Label>
-                  {editing ? (
-                    <textarea
-                      value={formData.notes || ""}
-                      onChange={(e) => handleInputChange("notes", e.target.value)}
-                      placeholder="Add notes about this client"
-                      className="w-full min-h-[80px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white resize-none"
-                      rows={3}
-                    />
-                  ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 min-h-[80px]">
-                      <div className="flex items-start space-x-2">
-                        <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400 mt-1" />
-                        <p className="text-gray-900 dark:text-white">
-                          {client.notes || "No notes available"}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Card>
-
-            {/* Account Information */}
-            <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                </div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Account Information
-                </h2>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  { label: "Status", value: client.is_active ? "Active" : "Inactive", highlight: true },
-                  { label: "Created", value: client.created_at ? new Date(client.created_at).toLocaleDateString() : "Unknown" },
-                  { label: "Updated", value: client.updated_at ? new Date(client.updated_at).toLocaleDateString() : "Unknown" },
-                  { label: "Client ID", value: client.id, mono: true }
-                ].map((item, i) => (
-                  <div key={i} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <span className="text-gray-600 dark:text-gray-400 font-medium text-sm">{item.label}:</span>
-                    {item.highlight ? (
-                      <Badge variant={client.is_active ? "default" : "secondary"}>
-                        {item.value}
-                      </Badge>
-                    ) : item.mono ? (
-                      <code className="text-gray-900 dark:text-white font-mono text-sm bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
-                        {item.value}
-                      </code>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Notes
+                    </Label>
+                    {editing ? (
+                      <textarea
+                        value={formData.notes || ""}
+                        onChange={(e) =>
+                          handleInputChange("notes", e.target.value)
+                        }
+                        placeholder="Add notes about this client"
+                        className="w-full min-h-[80px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white resize-none"
+                        rows={3}
+                      />
                     ) : (
-                      <span className="text-gray-900 dark:text-white">
-                        {item.value}
-                      </span>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 min-h-[80px]">
+                        <div className="flex items-start space-x-2">
+                          <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400 mt-1" />
+                          <p className="text-gray-900 dark:text-white">
+                            {client.notes || "No notes available"}
+                          </p>
+                        </div>
+                      </div>
                     )}
                   </div>
-                ))}
-              </div>
-            </Card>
-          </div>
+                </div>
+              </Card>
 
-          {/* Right Column - Projects */}
-          <div className="lg:col-span-2 space-y-6">
+              {/* Account Information */}
+              <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Account Information
+                  </h2>
+                </div>
+
+                <div className="space-y-3">
+                  {[
+                    {
+                      label: "Status",
+                      value: client.is_active ? "Active" : "Inactive",
+                      highlight: true,
+                    },
+                    {
+                      label: "Created",
+                      value: client.created_at
+                        ? new Date(client.created_at).toLocaleDateString()
+                        : "Unknown",
+                    },
+                    {
+                      label: "Updated",
+                      value: client.updated_at
+                        ? new Date(client.updated_at).toLocaleDateString()
+                        : "Unknown",
+                    },
+                    { label: "Client ID", value: client.id, mono: true },
+                  ].map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+                    >
+                      <span className="text-gray-600 dark:text-gray-400 font-medium text-sm">
+                        {item.label}:
+                      </span>
+                      {item.highlight ? (
+                        <Badge
+                          variant={client.is_active ? "default" : "secondary"}
+                        >
+                          {item.value}
+                        </Badge>
+                      ) : item.mono ? (
+                        <code className="text-gray-900 dark:text-white font-mono text-sm bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
+                          {item.value}
+                        </code>
+                      ) : (
+                        <span className="text-gray-900 dark:text-white">
+                          {item.value}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+
+            {/* Right Column - Quick Actions & Summary */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Quick Actions */}
+              <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Quick Actions
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Button
+                    variant="outline"
+                    className="h-16 flex flex-col items-center justify-center space-y-2"
+                    onClick={() => setActiveTab("projects")}
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span className="text-xs">New Project</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-16 flex flex-col items-center justify-center space-y-2"
+                    onClick={() => setActiveTab("documents")}
+                  >
+                    <FileText className="w-5 h-5" />
+                    <span className="text-xs">View Documents</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-16 flex flex-col items-center justify-center space-y-2"
+                  >
+                    <Mail className="w-5 h-5" />
+                    <span className="text-xs">Send Email</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-16 flex flex-col items-center justify-center space-y-2"
+                  >
+                    <Phone className="w-5 h-5" />
+                    <span className="text-xs">Call Client</span>
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Recent Activity */}
+              <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Recent Activity
+                </h3>
+                <div className="space-y-4">
+                  {[
+                    {
+                      action: "Project status updated",
+                      time: "2 hours ago",
+                      type: "project",
+                    },
+                    {
+                      action: "Document uploaded",
+                      time: "1 day ago",
+                      type: "document",
+                    },
+                    {
+                      action: "Meeting scheduled",
+                      time: "3 days ago",
+                      type: "meeting",
+                    },
+                    {
+                      action: "Invoice sent",
+                      time: "1 week ago",
+                      type: "billing",
+                    },
+                  ].map((activity, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                    >
+                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                        <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {activity.action}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {activity.time}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Projects Tab */}
+        {activeTab === "projects" && (
+          <div className="space-y-6">
             {/* Projects Header */}
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   Projects & Jobs
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">Track project progress and deliverables</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Track project progress and deliverables
+                </p>
               </div>
-              <Button 
+              <Button
                 size="sm"
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
@@ -494,48 +713,60 @@ export default function ClientDetailPage({ params }) {
               </Button>
             </div>
 
-            {/* Projects List */}
-            <div className="space-y-4">
+            {/* Projects Grid - Full Width */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {jobs.map((job) => (
-                <Card 
-                  key={job.id} 
-                  className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-md cursor-pointer"
+                <Card
+                  key={job.id}
+                  className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-md cursor-pointer transition-all"
                   onClick={() => router.push(`/projects/${job.id}`)}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-3">
-                        <div className={`w-10 h-10 ${
-                          job.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20' :
-                          job.status === 'ongoing' ? 'bg-blue-100 dark:bg-blue-900/20' :
-                          'bg-yellow-100 dark:bg-yellow-900/20'
-                        } rounded-lg flex items-center justify-center`}>
-                          {React.cloneElement(getJobStatusIcon(job.status), { 
+                        <div
+                          className={`w-10 h-10 ${
+                            job.status === "completed"
+                              ? "bg-green-100 dark:bg-green-900/20"
+                              : job.status === "ongoing"
+                              ? "bg-blue-100 dark:bg-blue-900/20"
+                              : "bg-yellow-100 dark:bg-yellow-900/20"
+                          } rounded-lg flex items-center justify-center`}
+                        >
+                          {React.cloneElement(getJobStatusIcon(job.status), {
                             className: `w-5 h-5 ${
-                              job.status === 'completed' ? 'text-green-600 dark:text-green-400' :
-                              job.status === 'ongoing' ? 'text-blue-600 dark:text-blue-400' :
-                              'text-yellow-600 dark:text-yellow-400'
-                            }` 
+                              job.status === "completed"
+                                ? "text-green-600 dark:text-green-400"
+                                : job.status === "ongoing"
+                                ? "text-blue-600 dark:text-blue-400"
+                                : "text-yellow-600 dark:text-yellow-400"
+                            }`,
                           })}
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
                             {job.title}
                           </h3>
-                          <Badge variant="outline" className={getJobStatusColor(job.status)}>
-                            {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                          <Badge
+                            variant="outline"
+                            className={getJobStatusColor(job.status)}
+                          >
+                            {job.status.charAt(0).toUpperCase() +
+                              job.status.slice(1)}
                           </Badge>
                         </div>
                       </div>
                       <p className="text-gray-600 dark:text-gray-400 mb-4">
                         {job.description}
                       </p>
-                      
+
                       <div className="grid grid-cols-2 gap-4">
                         <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                           <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                           <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Started</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Started
+                            </p>
                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                               {new Date(job.startDate).toLocaleDateString()}
                             </p>
@@ -545,7 +776,9 @@ export default function ClientDetailPage({ params }) {
                           <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                             <CheckCircle className="w-4 h-4 text-green-500" />
                             <div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">Completed</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Completed
+                              </p>
                               <p className="text-sm font-medium text-gray-900 dark:text-white">
                                 {new Date(job.endDate).toLocaleDateString()}
                               </p>
@@ -553,56 +786,74 @@ export default function ClientDetailPage({ params }) {
                           </div>
                         )}
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-gray-900 dark:text-white">
-                          R{job.value.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Project Value
-                        </p>
+
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between">
+                          <div className="text-right">
+                            <p className="text-xl font-bold text-gray-900 dark:text-white">
+                              R{job.value.toLocaleString()}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Project Value
+                            </p>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              asChild
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/projects/${job.id}`);
+                                }}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Edit3 className="h-4 w-4 mr-2" />
+                                Edit Project
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <FileText className="h-4 w-4 mr-2" />
+                                Generate Report
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/projects/${job.id}`);
-                          }}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                            <Edit3 className="h-4 w-4 mr-2" />
-                            Edit Project
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                            <FileText className="h-4 w-4 mr-2" />
-                            Generate Report
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+
+                      {/* Progress Bar for ongoing projects */}
+                      {job.status === "ongoing" && (
+                        <div className="mt-4">
+                          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                            <span>Progress</span>
+                            <span>65%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full"
+                              style={{ width: "65%" }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  
-                  {/* Progress Bar for ongoing projects */}
-                  {job.status === "ongoing" && (
-                    <div className="mt-4">
-                      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        <span>Progress</span>
-                        <span>65%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: "65%" }}></div>
-                      </div>
-                    </div>
-                  )}
                 </Card>
               ))}
             </div>
@@ -616,7 +867,8 @@ export default function ClientDetailPage({ params }) {
                   No Projects Yet
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  This client doesn't have any projects assigned yet. Start by creating their first project.
+                  This client doesn't have any projects assigned yet. Start by
+                  creating their first project.
                 </p>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Plus className="w-4 h-4 mr-2" />
@@ -625,7 +877,12 @@ export default function ClientDetailPage({ params }) {
               </Card>
             )}
           </div>
-        </div>
+        )}
+
+        {/* Documents Tab */}
+        {activeTab === "documents" && (
+          <DocumentViewer clientId={resolvedParams.id} />
+        )}
       </div>
     </div>
   );

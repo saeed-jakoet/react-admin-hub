@@ -8,21 +8,20 @@ import { Card } from "@/components/ui/card";
 import {
   Plus,
   MoreVertical,
-  Users,
+  Building2,
   UserCheck,
   UserX,
-  Eye,
-  Edit,
-  Trash2,
-  Building2,
   Mail,
   Phone,
   MapPin,
+  Eye,
+  Edit,
   TrendingUp,
   TrendingDown,
   CheckCircle,
   XCircle,
 } from "lucide-react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { get } from "@/lib/api/fetcher";
 import { AddClientDialog } from "@/components/clients/AddClientDialog";
+import { ClientsGridView } from "@/components/clients/ClientsGridView";
 import { Loader } from "@/components/shared/Loader";
 import { TableControls } from "@/components/shared/TableControls";
 
@@ -120,11 +120,13 @@ export default function ClientsPage() {
 
   // Export columns configuration
   const exportColumns = [
-    { header: "First Name", accessorKey: "first_name" },
-    { header: "Last Name", accessorKey: "last_name" },
+    { header: "Company", accessorKey: "company_name" },
+    {
+      header: "Contact Person",
+      accessor: (client) => `${client.first_name} ${client.last_name}`,
+    },
     { header: "Email", accessorKey: "email" },
     { header: "Phone", accessorKey: "phone_number" },
-    { header: "Company", accessorKey: "company_name" },
     { header: "Address", accessorKey: "address" },
     {
       header: "Status",
@@ -141,7 +143,7 @@ export default function ClientsPage() {
   };
 
   if (loading) {
-    return <Loader text="Loading clients..." />;
+    return <Loader variant="bars" text="Loading client..." />;
   }
 
   const allColumns = [
@@ -151,14 +153,17 @@ export default function ClientsPage() {
       cell: ({ row }) => (
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
-            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
             <div className="font-semibold text-gray-900 dark:text-white">
-              {row.original.first_name} {row.original.last_name}
+              {row.original.company_name ||
+                `${row.original.first_name} ${row.original.last_name}`}
             </div>
             <div className="text-sm text-gray-500 dark:text-slate-400">
-              {row.original.email}
+              {row.original.company_name
+                ? `${row.original.first_name} ${row.original.last_name}`
+                : row.original.email}
             </div>
           </div>
         </div>
@@ -169,20 +174,20 @@ export default function ClientsPage() {
       header: "Contact",
       cell: ({ row }) => (
         <div className="space-y-1">
+          <div className="flex items-center space-x-2">
+            <Mail className="w-4 h-4 text-gray-400" />
+            <span className="text-gray-900 dark:text-white font-medium">
+              {row.original.email}
+            </span>
+          </div>
           {row.original.phone_number && (
             <div className="flex items-center space-x-2">
               <Phone className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-900 dark:text-white">
+              <span className="text-gray-600 dark:text-slate-400">
                 {row.original.phone_number}
               </span>
             </div>
           )}
-          <div className="flex items-center space-x-2">
-            <Mail className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-600 dark:text-slate-400">
-              {row.original.email}
-            </span>
-          </div>
         </div>
       ),
     },
@@ -259,10 +264,10 @@ export default function ClientsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Client Management
+            Business Client Management
           </h1>
           <p className="text-gray-600 dark:text-slate-400">
-            Manage your client relationships and contacts
+            Manage your business relationships and company contacts
           </p>
         </div>
         <Button
@@ -281,13 +286,13 @@ export default function ClientsPage() {
             {
               label: "Total Clients",
               value: clientStats.total,
-              desc: "Across all categories",
-              icon: Users,
+              desc: "Business accounts",
+              icon: Building2,
               color: "blue",
               trend: TrendingUp,
             },
             {
-              label: "Active Clients",
+              label: "Active Accounts",
               value: clientStats.active,
               desc: "Currently engaged",
               icon: UserCheck,
@@ -295,7 +300,7 @@ export default function ClientsPage() {
               trend: TrendingUp,
             },
             {
-              label: "Inactive Clients",
+              label: "Inactive Accounts",
               value: clientStats.inactive,
               desc: "Need attention",
               icon: UserX,
@@ -365,112 +370,12 @@ export default function ClientsPage() {
 
         {/* Clients Display */}
         {viewMode === "grid" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredClients.map((client) => (
-              <Card
-                key={client.id}
-                className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md cursor-pointer transition-all"
-                onClick={() => handleRowClick(client)}
-              >
-                <div className="p-5">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-base mb-1">
-                        {client.first_name} {client.last_name}
-                      </h3>
-                      <p className="text-gray-500 dark:text-slate-400 text-sm">
-                        {client.email}
-                      </p>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRowClick(client);
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Client
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  <div className="space-y-3">
-                    {client.phone_number && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-slate-400 text-sm">
-                          Phone
-                        </span>
-                        <span className="text-gray-900 dark:text-white font-medium">
-                          {client.phone_number}
-                        </span>
-                      </div>
-                    )}
-
-                    {client.company_name && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-slate-400 text-sm">
-                          Company
-                        </span>
-                        <span className="text-gray-900 dark:text-white font-medium">
-                          {client.company_name}
-                        </span>
-                      </div>
-                    )}
-
-                    {client.address && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-slate-400 text-sm">
-                          Address
-                        </span>
-                        <span className="text-gray-900 dark:text-white font-medium text-right">
-                          {client.address}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${getStatusColor(
-                          client.is_active
-                        )}`}
-                      >
-                        {client.is_active ? "Active" : "Inactive"}
-                      </span>
-                      <span className="text-gray-500 dark:text-slate-400 text-xs">
-                        {new Date(client.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <ClientsGridView
+            clients={filteredClients}
+            getStatusColor={getStatusColor}
+            getStatusIcon={getStatusIcon}
+            onClientClick={handleRowClick}
+          />
         ) : (
           // Table View
           <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
