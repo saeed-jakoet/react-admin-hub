@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Plus,
@@ -14,16 +14,20 @@ import {
   MapPin,
   User,
   Building,
+  Building2,
   Edit3,
   Save,
   X,
   Eye,
+  EyeOff,
   FileText,
   Trash2,
   Phone,
   Mail,
   Clock,
   Ruler,
+  Hash,
+  Users,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,12 +49,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DataTable } from "@/components/shared/DataTable";
-import { get, put } from "@/lib/api/fetcher";
+import { get, put, post } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
+import JobCreationModal from "@/components/shared/JobCreationModal";
+import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
 
 export default function DropCablePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const clientId = params.id;
 
   const [jobs, setJobs] = useState([]);
@@ -62,6 +69,10 @@ export default function DropCablePage() {
   const [editFormData, setEditFormData] = useState({});
   const [saving, setSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // New Job Modal State
+  const [newJobModalOpen, setNewJobModalOpen] = useState(false);
+  const [clientNameForModal, setClientNameForModal] = useState("");
 
   // Fetch drop cable jobs for this client
   useEffect(() => {
@@ -82,6 +93,23 @@ export default function DropCablePage() {
       fetchDropCableJobs();
     }
   }, [clientId, router]);
+
+  // Check URL parameters for new job creation
+  useEffect(() => {
+    const isNew = searchParams.get("new") === "true";
+    const clientName = searchParams.get("clientName");
+
+    if (isNew) {
+      setNewJobModalOpen(true);
+      // Store client name before clearing URL parameters
+      if (clientName) {
+        setClientNameForModal(decodeURIComponent(clientName));
+      }
+      // Clean up URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, [searchParams]);
 
   // Format status for display
   const formatDropCableStatus = (status) => {
@@ -246,6 +274,21 @@ export default function DropCablePage() {
     }
   };
 
+  // New Job Modal Handlers
+  const handleJobCreated = (newJob) => {
+    // Add new job to the list
+    setJobs((prev) => [newJob, ...prev]);
+  };
+
+  const handleJobCreationError = (errorMessage) => {
+    setError(errorMessage);
+  };
+
+  const handleCloseNewJobModal = () => {
+    setNewJobModalOpen(false);
+    setClientNameForModal(""); // Reset client name when modal closes
+  };
+
   // Define table columns for DataTable - simplified view
   const columns = [
     {
@@ -393,6 +436,13 @@ export default function DropCablePage() {
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
+              <Button
+                onClick={() => setNewJobModalOpen(true)}
+                className="bg-blue-600 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New Drop Cable Job
+              </Button>
             </div>
           </div>
 
@@ -448,17 +498,12 @@ export default function DropCablePage() {
           {/* Edit Dialog */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
-              <DialogHeader className="pb-4">
+              <DialogHeader className="pb-4 items-center">
                 <DialogTitle className="flex items-center gap-2 text-xl">
-                  <Edit3 className="w-5 h-5" />
-                  Edit Drop Cable Job
-                </DialogTitle>
-                <DialogDescription className="text-base">
-                  Update the details for circuit:{" "}
-                  <span className="font-semibold text-blue-600">
+                  <span className="font-semibold">
                     {editFormData.circuit_number}
                   </span>
-                </DialogDescription>
+                </DialogTitle>
               </DialogHeader>
 
               <div className="space-y-6">
@@ -945,6 +990,18 @@ export default function DropCablePage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* New Job Creation Modal */}
+          <JobCreationModal
+            isOpen={newJobModalOpen}
+            onClose={handleCloseNewJobModal}
+            onJobCreated={handleJobCreated}
+            onError={handleJobCreationError}
+            jobType="drop-cable"
+            jobConfig={jobTypeConfigs["drop-cable"]}
+            clientId={clientId}
+            clientName={clientNameForModal}
+          />
         </div>
       </div>
     </div>
