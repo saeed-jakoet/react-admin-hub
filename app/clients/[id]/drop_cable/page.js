@@ -10,48 +10,21 @@ import {
   Activity,
   Download,
   RefreshCw,
-  Calendar,
-  MapPin,
-  User,
-  Building,
-  Building2,
-  Edit3,
-  Save,
-  X,
-  Eye,
-  EyeOff,
-  FileText,
-  Trash2,
-  Phone,
-  Mail,
-  Clock,
-  Ruler,
-  Hash,
-  Users,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { DataTable } from "@/components/shared/DataTable";
 import { get, put, post } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
-import JobCreationModal from "@/components/shared/JobCreationModal";
+import JobFormDialog from "@/components/shared/JobFormDialog";
 import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
 
 export default function DropCablePage() {
@@ -80,6 +53,8 @@ export default function DropCablePage() {
       try {
         setLoading(true);
         const data = await get(`/drop-cable/client/${clientId}`);
+        console.log(data);
+        
         setJobs(data.data || []);
       } catch (error) {
         console.error("Error fetching drop cable jobs:", error);
@@ -141,6 +116,8 @@ export default function DropCablePage() {
         "text-teal-700 bg-teal-50 border-teal-200 dark:bg-teal-900/20 dark:text-teal-300 dark:border-teal-700",
       installation_completed:
         "text-green-700 bg-green-50 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700",
+      as_built_submitted:
+        "text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700",
     };
     return (
       colors[status] ||
@@ -180,113 +157,6 @@ export default function DropCablePage() {
     setEditingJob(job.id);
     setEditFormData({ ...job });
     setDialogOpen(true);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingJob(null);
-    setEditFormData({});
-    setDialogOpen(false);
-  };
-
-  const handleInputChange = (field, value) => {
-    setEditFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  console.log(editFormData);
-
-  const handleSaveEdit = async () => {
-    try {
-      setSaving(true);
-
-      // Only send fields allowed by backend schema to avoid validation errors
-      const allowedKeys = [
-        "client_id",
-        "job_number",
-        "circuit_number",
-        "site_b_name",
-        "county",
-        "physical_address_site_b",
-        "dfa_pm",
-        "client",
-        "client_contact_name",
-        "end_client_contact_name",
-        "end_client_contact_email",
-        "end_client_contact_phone",
-        "service_provider",
-        "dpc_distance_meters",
-        "survey_date",
-        "survey_time",
-        "order_received_at",
-        "installation_date_requested_at",
-        "survey_scheduled_for",
-        "survey_completed_at",
-        "lla_sent_at",
-        "lla_received_at",
-        "installation_scheduled_for",
-        "installation_completed_at",
-        "as_built_submitted_at",
-        "technician_name",
-        "status",
-        "notes",
-      ];
-
-      const payload = { id: editingJob };
-      for (const key of allowedKeys) {
-        const val = editFormData[key];
-        // Skip undefined, null, and empty strings to satisfy optional fields
-        if (val === undefined || val === null || val === "") continue;
-        // Ensure numeric fields are numbers
-        if (key === "dpc_distance_meters") {
-          const n = typeof val === "string" ? Number(val) : val;
-          if (!Number.isFinite(n)) continue;
-          payload[key] = n;
-          continue;
-        }
-        payload[key] = val;
-      }
-
-      // Normalize survey_time from HH:MM (browser) to HH:MM:SS for backend schema
-      if (payload.survey_time && /^\d{2}:\d{2}$/.test(payload.survey_time)) {
-        payload.survey_time = payload.survey_time + ":00";
-      }
-
-      const result = await put(`/drop-cable`, payload);
-      console.log(result);
-
-      // Update jobs list with edited job
-      setJobs((prev) =>
-        prev.map((job) =>
-          job.id === editingJob ? { ...job, ...payload } : job
-        )
-      );
-
-      setEditingJob(null);
-      setEditFormData({});
-      setDialogOpen(false);
-    } catch (error) {
-      console.error("Error saving job:", error);
-      setError(error.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // New Job Modal Handlers
-  const handleJobCreated = (newJob) => {
-    // Add new job to the list
-    setJobs((prev) => [newJob, ...prev]);
-  };
-
-  const handleJobCreationError = (errorMessage) => {
-    setError(errorMessage);
-  };
-
-  const handleCloseNewJobModal = () => {
-    setNewJobModalOpen(false);
-    setClientNameForModal(""); // Reset client name when modal closes
   };
 
   // Define table columns for DataTable - simplified view
@@ -341,14 +211,14 @@ export default function DropCablePage() {
       },
     },
     {
-      accessorKey: "survey_scheduled_for",
+      accessorKey: "survey_date",
       header: "Survey Date",
       cell: ({ row }) => {
         const job = row.original;
         return (
           <span>
-            {job.survey_scheduled_for
-              ? new Date(job.survey_scheduled_for).toLocaleDateString()
+            {job.survey_date
+              ? new Date(job.survey_date).toLocaleDateString()
               : "-"}
           </span>
         );
@@ -496,511 +366,40 @@ export default function DropCablePage() {
           />
 
           {/* Edit Dialog */}
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
-              <DialogHeader className="pb-4 items-center">
-                <DialogTitle className="flex items-center gap-2 text-xl">
-                  <span className="font-semibold">
-                    {editFormData.circuit_number}
-                  </span>
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="space-y-6">
-                {/* Job Information Section */}
-                <Card className="p-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Building className="w-4 h-4 text-blue-600" />
-                    <h3 className="text-lg font-semibold">Job Information</h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label
-                        htmlFor="circuit_number"
-                        className="flex items-center gap-2"
-                      >
-                        <FileText className="w-4 h-4" />
-                        Circuit Number
-                      </Label>
-                      <Input
-                        id="circuit_number"
-                        value={editFormData.circuit_number || ""}
-                        onChange={(e) =>
-                          handleInputChange("circuit_number", e.target.value)
-                        }
-                        placeholder="Enter circuit number"
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="site_b_name"
-                        className="flex items-center gap-2"
-                      >
-                        <MapPin className="w-4 h-4" />
-                        Site B Name
-                      </Label>
-                      <Input
-                        id="site_b_name"
-                        value={editFormData.site_b_name || ""}
-                        onChange={(e) =>
-                          handleInputChange("site_b_name", e.target.value)
-                        }
-                        placeholder="Enter site name"
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="status"
-                        className="flex items-center gap-2"
-                      >
-                        <Activity className="w-4 h-4" />
-                        Status
-                      </Label>
-                      <select
-                        id="status"
-                        value={editFormData.status || ""}
-                        onChange={(e) =>
-                          handleInputChange("status", e.target.value)
-                        }
-                        className="w-full mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        {[
-                          "awaiting_client_installation_date",
-                          "survey_required",
-                          "survey_scheduled",
-                          "survey_completed",
-                          "lla_required",
-                          "awaiting_lla_approval",
-                          "lla_received",
-                          "installation_scheduled",
-                          "installation_completed",
-                        ].map((status) => (
-                          <option key={status} value={status}>
-                            {formatDropCableStatus(status)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <div>
-                      <Label
-                        htmlFor="county"
-                        className="flex items-center gap-2"
-                      >
-                        <MapPin className="w-4 h-4" />
-                        County
-                      </Label>
-                      <select
-                        id="county"
-                        value={editFormData.county || ""}
-                        onChange={(e) =>
-                          handleInputChange("county", e.target.value || null)
-                        }
-                        className="w-full mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="">Select County</option>
-                        <option value="tablebay">Tablebay</option>
-                        <option value="falsebay">Falsebay</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="dpc_distance_meters"
-                        className="flex items-center gap-2"
-                      >
-                        <Ruler className="w-4 h-4" />
-                        Distance (meters)
-                      </Label>
-                      <Input
-                        id="dpc_distance_meters"
-                        type="number"
-                        value={editFormData.dpc_distance_meters || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "dpc_distance_meters",
-                            parseInt(e.target.value) || null
-                          )
-                        }
-                        placeholder="Distance in meters"
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <Label
-                      htmlFor="physical_address_site_b"
-                      className="flex items-center gap-2"
-                    >
-                      <MapPin className="w-4 h-4" />
-                      Physical Address
-                    </Label>
-                    <Input
-                      id="physical_address_site_b"
-                      value={editFormData.physical_address_site_b || ""}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "physical_address_site_b",
-                          e.target.value
-                        )
-                      }
-                      placeholder="Enter physical address"
-                      className="mt-1"
-                    />
-                  </div>
-                </Card>
-
-                {/* Client & Team Information */}
-                <Card className="p-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <User className="w-4 h-4 text-green-600" />
-                    <h3 className="text-lg font-semibold">
-                      Client & Team Information
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label
-                        htmlFor="client"
-                        className="flex items-center gap-2"
-                      >
-                        <Building className="w-4 h-4" />
-                        Client
-                      </Label>
-                      <Input
-                        id="client"
-                        value={editFormData.client || ""}
-                        onChange={(e) =>
-                          handleInputChange("client", e.target.value)
-                        }
-                        placeholder="Client name"
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="dfa_pm"
-                        className="flex items-center gap-2"
-                      >
-                        <User className="w-4 h-4" />
-                        DFA PM
-                      </Label>
-                      <Input
-                        id="dfa_pm"
-                        value={editFormData.dfa_pm || ""}
-                        onChange={(e) =>
-                          handleInputChange("dfa_pm", e.target.value)
-                        }
-                        placeholder="DFA Project Manager"
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="technician_name"
-                        className="flex items-center gap-2"
-                      >
-                        <User className="w-4 h-4" />
-                        Technician
-                      </Label>
-                      <Input
-                        id="technician_name"
-                        value={editFormData.technician_name || ""}
-                        onChange={(e) =>
-                          handleInputChange("technician_name", e.target.value)
-                        }
-                        placeholder="Technician name"
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="service_provider"
-                        className="flex items-center gap-2"
-                      >
-                        <Building className="w-4 h-4" />
-                        Service Provider
-                      </Label>
-                      <Input
-                        id="service_provider"
-                        value={editFormData.service_provider || ""}
-                        onChange={(e) =>
-                          handleInputChange("service_provider", e.target.value)
-                        }
-                        placeholder="Service provider"
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Contact Information */}
-                <Card className="p-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Phone className="w-4 h-4 text-purple-600" />
-                    <h3 className="text-lg font-semibold">
-                      Contact Information
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label
-                        htmlFor="client_contact_name"
-                        className="flex items-center gap-2"
-                      >
-                        <User className="w-4 h-4" />
-                        Client Contact Name
-                      </Label>
-                      <Input
-                        id="client_contact_name"
-                        value={editFormData.client_contact_name || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "client_contact_name",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Client contact person"
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="end_client_contact_name"
-                        className="flex items-center gap-2"
-                      >
-                        <User className="w-4 h-4" />
-                        End Client Contact
-                      </Label>
-                      <Input
-                        id="end_client_contact_name"
-                        value={editFormData.end_client_contact_name || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "end_client_contact_name",
-                            e.target.value
-                          )
-                        }
-                        placeholder="End client contact person"
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="end_client_contact_email"
-                        className="flex items-center gap-2"
-                      >
-                        <Mail className="w-4 h-4" />
-                        End Client Email
-                      </Label>
-                      <Input
-                        id="end_client_contact_email"
-                        type="email"
-                        value={editFormData.end_client_contact_email || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "end_client_contact_email",
-                            e.target.value
-                          )
-                        }
-                        placeholder="email@example.com"
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="end_client_contact_phone"
-                        className="flex items-center gap-2"
-                      >
-                        <Phone className="w-4 h-4" />
-                        End Client Phone
-                      </Label>
-                      <Input
-                        id="end_client_contact_phone"
-                        value={editFormData.end_client_contact_phone || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "end_client_contact_phone",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Phone number"
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Schedule Information */}
-                <Card className="p-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Calendar className="w-4 h-4 text-orange-600" />
-                    <h3 className="text-lg font-semibold">
-                      Schedule Information
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label
-                        htmlFor="survey_date"
-                        className="flex items-center gap-2"
-                      >
-                        <Calendar className="w-4 h-4" />
-                        Survey Date
-                      </Label>
-                      <Input
-                        id="survey_date"
-                        type="date"
-                        value={editFormData.survey_date || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "survey_date",
-                            e.target.value || null
-                          )
-                        }
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="survey_time"
-                        className="flex items-center gap-2"
-                      >
-                        <Clock className="w-4 h-4" />
-                        Survey Time
-                      </Label>
-                      <Input
-                        id="survey_time"
-                        type="time"
-                        value={editFormData.survey_time || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "survey_time",
-                            e.target.value || null
-                          )
-                        }
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="survey_scheduled_for"
-                        className="flex items-center gap-2"
-                      >
-                        <Calendar className="w-4 h-4" />
-                        Survey Scheduled
-                      </Label>
-                      <Input
-                        id="survey_scheduled_for"
-                        type="date"
-                        value={
-                          editFormData.survey_scheduled_for
-                            ? editFormData.survey_scheduled_for.split("T")[0]
-                            : ""
-                        }
-                        onChange={(e) =>
-                          handleInputChange(
-                            "survey_scheduled_for",
-                            e.target.value
-                              ? e.target.value + "T00:00:00+00:00"
-                              : null
-                          )
-                        }
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div className="md:col-span-3">
-                      <Label
-                        htmlFor="installation_scheduled_for"
-                        className="flex items-center gap-2"
-                      >
-                        <Calendar className="w-4 h-4" />
-                        Installation Scheduled
-                      </Label>
-                      <Input
-                        id="installation_scheduled_for"
-                        type="date"
-                        value={
-                          editFormData.installation_scheduled_for
-                            ? editFormData.installation_scheduled_for.split(
-                                "T"
-                              )[0]
-                            : ""
-                        }
-                        onChange={(e) =>
-                          handleInputChange(
-                            "installation_scheduled_for",
-                            e.target.value
-                              ? e.target.value + "T00:00:00+00:00"
-                              : null
-                          )
-                        }
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                </Card>
-              </div>
-
-              <DialogFooter className="pt-6 border-t">
-                <div className="flex gap-3 w-full sm:w-auto">
-                  <Button
-                    variant="outline"
-                    onClick={handleCancelEdit}
-                    disabled={saving}
-                    className="flex-1 sm:flex-none"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSaveEdit}
-                    disabled={saving}
-                    className="flex-1 sm:flex-none"
-                  >
-                    {saving ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Changes
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <JobFormDialog
+            mode="edit"
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            jobData={editFormData}
+            jobConfig={jobTypeConfigs["drop-cable"]}
+            onSuccess={(updatedJob) => {
+              // Update jobs list with edited job
+              setJobs((prev) =>
+                prev.map((job) =>
+                  job.id === editingJob ? { ...job, ...updatedJob } : job
+                )
+              );
+              setEditingJob(null);
+              setEditFormData({});
+            }}
+            onError={(error) => setError(error)}
+            saving={saving}
+          />
 
           {/* New Job Creation Modal */}
-          <JobCreationModal
-            isOpen={newJobModalOpen}
-            onClose={handleCloseNewJobModal}
-            onJobCreated={handleJobCreated}
-            onError={handleJobCreationError}
-            jobType="drop-cable"
+          <JobFormDialog
+            mode="create"
+            open={newJobModalOpen}
+            onOpenChange={setNewJobModalOpen}
             jobConfig={jobTypeConfigs["drop-cable"]}
             clientId={clientId}
             clientName={clientNameForModal}
+            onSuccess={(newJob) => {
+              // Add new job to the list
+              setJobs((prev) => [newJob, ...prev]);
+              setClientNameForModal("");
+            }}
+            onError={(error) => setError(error)}
           />
         </div>
       </div>

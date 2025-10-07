@@ -141,17 +141,15 @@ const JobCreationModal = ({
           if (fieldConfig.type === "number" && payload[key]) {
             payload[key] = parseInt(payload[key]) || null;
           }
-          // Format time fields
-          if (
-            fieldConfig.type === "time" &&
-            payload[key] &&
-            /^\d{2}:\d{2}$/.test(payload[key])
-          ) {
-            payload[key] = payload[key] + ":00";
+          // Keep time fields as simple HH:MM format
+          if (fieldConfig.type === "time" && payload[key]) {
+            // Don't add seconds - keep it as HH:MM
+            payload[key] = payload[key];
           }
-          // Format date fields with timezone
+          // Keep date fields as simple YYYY-MM-DD format
           if (fieldConfig.type === "date" && payload[key]) {
-            payload[key] = payload[key] + "T00:00:00+00:00";
+            // Don't add timezone - keep it as YYYY-MM-DD
+            payload[key] = payload[key];
           }
         }
       });

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/components/providers/AuthProvider";
 import axios from "axios";
 import {
   Users,
@@ -21,7 +22,8 @@ import {
   Wifi,
   AlertCircle,
   CheckCircle2,
-  Clock
+  Clock,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -110,16 +112,43 @@ const navigationSections = [
         notification: null,
       },
     ]
+  },
+  {
+    label: "Administration",
+    items: [
+      {
+        id: "logs",
+        label: "Audit Logs",
+        href: "/logs",
+        icon: Shield,
+        notification: null,
+        roleRequired: "super_admin",
+      },
+    ]
   }
 ];
 
 export function AppSidebar({ collapsed = false, onToggle }) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const [supabaseStatus, setSupabaseStatus] = useState({
     status: 'loading',
     message: 'Checking connection...',
     indicator: 'default'
   });
+
+  // Filter navigation items based on user role
+  const filteredNavigationSections = navigationSections.map(section => ({
+    ...section,
+    items: section.items.filter(item => {
+      // If no role is required, show the item
+      if (!item.roleRequired) return true;
+      // If user is not loaded yet, hide role-restricted items
+      if (!user) return false;
+      // Check if user has the required role
+      return user.role === item.roleRequired;
+    })
+  })).filter(section => section.items.length > 0); // Remove empty sections
 
   useEffect(() => {
     const checkSupabaseStatus = async () => {
@@ -264,7 +293,7 @@ export function AppSidebar({ collapsed = false, onToggle }) {
 
       {/* Navigation */}
       <nav className="px-2 py-6 space-y-6 overflow-y-auto h-[calc(100vh-4rem)]">
-        {navigationSections.map((section, sectionIndex) => (
+        {filteredNavigationSections.map((section, sectionIndex) => (
           <div key={section.label} className="space-y-2">
             {!collapsed && (
               <div className="flex items-center space-x-2 px-3 mb-3">
