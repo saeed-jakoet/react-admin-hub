@@ -178,6 +178,22 @@ export default function JobFormDialog({
         continue;
       }
 
+      // Special: transform end_client_contact_phone to +27 format
+      if (name === "end_client_contact_phone") {
+        // Remove all non-digit characters
+        let digits = String(value).replace(/\D/g, "");
+        // If starts with 0 and is 10 digits, replace with +27
+        if (digits.length === 10 && digits.startsWith("0")) {
+          value = "+27" + digits.slice(1);
+        } else if (digits.length === 9 && !digits.startsWith("0")) {
+          // If 9 digits and doesn't start with 0, assume missing 0, add +27
+          value = "+27" + digits;
+        } else if (!String(value).startsWith("+27")) {
+          // If not already +27, just prefix +27
+          value = "+27" + digits.replace(/^0+/, "");
+        }
+      }
+
       // Coerce by type
       if (fieldConfig?.type === "number") {
         const n = parseInt(value);

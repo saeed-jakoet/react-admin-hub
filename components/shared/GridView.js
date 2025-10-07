@@ -41,7 +41,7 @@ export function GridCard({
 }) {
   return (
     <Card
-      className={`bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-all duration-200 group cursor-pointer ${className}`}
+      className={`relative bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-all duration-200 group cursor-pointer ${className}`}
       onClick={onClick}
     >
       <div className="p-6">

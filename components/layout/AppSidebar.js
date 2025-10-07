@@ -376,7 +376,7 @@ export function AppSidebar() {
       </nav>
 
       {/* Supabase Status */}
-      <div className="absolute bottom-6 left-2 right-2">
+      {/* <div className="absolute bottom-6 left-2 right-2">
         <a
           href="https://status.supabase.com"
           target="_blank"
@@ -430,7 +430,7 @@ export function AppSidebar() {
             </div>
           </div>
         </a>
-      </div>
+      </div> */}
     </aside>
   );
 }
