@@ -7,7 +7,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -425,24 +424,94 @@ export default function JobFormDialog({
 
   // Get display title
   const getTitle = () => {
-    if (mode === "create") {
+    // For drop-cable jobs, show circuit number left, status right
+    if (jobConfig.apiEndpoint === "/drop-cable") {
+      const displayName =
+        formData.circuit_number ||
+        formData.project_id ||
+        formData.ticket_number ||
+        formData.link_id ||
+        formData.access_id ||
+        formData.relocation_id ||
+        "Edit Installation";
       return (
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-            <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+              <Save className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="truncate">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 truncate">
+                {displayName}
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
+                Edit {jobConfig.shortName || "installation"} details
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              {jobConfig.title}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {jobConfig.description}
-            </p>
-          </div>
+          {/* Status dropdown on the right */}
+          {statusFieldConfig && (
+            <div className="relative min-w-[240px]">
+              <div className="relative">
+                {/* Status indicator */}
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
+                  <div
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      getDropCableStatusColor(
+                        formData.status || statusFieldConfig.defaultValue || ""
+                      )
+                        .split(" ")
+                        .find((cls) => cls.startsWith("bg-"))
+                        ?.replace("bg-", "bg-") || "bg-gray-400"
+                    }`}
+                  ></div>
+                </div>
+
+                <select
+                  id="status"
+                  value={
+                    formData.status || statusFieldConfig.defaultValue || ""
+                  }
+                  onChange={(e) => handleInputChange("status", e.target.value)}
+                  aria-label="Status"
+                  className={`block w-full appearance-none pl-10 pr-12 py-3 rounded-lg text-sm font-medium border-0 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${getDropCableStatusColor(
+                    formData.status || statusFieldConfig.defaultValue || ""
+                  )}`}
+                >
+                  {(statusFieldConfig.options || []).map((option) => (
+                    <option
+                      key={option.value}
+                      value={option.value}
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2"
+                    >
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Simple dropdown arrow */}
+                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                  <svg
+                    className="h-4 w-4 text-current opacity-60"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
-
+    // Default for other job types
     const displayName =
       formData.circuit_number ||
       formData.project_id ||
@@ -451,7 +520,6 @@ export default function JobFormDialog({
       formData.access_id ||
       formData.relocation_id ||
       "Edit Job";
-
     return (
       <div className="flex items-center gap-3">
         <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
@@ -467,6 +535,51 @@ export default function JobFormDialog({
         </div>
       </div>
     );
+  };
+
+  // Find the status field config (if any)
+  const statusFieldConfig = jobConfig.sections
+    ?.flatMap((section) => section.fields)
+    ?.find((f) => f.name === "status");
+
+  // Get status color for drop cable jobs (matching table colors)
+  const getDropCableStatusColor = (status) => {
+    const colors = {
+      awaiting_client_installation_date:
+        "text-orange-700 bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-700",
+      survey_required:
+        "text-purple-700 bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-700",
+      survey_scheduled:
+        "text-indigo-700 bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-700",
+      survey_completed:
+        "text-cyan-700 bg-cyan-50 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-700",
+      lla_required:
+        "text-yellow-700 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-700",
+      awaiting_lla_approval:
+        "text-amber-700 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700",
+      lla_received:
+        "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-700",
+      installation_scheduled:
+        "text-teal-700 bg-teal-50 border-teal-200 dark:bg-teal-900/20 dark:text-teal-300 dark:border-teal-700",
+      installation_completed:
+        "text-green-700 bg-green-50 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700",
+      as_built_submitted:
+        "text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700",
+    };
+    return (
+      colors[status] ||
+      "text-gray-700 bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700"
+    );
+  };
+
+  // Extract only background classes (light and dark) so we color the select background,
+  // keeping text and border neutral for readability
+  const getDropCableStatusBg = (status) => {
+    const full = getDropCableStatusColor(status || "");
+    return full
+      .split(" ")
+      .filter((cls) => cls.startsWith("bg-") || cls.startsWith("dark:bg-"))
+      .join(" ");
   };
 
   return (
@@ -493,32 +606,92 @@ export default function JobFormDialog({
           </div>
         )}
 
+        {/* Status field is now in the header for drop-cable jobs */}
+
         <div className="space-y-6">
-          {jobConfig.sections?.map((section, index) => (
-            <Card
-              key={index}
-              className="p-6 shadow-sm border border-gray-200 dark:border-gray-700"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                {section.icon && (
-                  <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    <section.icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          {jobConfig.sections?.map((section, index) => {
+            // For drop-cable jobs, render status next to circuit_number in Job Details section
+            if (
+              jobConfig.apiEndpoint === "/drop-cable" &&
+              section.title === "Job Details" &&
+              statusFieldConfig
+            ) {
+              // Find the circuit_number field
+              const circuitField = section.fields.find(
+                (f) => f.name === "circuit_number"
+              );
+              // Render both fields in a flex row
+              return (
+                <Card
+                  key={index}
+                  className="p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                >
+                  <div className="flex items-center gap-3 mb-6">
+                    {section.icon && (
+                      <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <section.icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                      </div>
+                    )}
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {section.title}
+                    </h3>
                   </div>
-                )}
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {section.title}
-                </h3>
-              </div>
-              <div
-                className={`grid ${
-                  section.gridCols ||
-                  "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                } gap-6`}
+                  {/* Circuit Number and County side by side */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="space-y-1">{renderField(circuitField)}</div>
+                    <div className="space-y-1">
+                      {renderField(
+                        section.fields.find((f) => f.name === "county")
+                      )}
+                    </div>
+                  </div>
+                  {/* Render the rest of the fields except circuit_number, county and status */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {section.fields
+                      .filter(
+                        (f) =>
+                          f.name !== "circuit_number" &&
+                          f.name !== "county" &&
+                          f.name !== "status"
+                      )
+                      .map(renderField)}
+                  </div>
+                </Card>
+              );
+            }
+            // For all other sections, render as before, but filter out status for drop-cable
+            return (
+              <Card
+                key={index}
+                className="p-6 shadow-sm border border-gray-200 dark:border-gray-700"
               >
-                {section.fields?.map(renderField)}
-              </div>
-            </Card>
-          ))}
+                <div className="flex items-center gap-3 mb-6">
+                  {section.icon && (
+                    <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      <section.icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                    </div>
+                  )}
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {section.title}
+                  </h3>
+                </div>
+                <div
+                  className={`grid ${
+                    section.gridCols ||
+                    "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                  } gap-6`}
+                >
+                  {section.fields
+                    ?.filter((f) =>
+                      jobConfig.apiEndpoint === "/drop-cable"
+                        ? f.name !== "status" && f.name !== "circuit_number"
+                        : f.name !== "status"
+                    )
+                    ?.map(renderField)}
+                </div>
+              </Card>
+            );
+          })}
         </div>
 
         <DialogFooter className="pt-6 border-t border-gray-200 dark:border-gray-700">
