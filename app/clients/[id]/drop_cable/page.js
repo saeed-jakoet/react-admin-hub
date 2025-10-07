@@ -10,6 +10,8 @@ import {
   Activity,
   Download,
   RefreshCw,
+  MoreVertical,
+  Upload,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,7 @@ import { DataTable } from "@/components/shared/DataTable";
 import { get, put, post } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
 import JobFormDialog from "@/components/shared/JobFormDialog";
+import UploadDocumentDialog from "@/components/shared/UploadDocumentDialog";
 import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
 
 export default function DropCablePage() {
@@ -46,6 +49,11 @@ export default function DropCablePage() {
   // New Job Modal State
   const [newJobModalOpen, setNewJobModalOpen] = useState(false);
   const [clientNameForModal, setClientNameForModal] = useState("");
+
+  // Upload Document Modal State
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [selectedJobForUpload, setSelectedJobForUpload] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   // Fetch drop cable jobs for this client
   useEffect(() => {
@@ -159,6 +167,99 @@ export default function DropCablePage() {
     setDialogOpen(true);
   };
 
+  // Handle upload document
+  const handleUploadDocument = (job) => {
+    setSelectedJobForUpload(job);
+    setUploadModalOpen(true);
+  };
+
+  // Upload document to API
+  const uploadDocument = async ({ file, category, jobData }) => {
+    setUploading(true);
+    
+    try {
+      // Validate required job fields before building payload
+      if (!jobData?.id) {
+        throw new Error("Missing job id");
+      }
+      if (!clientId) {
+        throw new Error("Missing client id in route");
+      }
+      if (!jobData?.circuit_number || String(jobData.circuit_number).trim() === "") {
+        throw new Error("This job is missing a circuit number. Please add it before uploading.");
+      }
+
+      // Helper to derive a safe identifier from a name
+      const toIdentifier = (s) =>
+        String(s || "")
+          .trim()
+          .replace(/[\\/]+/g, "-")
+          .replace(/\s+/g, "_")
+          .replace(/[^a-zA-Z0-9_-]/g, "");
+
+      // Ensure non-empty clientName and clientIdentifier to satisfy backend schema
+      let clientName = jobData.client && String(jobData.client).trim();
+      let clientIdentifier = jobData.client_identifier && String(jobData.client_identifier).trim();
+
+      // If we don't have them on the row, fetch client details and derive
+      if (!clientName || !clientIdentifier) {
+        try {
+          const resp = await get(`/client/${clientId}`);
+          const client = resp?.data || {};
+          if (!clientName) {
+            clientName = client.company_name || [client.first_name, client.last_name].filter(Boolean).join(" ");
+          }
+          if (!clientIdentifier) {
+            const base = client.company_name || [client.first_name, client.last_name].filter(Boolean).join(" ");
+            clientIdentifier = toIdentifier(base || "client");
+          }
+        } catch (e) {
+          // Fallback: derive identifier from whatever name we have
+          if (!clientName) clientName = "Client";
+          if (!clientIdentifier) clientIdentifier = toIdentifier(clientName);
+        }
+      }
+
+      if (!clientName || !clientIdentifier) {
+        throw new Error("Missing client details (name/identifier). Please ensure the client has a name.");
+      }
+
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("clientName", clientName);
+      formData.append("clientIdentifier", clientIdentifier);
+      formData.append("circuitNumber", String(jobData.circuit_number));
+  formData.append("jobType", "drop_cable");
+  formData.append("category", category);
+  // Use new field expected by the API/DB column
+  formData.append("dropCableJobId", String(jobData.id));
+      formData.append("clientId", String(clientId));
+
+      // Optional: debug log the payload keys (not file content)
+      try {
+        const debug = {};
+        for (const [k, v] of formData.entries()) {
+          debug[k] = k === "file" ? (v && v.name ? v.name : "[file]") : v;
+        }
+        console.debug("Uploading document with payload:", debug);
+      } catch {}
+
+      // Make API call to upload endpoint using your post provider
+      const result = await post("/documents/upload", formData);
+      console.log("Upload successful:", result);
+      
+      // Show success message or refresh data if needed
+      // You could add a toast notification here
+      
+    } catch (error) {
+      console.error("Upload error:", error);
+      throw error;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // Define table columns for DataTable - simplified view
   const columns = [
     {
@@ -247,6 +348,34 @@ export default function DropCablePage() {
           <span className="text-sm text-gray-500">
             {new Date(job.created_at).toLocaleDateString()}
           </span>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => {
+        const job = row.original;
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => handleUploadDocument(job)}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Document
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         );
       },
     },
@@ -400,6 +529,15 @@ export default function DropCablePage() {
               setClientNameForModal("");
             }}
             onError={(error) => setError(error)}
+          />
+
+          {/* Upload Document Modal */}
+          <UploadDocumentDialog
+            open={uploadModalOpen}
+            onOpenChange={setUploadModalOpen}
+            onUpload={uploadDocument}
+            jobData={selectedJobForUpload}
+            uploading={uploading}
           />
         </div>
       </div>
