@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import axios from "axios";
+import { isAllowed } from "@/components/providers/accessControl";
 import {
   Users,
   Building2,
@@ -137,16 +138,12 @@ export function AppSidebar({ collapsed = false, onToggle }) {
     indicator: 'default'
   });
 
-  // Filter navigation items based on user role
+  // Filter navigation items based on user role and allowed paths
   const filteredNavigationSections = navigationSections.map(section => ({
     ...section,
     items: section.items.filter(item => {
-      // If no role is required, show the item
-      if (!item.roleRequired) return true;
-      // If user is not loaded yet, hide role-restricted items
-      if (!user) return false;
-      // Check if user has the required role
-      return user.role === item.roleRequired;
+      if (!user) return false; // Hide all if user not loaded
+      return isAllowed(user.role, item.href);
     })
   })).filter(section => section.items.length > 0); // Remove empty sections
 

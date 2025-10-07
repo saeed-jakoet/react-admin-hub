@@ -8,9 +8,9 @@ export const Role = {
 // Define allowed path prefixes per role
 export const accessMatrix = {
   [Role.SUPER_ADMIN]: ["/"], // wildcard via special handling
-  [Role.MANAGER]: ["/", "/projects", "/teams", "/reports"],
-  [Role.FIELD_WORKER]: ["/", "/projects"],
-  [Role.CLIENT]: ["/", "/reports"],
+  [Role.MANAGER]: ["/projects", "/teams", "/reports"],
+  [Role.FIELD_WORKER]: ["/projects"],
+  [Role.CLIENT]: ["/reports"],
 };
 
 export function isAllowed(role, path) {

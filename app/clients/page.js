@@ -50,6 +50,8 @@ export default function ClientsPage() {
     try {
       setLoading(true);
       const response = await get("/client");
+      console.log(response);
+
       setClients(response.data);
     } catch (error) {
       console.error("Error fetching clients:", error);
@@ -157,13 +159,7 @@ export default function ClientsPage() {
           </div>
           <div>
             <div className="font-semibold text-gray-900 dark:text-white">
-              {row.original.company_name ||
-                `${row.original.first_name} ${row.original.last_name}`}
-            </div>
-            <div className="text-sm text-gray-500 dark:text-slate-400">
-              {row.original.company_name
-                ? `${row.original.first_name} ${row.original.last_name}`
-                : row.original.email}
+              {row.original.company_name}
             </div>
           </div>
         </div>
@@ -192,16 +188,27 @@ export default function ClientsPage() {
       ),
     },
     {
-      accessorKey: "company_name",
-      header: "Company",
-      cell: ({ row }) => (
-        <div className="flex items-center space-x-2">
-          <Building2 className="w-4 h-4 text-gray-400" />
-          <span className="text-gray-900 dark:text-white font-medium">
-            {row.original.company_name || "—"}
-          </span>
-        </div>
-      ),
+      accessorKey: "created_at",
+      header: "Joined on",
+      cell: ({ row }) => {
+        const raw = row.original.created_at;
+        let formatted = "—";
+        if (raw) {
+          const d = new Date(raw);
+          const day = String(d.getDate()).padStart(2, "0");
+          const month = String(d.getMonth() + 1).padStart(2, "0");
+          const year = d.getFullYear();
+          formatted = `${day}/${month}/${year}`;
+        }
+        return (
+          <div className="flex items-center space-x-2">
+            <Building2 className="w-4 h-4 text-gray-400" />
+            <span className="text-gray-900 dark:text-white font-medium">
+              {formatted}
+            </span>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "address",

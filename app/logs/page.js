@@ -18,6 +18,7 @@ import {
   AlertCircle,
   ArrowRight,
   ExternalLink,
+  Info,
 } from "lucide-react";
 
 export default function LogsPage() {
@@ -47,67 +48,6 @@ export default function LogsPage() {
   React.useEffect(() => {
     fetchLogs();
   }, []);
-
-  // Filter logs based on search term
-  const filteredLogs = React.useMemo(() => {
-    return logs.filter(log => {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        log.user_name?.toLowerCase().includes(searchLower) ||
-        getSimpleDescription(log).toLowerCase().includes(searchLower)
-      );
-    });
-  }, [logs, searchTerm]);
-
-  // Get the navigation URL for a log entry
-  const getNavigationUrl = (log) => {
-    const { table_name, old_data, new_data, record_id } = log;
-    
-    if (table_name === "drop_cable") {
-      // For drop cable jobs, navigate to the client's drop cable page
-      const clientId = new_data?.client_id || old_data?.client_id;
-      if (clientId) {
-        return `/clients/${clientId}/drop_cable`;
-      }
-    }
-    
-    // Add more table mappings as needed
-    if (table_name === "clients") {
-      return `/clients/${record_id}`;
-    }
-    
-    if (table_name === "projects") {
-      return `/projects/${record_id}`;
-    }
-    
-    if (table_name === "users") {
-      return `/users`;
-    }
-    
-    if (table_name === "staff") {
-      return `/staff`;
-    }
-    
-    if (table_name === "inventory") {
-      return `/inventory`;
-    }
-    
-    // Default fallback - could be expanded based on your table structure
-    return null;
-  };
-
-  // Handle clicking on a log entry
-  const handleLogClick = (log) => {
-    const url = getNavigationUrl(log);
-    if (url) {
-      router.push(url);
-    }
-  };
-
-  // Check if a log entry is clickable
-  const isLogClickable = (log) => {
-    return getNavigationUrl(log) !== null;
-  };
 
   // Get simple description of what happened
   const getSimpleDescription = (log) => {
@@ -223,6 +163,166 @@ export default function LogsPage() {
       .join(" ");
   };
 
+  // Filter logs based on search term
+  const filteredLogs = React.useMemo(() => {
+    return logs.filter(log => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        log.user_name?.toLowerCase().includes(searchLower) ||
+        getSimpleDescription(log).toLowerCase().includes(searchLower)
+      );
+    });
+  }, [logs, searchTerm]);
+
+  // Get the navigation URL for a log entry
+  const getNavigationUrl = (log) => {
+    const { table_name, old_data, new_data, record_id } = log;
+    
+    if (table_name === "drop_cable") {
+      // For drop cable jobs, navigate to the client's drop cable page
+      const clientId = new_data?.client_id || old_data?.client_id;
+      if (clientId) {
+        return `/clients/${clientId}/drop_cable`;
+      }
+    }
+    
+    // Add more table mappings as needed
+    if (table_name === "clients") {
+      return `/clients/${record_id}`;
+    }
+    
+    if (table_name === "projects") {
+      return `/projects/${record_id}`;
+    }
+    
+    if (table_name === "users") {
+      return `/users`;
+    }
+    
+    if (table_name === "staff") {
+      return `/staff`;
+    }
+    
+    if (table_name === "inventory") {
+      return `/inventory`;
+    }
+    
+    // Default fallback - could be expanded based on your table structure
+    return null;
+  };
+
+  // Handle clicking on a log entry
+  const handleLogClick = (log) => {
+    const url = getNavigationUrl(log);
+    if (url) {
+      router.push(url);
+    }
+  };
+
+  // Check if a log entry is clickable
+  const isLogClickable = (log) => {
+    return getNavigationUrl(log) !== null;
+  };
+
+  // Get comprehensive change details for any action
+  const getDetailedChanges = (log) => {
+    const { action, old_data, new_data, table_name } = log;
+    
+    if (action === "CREATE" || action === "INSERT") {
+      if (!new_data) return [];
+      
+      // Show key fields that were set during creation
+      const changes = [];
+      const keyFields = {
+        drop_cable: ['status', 'client', 'circuit_number', 'technician_name', 'site_b_name', 'priority'],
+        clients: ['company_name', 'email', 'phone_number', 'is_active', 'address'],
+        projects: ['name', 'client_name', 'budget', 'status', 'start_date'],
+        users: ['email', 'role', 'first_name', 'last_name'],
+        staff: ['name', 'position', 'department', 'email'],
+        inventory: ['item_name', 'item_code', 'category', 'quantity', 'supplier_name', 'location']
+      };
+      
+      const fields = keyFields[table_name] || Object.keys(new_data).slice(0, 6);
+      
+      fields.forEach(field => {
+        if (new_data[field] !== null && new_data[field] !== undefined && new_data[field] !== '') {
+          changes.push({
+            field: field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            from: '',
+            to: String(new_data[field]),
+            type: 'created'
+          });
+        }
+      });
+      
+      return changes;
+    }
+    
+    if (action === "UPDATE") {
+      if (!old_data || !new_data) return [];
+      
+      const changes = [];
+      const allFields = new Set([...Object.keys(old_data), ...Object.keys(new_data)]);
+      
+      // Skip these fields as they're not user-relevant
+      const skipFields = ['id', 'created_at', 'updated_at', 'deleted_at'];
+      
+      allFields.forEach(field => {
+        if (skipFields.includes(field)) return;
+        
+        const oldVal = old_data[field];
+        const newVal = new_data[field];
+        
+        // Convert to strings for comparison, handling null/undefined
+        const oldStr = oldVal === null || oldVal === undefined ? '' : String(oldVal);
+        const newStr = newVal === null || newVal === undefined ? '' : String(newVal);
+        
+        if (oldStr !== newStr) {
+          changes.push({
+            field: field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            from: oldStr || '(empty)',
+            to: newStr || '(empty)',
+            type: 'updated'
+          });
+        }
+      });
+      
+      return changes;
+    }
+    
+    if (action === "DELETE") {
+      if (!old_data) return [];
+      
+      // Show key fields that existed before deletion
+      const changes = [];
+      const keyFields = {
+        drop_cable: ['status', 'client', 'circuit_number', 'technician_name'],
+        clients: ['company_name', 'email', 'is_active'],
+        projects: ['name', 'client_name', 'status'],
+        users: ['email', 'role'],
+        staff: ['name', 'position'],
+        inventory: ['item_name', 'item_code', 'category']
+      };
+      
+      const fields = keyFields[table_name] || Object.keys(old_data).slice(0, 4);
+      
+      fields.forEach(field => {
+        if (old_data[field] !== null && old_data[field] !== undefined && old_data[field] !== '') {
+          changes.push({
+            field: field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            from: String(old_data[field]),
+            to: '',
+            type: 'deleted'
+          });
+        }
+      });
+      
+      return changes;
+    }
+    
+    return [];
+  };
+
   // Get change details for status changes
   const getChangeDetails = (log) => {
     const { action, old_data, new_data } = log;
@@ -324,6 +424,7 @@ export default function LogsPage() {
         const log = row.original;
         const description = getSimpleDescription(log);
         const changeDetails = getChangeDetails(log);
+        const allChanges = getDetailedChanges(log);
         const isClickable = isLogClickable(log);
 
         const content = (
@@ -333,8 +434,89 @@ export default function LogsPage() {
               {isClickable && (
                 <ExternalLink className="w-3 h-3 text-blue-500" />
               )}
+              {allChanges.length > 0 && (
+                <div className="relative group">
+                  <Info className="w-3 h-3 text-gray-400 cursor-help" />
+                  
+                  {/* Hover Tooltip */}
+                  <div className="absolute left-0 top-6 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+                    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg shadow-lg p-4 w-80 max-h-64 overflow-y-auto">
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                        Changes Made ({allChanges.length})
+                      </div>
+                      <div className="space-y-2">
+                        {allChanges.map((change, idx) => (
+                          <div key={idx} className="flex flex-col space-y-1">
+                            <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                              {change.field}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs">
+                              {change.type === 'created' ? (
+                                <span className="text-green-600 dark:text-green-400 font-mono bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
+                                  + {change.to}
+                                </span>
+                              ) : change.type === 'deleted' ? (
+                                <span className="text-red-600 dark:text-red-400 font-mono bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                                  - {change.from}
+                                </span>
+                              ) : (
+                                <>
+                                  <span className="text-red-600 dark:text-red-400 font-mono bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                                    {change.from}
+                                  </span>
+                                  <ArrowRight className="w-3 h-3 text-gray-400" />
+                                  <span className="text-green-600 dark:text-green-400 font-mono bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
+                                    {change.to}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            {changeDetails && changeDetails.to && (
+            
+            {/* Show summary of changes inline */}
+            {allChanges.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {allChanges.slice(0, 3).map((change, idx) => (
+                  <div key={idx} className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs ${
+                    change.type === 'created' 
+                      ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700'
+                      : change.type === 'deleted'
+                      ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700'
+                      : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700'
+                  }`}>
+                    <span className="font-medium">{change.field}</span>
+                    {change.type === 'updated' && (
+                      <>
+                        <span className="font-mono text-xs opacity-75">{change.from}</span>
+                        <ArrowRight className="w-2 h-2" />
+                        <span className="font-mono text-xs">{change.to}</span>
+                      </>
+                    )}
+                    {change.type === 'created' && (
+                      <span className="font-mono text-xs">+{change.to}</span>
+                    )}
+                    {change.type === 'deleted' && (
+                      <span className="font-mono text-xs">-{change.from}</span>
+                    )}
+                  </div>
+                ))}
+                {allChanges.length > 3 && (
+                  <div className="inline-flex items-center px-2 py-1 rounded-md border text-xs bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700">
+                    +{allChanges.length - 3} more
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Keep the old simple change display as fallback */}
+            {changeDetails && changeDetails.to && allChanges.length === 0 && (
               <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-md border text-xs ${changeDetails.color}`}>
                 {changeDetails.from && (
                   <>
@@ -413,7 +595,7 @@ export default function LogsPage() {
   return (
     <div className="flex-1 p-6">
       {/* Header */}
-      <div className="mb-8">
+      {/* <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
             <Activity className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -427,10 +609,10 @@ export default function LogsPage() {
             </p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -474,10 +656,10 @@ export default function LogsPage() {
             <User className="w-8 h-8 text-purple-600 dark:text-purple-400" />
           </div>
         </Card>
-      </div>
+      </div> */}
 
       {/* Search */}
-      <Card className="p-6 mb-6">
+      {/* <Card className="p-6 mb-6">
         <div className="flex gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -495,11 +677,18 @@ export default function LogsPage() {
             Refresh
           </Button>
         </div>
-      </Card>
+      </Card> */}
 
       {/* Activity Table */}
-      <Card className="p-6">
-        <DataTable columns={columns} data={filteredLogs} />
+      <Card className="p-6 overflow-visible">
+        <div className="w-full overflow-visible">
+          <DataTable 
+            columns={columns} 
+            data={filteredLogs}
+            className="overflow-visible w-full"
+            tableClassName="overflow-visible w-full"
+          />
+        </div>
       </Card>
     </div>
   );
