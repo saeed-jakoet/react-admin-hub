@@ -28,7 +28,9 @@ import { get, put, post } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
 import JobFormDialog from "@/components/shared/JobFormDialog";
 import UploadDocumentDialog from "@/components/shared/UploadDocumentDialog";
+import AsBuiltDocumentDialog from "@/components/shared/AsBuiltDocumentDialog";
 import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
+import { FileText } from "lucide-react";
 
 export default function DropCablePage() {
   const params = useParams();
@@ -55,6 +57,11 @@ export default function DropCablePage() {
   const [selectedJobForUpload, setSelectedJobForUpload] = useState(null);
   const [uploading, setUploading] = useState(false);
 
+  // As-Built Document Modal State
+  const [asBuiltModalOpen, setAsBuiltModalOpen] = useState(false);
+  const [selectedJobForAsBuilt, setSelectedJobForAsBuilt] = useState(null);
+  const [generatingAsBuilt, setGeneratingAsBuilt] = useState(false);
+
   // Fetch drop cable jobs for this client
   useEffect(() => {
     async function fetchDropCableJobs() {
@@ -62,7 +69,7 @@ export default function DropCablePage() {
         setLoading(true);
         const data = await get(`/drop-cable/client/${clientId}`);
         console.log(data);
-        
+
         setJobs(data.data || []);
       } catch (error) {
         console.error("Error fetching drop cable jobs:", error);
@@ -106,7 +113,7 @@ export default function DropCablePage() {
   // Get status color for badges
   const getDropCableStatusColor = (status) => {
     const colors = {
-      awaiting_client_installation_date:
+      awaiting_client_confirmation_date:
         "text-orange-700 bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-700",
       survey_required:
         "text-purple-700 bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-700",
@@ -126,6 +133,14 @@ export default function DropCablePage() {
         "text-green-700 bg-green-50 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700",
       as_built_submitted:
         "text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700",
+      issue_logged:
+        "text-red-700 bg-red-50 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700",
+      on_hold:
+        "text-gray-700 bg-gray-100 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700",
+      awaiting_health_and_safety:
+        "text-pink-700 bg-pink-50 border-pink-200 dark:bg-pink-900/20 dark:text-pink-300 dark:border-pink-700",
+      planning_document_submitted:
+        "text-lime-700 bg-lime-50 border-lime-200 dark:bg-lime-900/20 dark:text-lime-300 dark:border-lime-700",
     };
     return (
       colors[status] ||
@@ -173,10 +188,16 @@ export default function DropCablePage() {
     setUploadModalOpen(true);
   };
 
+  // Handle generate as-built document
+  const handleGenerateAsBuilt = (job) => {
+    setSelectedJobForAsBuilt(job);
+    setAsBuiltModalOpen(true);
+  };
+
   // Upload document to API
   const uploadDocument = async ({ file, category, jobData }) => {
     setUploading(true);
-    
+
     try {
       // Validate required job fields before building payload
       if (!jobData?.id) {
@@ -185,8 +206,13 @@ export default function DropCablePage() {
       if (!clientId) {
         throw new Error("Missing client id in route");
       }
-      if (!jobData?.circuit_number || String(jobData.circuit_number).trim() === "") {
-        throw new Error("This job is missing a circuit number. Please add it before uploading.");
+      if (
+        !jobData?.circuit_number ||
+        String(jobData.circuit_number).trim() === ""
+      ) {
+        throw new Error(
+          "This job is missing a circuit number. Please add it before uploading."
+        );
       }
 
       // Helper to derive a safe identifier from a name
@@ -199,7 +225,8 @@ export default function DropCablePage() {
 
       // Ensure non-empty clientName and clientIdentifier to satisfy backend schema
       let clientName = jobData.client && String(jobData.client).trim();
-      let clientIdentifier = jobData.client_identifier && String(jobData.client_identifier).trim();
+      let clientIdentifier =
+        jobData.client_identifier && String(jobData.client_identifier).trim();
 
       // If we don't have them on the row, fetch client details and derive
       if (!clientName || !clientIdentifier) {
@@ -207,10 +234,14 @@ export default function DropCablePage() {
           const resp = await get(`/client/${clientId}`);
           const client = resp?.data || {};
           if (!clientName) {
-            clientName = client.company_name || [client.first_name, client.last_name].filter(Boolean).join(" ");
+            clientName =
+              client.company_name ||
+              [client.first_name, client.last_name].filter(Boolean).join(" ");
           }
           if (!clientIdentifier) {
-            const base = client.company_name || [client.first_name, client.last_name].filter(Boolean).join(" ");
+            const base =
+              client.company_name ||
+              [client.first_name, client.last_name].filter(Boolean).join(" ");
             clientIdentifier = toIdentifier(base || "client");
           }
         } catch (e) {
@@ -221,7 +252,9 @@ export default function DropCablePage() {
       }
 
       if (!clientName || !clientIdentifier) {
-        throw new Error("Missing client details (name/identifier). Please ensure the client has a name.");
+        throw new Error(
+          "Missing client details (name/identifier). Please ensure the client has a name."
+        );
       }
 
       // Create FormData for multipart/form-data request
@@ -230,10 +263,10 @@ export default function DropCablePage() {
       formData.append("clientName", clientName);
       formData.append("clientIdentifier", clientIdentifier);
       formData.append("circuitNumber", String(jobData.circuit_number));
-  formData.append("jobType", "drop_cable");
-  formData.append("category", category);
-  // Use new field expected by the API/DB column
-  formData.append("dropCableJobId", String(jobData.id));
+      formData.append("jobType", "drop_cable");
+      formData.append("category", category);
+      // Use new field expected by the API/DB column
+      formData.append("dropCableJobId", String(jobData.id));
       formData.append("clientId", String(clientId));
 
       // Optional: debug log the payload keys (not file content)
@@ -248,15 +281,76 @@ export default function DropCablePage() {
       // Make API call to upload endpoint using your post provider
       const result = await post("/documents/upload", formData);
       console.log("Upload successful:", result);
-      
+
       // Show success message or refresh data if needed
       // You could add a toast notification here
-      
     } catch (error) {
       console.error("Upload error:", error);
       throw error;
     } finally {
       setUploading(false);
+    }
+  };
+
+  // Generate As-Built document
+  const generateAsBuiltDocument = async (documentData) => {
+    setGeneratingAsBuilt(true);
+
+    try {
+      // Create FormData for the API call
+      const formData = new FormData();
+
+      // Add form fields
+      Object.keys(documentData).forEach((key) => {
+        if (
+          key !== "images" &&
+          documentData[key] !== undefined &&
+          documentData[key] !== ""
+        ) {
+          formData.append(key, documentData[key]);
+        }
+      });
+
+      // Add images
+      documentData.images?.forEach((image, index) => {
+        if (image.file) {
+          formData.append(`image_${index}`, image.file);
+          formData.append(`caption_${index}`, image.caption || "");
+        }
+      });
+
+      // Add metadata
+      formData.append("jobId", documentData.jobId);
+      formData.append("clientId", clientId);
+      formData.append("documentType", "as_built");
+      formData.append("jobType", "drop_cable");
+
+      // Make API call to generate PDF
+      const result = await post("/documents/generate-as-built", formData);
+
+      if (result.success && result.downloadUrl) {
+        // Create a temporary link to download the PDF
+        const link = document.createElement("a");
+        link.href = result.downloadUrl;
+        link.download = `AsBuilt_${documentData.circuitNumber}_${
+          new Date().toISOString().split("T")[0]
+        }.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Close the modal
+        setAsBuiltModalOpen(false);
+
+        console.log("As-Built document generated successfully:", result);
+      } else {
+        throw new Error("Failed to generate As-Built document");
+      }
+    } catch (error) {
+      console.error("As-Built generation error:", error);
+      throw error;
+    } finally {
+      setGeneratingAsBuilt(false);
     }
   };
 
@@ -309,6 +403,14 @@ export default function DropCablePage() {
       cell: ({ row }) => {
         const job = row.original;
         return <span>{job.technician_name || "-"}</span>;
+      },
+    },
+    {
+      accessorKey: "as_built_submitted_at",
+      header: "as-build submission",
+      cell: ({ row }) => {
+        const job = row.original;
+        return <span>{job.as_built_submitted_at || "-"}</span>;
       },
     },
     {
@@ -373,6 +475,13 @@ export default function DropCablePage() {
                   <Upload className="h-4 w-4" />
                   Upload Document
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleGenerateAsBuilt(job)}
+                  className="flex items-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  Generate As-Built
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -423,11 +532,11 @@ export default function DropCablePage() {
               </Button>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Drop Cable Jobs
+                  Drop Cable Orders
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                {/* <p className="text-gray-600 dark:text-gray-400 mt-1">
                   Click any row to edit job details
-                </p>
+                </p> */}
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -511,7 +620,6 @@ export default function DropCablePage() {
               setEditingJob(null);
               setEditFormData({});
             }}
-            onError={(error) => setError(error)}
             saving={saving}
           />
 
@@ -528,7 +636,6 @@ export default function DropCablePage() {
               setJobs((prev) => [newJob, ...prev]);
               setClientNameForModal("");
             }}
-            onError={(error) => setError(error)}
           />
 
           {/* Upload Document Modal */}
@@ -538,6 +645,15 @@ export default function DropCablePage() {
             onUpload={uploadDocument}
             jobData={selectedJobForUpload}
             uploading={uploading}
+          />
+
+          {/* As-Built Document Generation Modal */}
+          <AsBuiltDocumentDialog
+            open={asBuiltModalOpen}
+            onOpenChange={setAsBuiltModalOpen}
+            onGenerate={generateAsBuiltDocument}
+            jobData={selectedJobForAsBuilt}
+            generating={generatingAsBuilt}
           />
         </div>
       </div>

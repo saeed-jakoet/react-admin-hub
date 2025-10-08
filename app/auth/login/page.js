@@ -12,7 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Zap, Eye, EyeOff, AlertCircle, Shield, Network } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, Shield, Network } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -54,8 +55,8 @@ export default function LoginPage() {
       <Card className="w-full max-w-md relative z-10 border-0 shadow-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
         <CardHeader className="space-y-6 text-center pb-8">
           {/* Logo */}
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-600 shadow-lg">
-            <Zap className="h-8 w-8 text-white" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg- shadow-lg overflow-hidden">
+            <Image src="/logo.svg" alt="Logo" width={48} height={48} className="object-contain" />
           </div>
 
           {/* Title */}

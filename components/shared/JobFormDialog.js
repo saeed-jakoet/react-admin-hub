@@ -129,10 +129,12 @@ export default function JobFormDialog({
         ?.filter((f) => f.type === "email")
         ?.map((f) => f.name) || [];
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // More permissive email regex to allow all valid TLDs and subdomains
+  const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
     for (const name of emailFields) {
-      const val = formData[name];
-      if (val && !emailRegex.test(String(val))) {
+      const rawVal = formData[name];
+      const val = typeof rawVal === "string" ? rawVal.trim() : String(rawVal || "").trim();
+      if (val && !emailRegex.test(val)) {
         const label =
           jobConfig?.sections
             ?.flatMap((s) => s.fields)
@@ -233,6 +235,11 @@ export default function JobFormDialog({
         }
       }
 
+      // Normalize email: trim and remove zero-width chars
+      if (fieldConfig?.type === "email" && typeof value === "string") {
+        value = value.trim().replace(/[\u200B-\u200D\uFEFF]/g, "");
+      }
+
       payload[name] = value;
     }
 
@@ -245,6 +252,7 @@ export default function JobFormDialog({
       const validationError = validateForm();
       if (validationError) {
         setErrorMsg(validationError);
+        // Do not block further edits/submission; just show error
         return;
       }
 
@@ -289,7 +297,7 @@ export default function JobFormDialog({
       // Notify parent of success
       onSuccess?.(result.data || payload);
 
-      // Close dialog and reset
+      // Close dialog and reset after success
       handleCancel();
     } catch (error) {
       console.error(
@@ -304,6 +312,7 @@ export default function JobFormDialog({
           mode === "create" ? "creating" : "updating"
         } the job.`;
       setErrorMsg(msg);
+      // Keep dialog open to allow user to fix and resubmit
       onError?.(msg);
     } finally {
       setInternalSaving(false);
@@ -427,7 +436,10 @@ export default function JobFormDialog({
               type="email"
               value={value}
               onChange={(e) => handleInputChange(field.name, e.target.value)}
+              onBlur={(e) => handleInputChange(field.name, e.target.value.trim())}
               placeholder={field.placeholder}
+              autoComplete="email"
+              inputMode="email"
               className={`${baseClasses} h-12`}
             />
           );
@@ -592,7 +604,7 @@ export default function JobFormDialog({
   // Get status color for drop cable jobs (matching table colors)
   const getDropCableStatusColor = (status) => {
     const colors = {
-      awaiting_client_installation_date:
+      awaiting_client_confirmation_date:
         "text-orange-700 bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-700",
       survey_required:
         "text-purple-700 bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-700",
@@ -612,13 +624,20 @@ export default function JobFormDialog({
         "text-green-700 bg-green-50 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700",
       as_built_submitted:
         "text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700",
+      issue_logged:
+        "text-red-700 bg-red-50 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700",
+      on_hold:
+        "text-gray-700 bg-gray-100 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700",
+      awaiting_health_and_safety:
+        "text-pink-700 bg-pink-50 border-pink-200 dark:bg-pink-900/20 dark:text-pink-300 dark:border-pink-700",
+      planning_document_submitted:
+        "text-lime-700 bg-lime-50 border-lime-200 dark:bg-lime-900/20 dark:text-lime-300 dark:border-lime-700",
     };
     return (
       colors[status] ||
       "text-gray-700 bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700"
     );
   };
-
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -722,7 +741,9 @@ export default function JobFormDialog({
                   {section.fields
                     ?.filter((f) =>
                       jobConfig.apiEndpoint === "/drop-cable"
-                        ? f.name !== "status" && f.name !== "circuit_number" && f.name !== "notes"
+                        ? f.name !== "status" &&
+                          f.name !== "circuit_number" &&
+                          f.name !== "notes"
                         : f.name !== "status" && f.name !== "notes"
                     )
                     ?.map(renderField)}
@@ -732,40 +753,63 @@ export default function JobFormDialog({
           })}
 
           {/* Notes Section */}
-          {jobConfig.sections?.some((s) => s.fields?.some((f) => f.name === "notes")) && (
+          {jobConfig.sections?.some((s) =>
+            s.fields?.some((f) => f.name === "notes")
+          ) && (
             <Card className="p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
                   {/* Simple notes icon */}
-                  <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    className="w-4 h-4 text-gray-600 dark:text-gray-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M21 15V5a2 2 0 0 0-2-2H7l-4 4v12a2 2 0 0 0 2 2h9" />
                     <path d="M17 21l4-4" />
                     <path d="M16 3v4a2 2 0 0 1-2 2H8" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Notes</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Notes
+                </h3>
               </div>
 
               {/* Existing notes list (edit mode) */}
-              {mode === "edit" && Array.isArray(formData?.notes) && formData.notes.length > 0 && (
-                <div className="mb-6 space-y-3">
-                  {formData.notes.map((note, idx) => (
-                    <div key={idx} className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                      <div className="flex items-start justify-between gap-4">
-                        <p className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{note.text}</p>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
-                          {note.timestamp ? new Date(note.timestamp).toLocaleString() : ""}
-                        </span>
+              {mode === "edit" &&
+                Array.isArray(formData?.notes) &&
+                formData.notes.length > 0 && (
+                  <div className="mb-6 space-y-3">
+                    {formData.notes.map((note, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <p className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                            {note.text}
+                          </p>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+                            {note.timestamp
+                              ? new Date(note.timestamp).toLocaleString()
+                              : ""}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
 
               {/* Create mode: initial note textarea */}
               {mode === "create" && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Initial Note (optional)</Label>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Initial Note (optional)
+                  </Label>
                   <textarea
                     value={formData.notes || ""}
                     onChange={(e) => handleInputChange("notes", e.target.value)}
@@ -779,7 +823,9 @@ export default function JobFormDialog({
               {/* Edit mode: append a new note */}
               {mode === "edit" && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Add Note</Label>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Add Note
+                  </Label>
                   <textarea
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
@@ -787,7 +833,9 @@ export default function JobFormDialog({
                     rows={3}
                     className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400">When you save, this note will be timestamped and appended.</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    When you save, this note will be timestamped and appended.
+                  </p>
                 </div>
               )}
             </Card>

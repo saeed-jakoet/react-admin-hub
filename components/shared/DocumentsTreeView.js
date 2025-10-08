@@ -63,7 +63,7 @@ const DocumentsTreeView = ({ clientId }) => {
       apiEndpoint: "/floating-civils",
       documentType: "floating_civils",
       icon: Cable,
-  color: "red",
+      color: "red",
       implemented: false, // ❌ TODO: Implement /floating-civils/client/:id endpoint
     },
     {
@@ -383,7 +383,9 @@ const DocumentsTreeView = ({ clientId }) => {
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <Building2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Documents</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Documents
+          </h3>
         </div>
         <Loader variant="bars" text="Loading documents..." />
       </Card>
@@ -395,11 +397,15 @@ const DocumentsTreeView = ({ clientId }) => {
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <Building2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Documents</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Documents
+          </h3>
         </div>
         <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
-          <span className="text-red-700 dark:text-red-300">Error loading documents: {error}</span>
+          <span className="text-red-700 dark:text-red-300">
+            Error loading documents: {error}
+          </span>
           <Button
             variant="outline"
             size="sm"
@@ -415,12 +421,14 @@ const DocumentsTreeView = ({ clientId }) => {
   }
 
   return (
-    <Card className="p-6">
+    <>
       {/* Header with Stats */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Building2 className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Documents</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Documents
+          </h3>
         </div>
         <div className="flex gap-2">
           <Badge variant="secondary" className="text-xs font-medium">
@@ -617,7 +625,9 @@ const DocumentsTreeView = ({ clientId }) => {
                             {/* Job Row */}
                             <div
                               className={`${
-                                index % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50/50 dark:bg-gray-700/50"
+                                index % 2 === 0
+                                  ? "bg-white dark:bg-gray-800"
+                                  : "bg-gray-50/50 dark:bg-gray-700/50"
                               } hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors`}
                             >
                               <div className="px-4 py-3">
@@ -810,7 +820,7 @@ const DocumentsTreeView = ({ clientId }) => {
           )}
         </div>
       </div>
-    </Card>
+    </>
   );
 };
 
