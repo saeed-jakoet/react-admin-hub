@@ -2,10 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import axios from "axios";
 import { isAllowed } from "./accessControl";
-
-const BASE_URL = process.env.NEXT_PUBLIC_BASEURL;
+import { axiosInstance } from "@/lib/api/fetcher";
 
 const AuthContext = createContext(undefined);
 
@@ -15,41 +13,12 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  let isRefreshing = false;
-  let failedQueue = [];
-
-  const processQueue = (error, token = null) => {
-    failedQueue.forEach(({ resolve, reject }) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(token);
-      }
-    });
-    failedQueue = [];
-  };
-
-  // ---------------------------
-  // Refresh token function
-  // ---------------------------
-  const refreshToken = async () => {
-    const res = await fetch(`${BASE_URL}/refresh/refresh-token`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!res.ok) throw new Error("Refresh failed");
-    return res.json();
-  };
-
   // ---------------------------
   // Fetch user info from /auth/me/:id
   // ---------------------------
   const fetchCurrentUser = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/auth/me`, {
-        withCredentials: true, // send cookies
-      });
+      const res = await axiosInstance.get("/auth/me");
       if (res.status === 200 && res.data?.data) {
         setUser(res.data.data);
       } else {
@@ -66,11 +35,10 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     setIsLoading(true);
     try {
-      const res = await axios.post(
-        `${BASE_URL}/auth/signin`,
-        { email, password },
-        { withCredentials: true }
-      );
+      const res = await axiosInstance.post("/auth/signin", {
+        email,
+        password,
+      });
       if (res.status !== 200) {
         throw new Error("Invalid email or password");
       }
@@ -102,65 +70,12 @@ export function AuthProvider({ children }) {
       });
     }
     try {
-      await axios.post(
-        `${BASE_URL}/auth/logout`,
-        {},
-        { withCredentials: true }
-      );
+      await axiosInstance.post("/auth/logout", {});
     } catch {}
     setUser(null);
     setIsLoading(false);
     router.push("/auth/login");
   };
-
-  // ---------------------------
-  // Setup axios interceptor for 401 handling
-  // ---------------------------
-  useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-
-        if (
-          error.response?.status === 401 &&
-          !originalRequest._retry &&
-          !originalRequest.url?.includes("/refresh/")
-        ) {
-          if (isRefreshing) {
-            return new Promise((resolve, reject) => {
-              failedQueue.push({ resolve, reject });
-            })
-              .then(() => {
-                return axios(originalRequest);
-              })
-              .catch((err) => {
-                return Promise.reject(err);
-              });
-          }
-
-          originalRequest._retry = true;
-          isRefreshing = true;
-
-          try {
-            await refreshToken();
-            processQueue(null);
-            return axios(originalRequest);
-          } catch (refreshError) {
-            processQueue(refreshError);
-            setUser(null);
-            router.push("/auth/login");
-            return Promise.reject(refreshError);
-          } finally {
-            isRefreshing = false;
-          }
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    return () => axios.interceptors.response.eject(interceptor);
-  }, [router]);
 
   // ---------------------------
   // On mount, check for existing session
