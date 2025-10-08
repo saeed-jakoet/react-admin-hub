@@ -70,6 +70,8 @@ export default function JobFormDialog({
   const [formData, setFormData] = React.useState(getInitialData);
   const [internalSaving, setInternalSaving] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState("");
+  // New note input (used in edit mode to append without overwriting)
+  const [newNote, setNewNote] = React.useState("");
 
   const saving = externalSaving || internalSaving;
 
@@ -77,6 +79,7 @@ export default function JobFormDialog({
   React.useEffect(() => {
     if (mode === "edit" && jobData) {
       setFormData({ ...jobData });
+      setNewNote("");
     }
   }, [jobData, mode]);
 
@@ -143,8 +146,14 @@ export default function JobFormDialog({
 
   const preparePayload = () => {
     // Only include fields defined in the config
-    const allowedFields =
+    let allowedFields =
       jobConfig?.sections?.flatMap((s) => s.fields?.map((f) => f.name)) || [];
+
+    // In edit mode, we don't want to accidentally replace the notes array;
+    // we append via separate newNote field. So exclude 'notes' from auto payload in edit mode.
+    if (mode === "edit") {
+      allowedFields = allowedFields.filter((n) => n !== "notes");
+    }
 
     const payload = {};
 
@@ -250,6 +259,24 @@ export default function JobFormDialog({
       setInternalSaving(true);
       const payload = preparePayload();
 
+      // Notes handling
+      if (mode === "edit") {
+        // Append behavior: send string to let backend append a timestamped note
+        if (newNote && newNote.trim().length > 0) {
+          payload.notes = newNote.trim();
+        }
+      } else {
+        // Create: if notes happens to be an array (unlikely), reduce to a string;
+        // otherwise keep as text - backend will wrap with timestamp
+        if (Array.isArray(payload.notes)) {
+          const combined = payload.notes
+            .map((n) => (typeof n === "string" ? n : n?.text))
+            .filter(Boolean)
+            .join("\n");
+          payload.notes = combined || undefined;
+        }
+      }
+
       console.log(`JobFormDialog ${mode} payload:`, payload);
 
       let result;
@@ -323,6 +350,10 @@ export default function JobFormDialog({
           );
 
         case "textarea":
+          // Custom handling: if this is the 'notes' field, we render a specialized section elsewhere
+          if (field.name === "notes") {
+            return null;
+          }
           return (
             <textarea
               id={fieldId}
@@ -588,15 +619,6 @@ export default function JobFormDialog({
     );
   };
 
-  // Extract only background classes (light and dark) so we color the select background,
-  // keeping text and border neutral for readability
-  const getDropCableStatusBg = (status) => {
-    const full = getDropCableStatusColor(status || "");
-    return full
-      .split(" ")
-      .filter((cls) => cls.startsWith("bg-") || cls.startsWith("dark:bg-"))
-      .join(" ");
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -700,14 +722,76 @@ export default function JobFormDialog({
                   {section.fields
                     ?.filter((f) =>
                       jobConfig.apiEndpoint === "/drop-cable"
-                        ? f.name !== "status" && f.name !== "circuit_number"
-                        : f.name !== "status"
+                        ? f.name !== "status" && f.name !== "circuit_number" && f.name !== "notes"
+                        : f.name !== "status" && f.name !== "notes"
                     )
                     ?.map(renderField)}
                 </div>
               </Card>
             );
           })}
+
+          {/* Notes Section */}
+          {jobConfig.sections?.some((s) => s.fields?.some((f) => f.name === "notes")) && (
+            <Card className="p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                  {/* Simple notes icon */}
+                  <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15V5a2 2 0 0 0-2-2H7l-4 4v12a2 2 0 0 0 2 2h9" />
+                    <path d="M17 21l4-4" />
+                    <path d="M16 3v4a2 2 0 0 1-2 2H8" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Notes</h3>
+              </div>
+
+              {/* Existing notes list (edit mode) */}
+              {mode === "edit" && Array.isArray(formData?.notes) && formData.notes.length > 0 && (
+                <div className="mb-6 space-y-3">
+                  {formData.notes.map((note, idx) => (
+                    <div key={idx} className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                      <div className="flex items-start justify-between gap-4">
+                        <p className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{note.text}</p>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+                          {note.timestamp ? new Date(note.timestamp).toLocaleString() : ""}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Create mode: initial note textarea */}
+              {mode === "create" && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Initial Note (optional)</Label>
+                  <textarea
+                    value={formData.notes || ""}
+                    onChange={(e) => handleInputChange("notes", e.target.value)}
+                    placeholder="Add an initial note for this job"
+                    rows={3}
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  />
+                </div>
+              )}
+
+              {/* Edit mode: append a new note */}
+              {mode === "edit" && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Add Note</Label>
+                  <textarea
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    placeholder="Write a new note..."
+                    rows={3}
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">When you save, this note will be timestamped and appended.</p>
+                </div>
+              )}
+            </Card>
+          )}
         </div>
 
         <DialogFooter className="pt-6 border-t border-gray-200 dark:border-gray-700">

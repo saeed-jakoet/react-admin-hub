@@ -38,7 +38,32 @@ export default function ClientDetailPage({ params }) {
   const [editing, setEditing] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [formData, setFormData] = React.useState({});
-  const [activeTab, setActiveTab] = React.useState("overview");
+  // Persist active tab per client in localStorage
+  const localStorageKey = `client-${resolvedParams.id}-activeTab`;
+  const [activeTab, setActiveTabState] = React.useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem(localStorageKey);
+      return stored || "overview";
+    }
+    return "overview";
+  });
+
+  const setActiveTab = React.useCallback((tab) => {
+    setActiveTabState(tab);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(localStorageKey, tab);
+    }
+  }, [localStorageKey]);
+  // Restore tab on mount if changed elsewhere
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem(localStorageKey);
+      if (stored && stored !== activeTab) {
+        setActiveTabState(stored);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localStorageKey]);
 
   // Drop cable jobs data
   const [dropCableJobs, setDropCableJobs] = React.useState([]);

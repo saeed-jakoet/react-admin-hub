@@ -90,6 +90,17 @@ export function AuthProvider({ children }) {
   // Logout
   // ---------------------------
   const logout = async () => {
+    // Clear UI state persistence keys from localStorage
+    if (typeof window !== "undefined") {
+      // Remove clients view mode
+      window.localStorage.removeItem("clientsViewMode");
+      // Remove all client-[id]-activeTab keys
+      Object.keys(window.localStorage).forEach((key) => {
+        if (key.startsWith("client-") && key.endsWith("-activeTab")) {
+          window.localStorage.removeItem(key);
+        }
+      });
+    }
     try {
       await axios.post(
         `${BASE_URL}/auth/logout`,

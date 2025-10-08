@@ -34,13 +34,28 @@ import { ClientsGridView } from "@/components/clients/ClientsGridView";
 import { Loader } from "@/components/shared/Loader";
 import { TableControls } from "@/components/shared/TableControls";
 
+
 export default function ClientsPage() {
   const router = useRouter();
   const [clients, setClients] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
-  const [viewMode, setViewMode] = React.useState("table"); // table, grid
+  // Persist view mode in localStorage
+  const [viewMode, setViewModeState] = React.useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("clientsViewMode") || "table";
+    }
+    return "table";
+  });
   const [searchTerm, setSearchTerm] = React.useState("");
+
+  // Wrap setViewMode to persist
+  const setViewMode = React.useCallback((mode) => {
+    setViewModeState(mode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("clientsViewMode", mode);
+    }
+  }, []);
 
   React.useEffect(() => {
     fetchClients();

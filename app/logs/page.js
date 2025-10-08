@@ -269,14 +269,30 @@ export default function LogsPage() {
       
       allFields.forEach(field => {
         if (skipFields.includes(field)) return;
-        
+
         const oldVal = old_data[field];
         const newVal = new_data[field];
-        
-        // Convert to strings for comparison, handling null/undefined
-        const oldStr = oldVal === null || oldVal === undefined ? '' : String(oldVal);
-        const newStr = newVal === null || newVal === undefined ? '' : String(newVal);
-        
+
+        // Format values for display
+        const formatVal = (val) => {
+          if (val === null || val === undefined) return '';
+          if (typeof val === 'object') {
+            // Special handling for notes array or object
+            if (Array.isArray(val)) {
+              // If notes is an array of objects with text, join their text
+              return val.map((n) => n && n.text ? n.text : JSON.stringify(n)).join(' | ');
+            } else if (val.text) {
+              return val.text;
+            } else {
+              return JSON.stringify(val);
+            }
+          }
+          return String(val);
+        };
+
+        const oldStr = formatVal(oldVal);
+        const newStr = formatVal(newVal);
+
         if (oldStr !== newStr) {
           changes.push({
             field: field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
