@@ -55,7 +55,29 @@ export function AddItemDialog({
     if (!validateStep(currentStep)) return;
     setIsSubmitting(true);
     try {
-      await post(config.apiEndpoint, formData);
+      // Check if we have any file fields
+      const hasFiles = Object.values(formData).some(value => value instanceof File);
+      
+      if (hasFiles) {
+        // Use FormData for multipart upload
+        const formDataToSend = new FormData();
+        
+        // Add all form fields
+        Object.entries(formData).forEach(([key, value]) => {
+          if (value instanceof File) {
+            formDataToSend.append(key, value);
+          } else if (value !== null && value !== undefined && value !== '') {
+            formDataToSend.append(key, String(value));
+          }
+        });
+        
+        // Use post function from fetcher - it handles FormData correctly
+        await post(config.apiEndpoint, formDataToSend);
+      } else {
+        // Use regular JSON post
+        await post(config.apiEndpoint, formData);
+      }
+      
       setFormData(config.initialFormData);
       setCurrentStep(1);
       onSuccess?.();
@@ -72,6 +94,7 @@ export function AddItemDialog({
       case 'text':
       case 'email':
       case 'number':
+      case 'date':
         return (
           <div key={field.id} className="space-y-2">
             <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -172,6 +195,55 @@ export function AddItemDialog({
                   </button>
                 );
               })}
+            </div>
+          </div>
+        );
+
+      case 'file':
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {field.label}
+            </Label>
+            <div className="space-y-3">
+              {field.documentType && (
+                <div>
+                  <Label htmlFor={`${field.id}_type`} className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                    Document Type
+                  </Label>
+                  <select
+                    id={`${field.id}_type`}
+                    value={formData[`${field.id}_type`] || ''}
+                    onChange={(e) => handleInputChange(`${field.id}_type`, e.target.value)}
+                    className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:border-blue-500 dark:focus:border-blue-400"
+                  >
+                    <option value="">Select document type</option>
+                    <option value="id">ID Document</option>
+                    <option value="medical">Medical Certificate</option>
+                    <option value="employment_contract">Employment Contract</option>
+                  </select>
+                </div>
+              )}
+              <div className="relative">
+                {field.icon && (
+                  <field.icon className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                )}
+                <input
+                  id={field.id}
+                  type="file"
+                  accept={field.accept || "*/*"}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    handleInputChange(field.id, file);
+                  }}
+                  className={`${field.icon ? "pl-10" : ""} w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white file:mr-4 file:py-1 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-300`}
+                />
+              </div>
+              {formData[field.id] && (
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Selected: {formData[field.id].name}
+                </p>
+              )}
             </div>
           </div>
         );
