@@ -29,6 +29,7 @@ import {
   ArrowRight,
   MoreVertical,
 } from "lucide-react";
+import Image from "next/image";
 import { get, put } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
 import DocumentsTreeView from "@/components/shared/DocumentsTreeView";
@@ -49,6 +50,17 @@ export default function ClientDetailPage({ params }) {
     }
     return "overview";
   });
+
+  // --- Logo state hooks (must be top-level) ---
+  const logoExtensions = [".png", ".jpg", ".jpeg", ".svg"];
+  const [logoError, setLogoError] = React.useState(false);
+  const [currentLogoIdx, setCurrentLogoIdx] = React.useState(0);
+
+  // Reset logo error/index when company changes
+  React.useEffect(() => {
+    setLogoError(false);
+    setCurrentLogoIdx(0);
+  }, [client && client.company_name]);
 
   const setActiveTab = React.useCallback(
     (tab) => {
@@ -270,9 +282,38 @@ export default function ClientDetailPage({ params }) {
 
                 <div className="flex items-center gap-4">
                   <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                      <User className="w-8 h-8 text-white" />
-                    </div>
+                      {(() => {
+                        const logoBase = client.company_name
+                          ? client.company_name.toLowerCase().replace(/[^a-z0-9]/g, "_")
+                          : "";
+                        const logoSrc = logoExtensions.map(ext => `/logos/${logoBase}_logo${ext}`);
+                        if (logoError || !client.company_name) {
+                          return (
+                            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                              <User className="w-8 h-8 text-white" />
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="w-16 h-16 flex items-center justify-center">
+                            <Image
+                              src={logoSrc[currentLogoIdx]}
+                              alt={`${client.company_name} Logo`}
+                              width={56}
+                              height={56}
+                              style={{ objectFit: "contain" }}
+                              priority
+                              onError={() => {
+                                if (currentLogoIdx < logoSrc.length - 1) {
+                                  setCurrentLogoIdx(currentLogoIdx + 1);
+                                } else {
+                                  setLogoError(true);
+                                }
+                              }}
+                            />
+                          </div>
+                        );
+                      })()}
                     <div
                       className={`absolute -bottom-1 -right-1 w-5 h-5 ${
                         client.is_active ? "bg-emerald-500" : "bg-slate-400"
@@ -774,7 +815,7 @@ export default function ClientDetailPage({ params }) {
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-                  Job Categories
+                  Order
                 </h2>
                 <p className="text-slate-600 dark:text-slate-400 text-sm">
                   Track different types of work and installations

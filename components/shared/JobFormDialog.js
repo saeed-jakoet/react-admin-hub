@@ -129,11 +129,14 @@ export default function JobFormDialog({
         ?.filter((f) => f.type === "email")
         ?.map((f) => f.name) || [];
 
-  // More permissive email regex to allow all valid TLDs and subdomains
-  const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    // More permissive email regex to allow all valid TLDs and subdomains
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
     for (const name of emailFields) {
       const rawVal = formData[name];
-      const val = typeof rawVal === "string" ? rawVal.trim() : String(rawVal || "").trim();
+      const val =
+        typeof rawVal === "string"
+          ? rawVal.trim()
+          : String(rawVal || "").trim();
       if (val && !emailRegex.test(val)) {
         const label =
           jobConfig?.sections
@@ -285,8 +288,6 @@ export default function JobFormDialog({
         }
       }
 
-      console.log(`JobFormDialog ${mode} payload:`, payload);
-
       let result;
       if (mode === "create") {
         result = await post(jobConfig.apiEndpoint, payload);
@@ -436,7 +437,9 @@ export default function JobFormDialog({
               type="email"
               value={value}
               onChange={(e) => handleInputChange(field.name, e.target.value)}
-              onBlur={(e) => handleInputChange(field.name, e.target.value.trim())}
+              onBlur={(e) =>
+                handleInputChange(field.name, e.target.value.trim())
+              }
               placeholder={field.placeholder}
               autoComplete="email"
               inputMode="email"
@@ -605,7 +608,7 @@ export default function JobFormDialog({
   const getDropCableStatusColor = (status) => {
     const colors = {
       awaiting_client_confirmation_date:
-        "text-orange-700 bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-700",
+        "text-yellow-800 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-700",
       survey_required:
         "text-purple-700 bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-700",
       survey_scheduled:
@@ -627,11 +630,17 @@ export default function JobFormDialog({
       issue_logged:
         "text-red-700 bg-red-50 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700",
       on_hold:
-        "text-gray-700 bg-gray-100 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700",
+        "text-yellow-800 bg-yellow-100 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-700",
       awaiting_health_and_safety:
         "text-pink-700 bg-pink-50 border-pink-200 dark:bg-pink-900/20 dark:text-pink-300 dark:border-pink-700",
       planning_document_submitted:
         "text-lime-700 bg-lime-50 border-lime-200 dark:bg-lime-900/20 dark:text-lime-300 dark:border-lime-700",
+      awaiting_service_provider:
+        "text-sky-700 bg-sky-50 border-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:border-sky-700",
+      adw_required:
+        "text-amber-800 bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700",
+      site_not_ready:
+        "text-gray-700 bg-gray-200 border-gray-300 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-700",
     };
     return (
       colors[status] ||

@@ -482,7 +482,7 @@ const DocumentsTreeView = ({ clientId }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem onClick={() => setJobTypeFilter("all")}>
-                All Job Types
+                All Order Types
               </DropdownMenuItem>
               {availableJobTypes.map((jobType) => (
                 <DropdownMenuItem
@@ -545,22 +545,8 @@ const DocumentsTreeView = ({ clientId }) => {
             <div className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                All Job Types with Documents
+                All Orders Documents
               </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700"
-              >
-                {jobTypes.filter((jt) => jt.implemented).length} Active
-              </Badge>
-              <Badge
-                variant="outline"
-                className="text-xs bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700"
-              >
-                {jobTypes.filter((jt) => !jt.implemented).length} Pending
-              </Badge>
             </div>
           </div>
         </div>
