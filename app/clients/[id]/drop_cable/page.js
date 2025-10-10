@@ -229,32 +229,26 @@ export default function DropCablePage() {
           .replace(/\s+/g, "_")
           .replace(/[^a-zA-Z0-9_-]/g, "");
 
-      // Ensure non-empty clientName and clientIdentifier to satisfy backend schema
-      let clientName = jobData.client && String(jobData.client).trim();
-      let clientIdentifier =
-        jobData.client_identifier && String(jobData.client_identifier).trim();
-
-      // If we don't have them on the row, fetch client details and derive
-      if (!clientName || !clientIdentifier) {
-        try {
-          const resp = await get(`/client/${clientId}`);
-          const client = resp?.data || {};
-          if (!clientName) {
-            clientName =
-              client.company_name ||
-              [client.first_name, client.last_name].filter(Boolean).join(" ");
-          }
-          if (!clientIdentifier) {
-            const base =
-              client.company_name ||
-              [client.first_name, client.last_name].filter(Boolean).join(" ");
-            clientIdentifier = toIdentifier(base || "client");
-          }
-        } catch (e) {
-          // Fallback: derive identifier from whatever name we have
-          if (!clientName) clientName = "Client";
-          if (!clientIdentifier) clientIdentifier = toIdentifier(clientName);
-        }
+      // Always source official client details from API to avoid abbreviated names on job rows
+      let clientName = "";
+      let clientIdentifier = "";
+      try {
+        const resp = await get(`/client/${clientId}`);
+        const client = resp?.data || {};
+        const baseName =
+          client.company_name ||
+          [client.first_name, client.last_name].filter(Boolean).join(" ");
+        clientName = String(baseName || "Client").trim();
+        clientIdentifier = toIdentifier(baseName || "client");
+      } catch (e) {
+        // Fallback: if API fails, try to use jobData fields, else defaults
+        const fallbackName =
+          (jobData.client && String(jobData.client).trim()) || "Client";
+        clientName = fallbackName;
+        clientIdentifier =
+          (jobData.client_identifier &&
+            String(jobData.client_identifier).trim()) ||
+          toIdentifier(fallbackName);
       }
 
       if (!clientName || !clientIdentifier) {

@@ -44,18 +44,44 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config }) {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
+  // Helper to normalize phone numbers to +27 format
+  function normalizePhoneNumber(num) {
+    if (!num) return "";
+    let n = num.trim();
+    if (n.startsWith("+27") && n.length === 12) return n;
+    if (n.startsWith("0") && n.length === 10) return "+27" + n.slice(1);
+    // Remove all non-digits and try again
+    n = n.replace(/\D/g, "");
+    if (n.length === 9) return "+27" + n;
+    if (n.length === 10 && n.startsWith("0")) return "+27" + n.slice(1);
+    if (n.length === 11 && n.startsWith("27")) return "+" + n;
+    return num; // fallback, do not modify
+  }
+
   const handleSubmit = async () => {
     if (!validateStep(currentStep)) return;
     setIsSubmitting(true);
     try {
+      // Normalize phone numbers before submit
+      const normalizedFormData = {
+        ...formData,
+        phone_number: normalizePhoneNumber(formData.phone_number),
+        emergency_contact_phone: normalizePhoneNumber(formData.emergency_contact_phone),
+      };
+
       // Check if we have any file fields
-      const hasFiles = Object.values(formData).some(
+      const hasFiles = Object.values(normalizedFormData).some(
         (value) => value instanceof File
       );
       if (hasFiles) {
         // Use FormData for multipart upload
         const formDataToSend = new FormData();
-        Object.entries(formData).forEach(([key, value]) => {
+        const denyKeys = new Set([
+          "masked_national_id",
+          "encrypted_national_id",
+        ]);
+        Object.entries(normalizedFormData).forEach(([key, value]) => {
+          if (denyKeys.has(key)) return; // never send computed fields
           if (value instanceof File) {
             formDataToSend.append(key, value);
           } else if (value !== null && value !== undefined && value !== "") {
@@ -71,8 +97,13 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config }) {
         await post(config.apiEndpoint, formDataToSend);
       } else {
         // Sanitize JSON payload: drop empty strings and nulls so optional/nullable fields pass schema
-        const sanitized = Object.entries(formData).reduce(
+        const denyKeys = new Set([
+          "masked_national_id",
+          "encrypted_national_id",
+        ]);
+        const sanitized = Object.entries(normalizedFormData).reduce(
           (acc, [key, value]) => {
+            if (denyKeys.has(key)) return acc; // never send computed fields
             if (value === null || value === undefined) return acc;
             if (typeof value === "string") {
               const trimmed = value.trim();

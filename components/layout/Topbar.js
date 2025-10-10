@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, Bell, Settings, User, LogOut, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ import {
 
 export function Topbar() {
   const { logout, user } = useAuth();
+  const router = useRouter();
 
   return (
     <header className="h-16 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm">
@@ -102,7 +104,7 @@ export function Topbar() {
                 <User className="mr-2 h-4 w-4" />
                 <span>My Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem className="cursor-pointer" onClick={() => router.push("/settings") }>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>

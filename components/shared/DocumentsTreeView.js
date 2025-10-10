@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   ChevronRight,
   ChevronDown,
@@ -39,6 +39,8 @@ const DocumentsTreeView = ({ clientId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedJobs, setExpandedJobs] = useState(new Set());
+  const hasFetchedRef = useRef(false); // Prevent duplicate fetches (StrictMode/HMR)
+  const loadingJobsRef = useRef(new Set()); // Track in-flight doc fetches per jobKey
 
   // Filtering and search
   const [searchTerm, setSearchTerm] = useState("");
@@ -122,17 +124,22 @@ const DocumentsTreeView = ({ clientId }) => {
     },
   ];
 
-  // Fetch all job types and their documents
+  // Reset fetch guard when client changes
+  useEffect(() => {
+    hasFetchedRef.current = false;
+  }, [clientId]);
+
+  // Fetch only jobs for implemented job types (documents will be lazy-loaded per expansion)
   useEffect(() => {
     const fetchAllJobsAndDocuments = async () => {
       if (!clientId) return;
+      if (hasFetchedRef.current) return; // Guard against duplicate runs in dev StrictMode/HMR
 
       try {
         setLoading(true);
         setError(null);
 
         const allJobsData = {};
-        const allDocumentsData = {};
 
         // Only fetch from implemented endpoints
         const implementedJobTypes = jobTypes.filter((jt) => jt.implemented);
@@ -140,9 +147,6 @@ const DocumentsTreeView = ({ clientId }) => {
         // Fetch jobs for each implemented job type
         for (const jobType of implementedJobTypes) {
           try {
-            console.log(
-              `Fetching ${jobType.name} jobs from ${jobType.apiEndpoint}/client/${clientId}`
-            );
             const response = await get(
               `${jobType.apiEndpoint}/client/${clientId}`
             );
@@ -150,31 +154,6 @@ const DocumentsTreeView = ({ clientId }) => {
 
             if (jobs.length > 0) {
               allJobsData[jobType.type] = jobs;
-              console.log(`Found ${jobs.length} ${jobType.name} jobs`);
-
-              // Fetch documents for each job in this job type
-              for (const job of jobs) {
-                try {
-                  const docResponse = await get(
-                    `/documents/job/${jobType.documentType}/${job.id}`
-                  );
-                  const jobKey = `${jobType.type}_${job.id}`;
-                  const documents = docResponse.data || [];
-                  allDocumentsData[jobKey] = documents;
-                  if (documents.length > 0) {
-                    console.log(
-                      `Found ${documents.length} documents for ${jobType.name} job ${job.id}`
-                    );
-                  }
-                } catch (docErr) {
-                  console.error(
-                    `Error fetching documents for ${jobType.type} job ${job.id}:`,
-                    docErr
-                  );
-                  const jobKey = `${jobType.type}_${job.id}`;
-                  allDocumentsData[jobKey] = [];
-                }
-              }
             } else {
               console.log(
                 `No ${jobType.name} jobs found for client ${clientId}`
@@ -193,16 +172,9 @@ const DocumentsTreeView = ({ clientId }) => {
         }
 
         setAllJobs(allJobsData);
-        setDocuments(allDocumentsData);
-
-        console.log("Final job types with data:", Object.keys(allJobsData));
-        console.log(
-          "Total documents loaded:",
-          Object.values(allDocumentsData).reduce(
-            (acc, docs) => acc + docs.length,
-            0
-          )
-        );
+        // Clear any previous documents when switching clients; documents will be fetched on-demand
+        setDocuments({});
+        hasFetchedRef.current = true;
       } catch (err) {
         console.error("Error fetching jobs and documents:", err);
         setError(err.message);
@@ -214,21 +186,43 @@ const DocumentsTreeView = ({ clientId }) => {
     fetchAllJobsAndDocuments();
   }, [clientId]);
 
-  // Fetch documents for a job (if not already loaded)
-  const fetchDocumentsForJob = async (jobId) => {
-    // Documents are already loaded in the initial fetch, so this is no longer needed
-    // But keeping the function for compatibility
-    return;
+  // Fetch documents for a job (lazy-load on expand, with de-dupe)
+  const fetchDocumentsForJob = async (jobTypeKey, job) => {
+    const jobKey = `${jobTypeKey}_${job.id}`;
+    if (documents[jobKey]) return; // already loaded
+    if (loadingJobsRef.current.has(jobKey)) return; // in-flight
+
+    const jobTypeConfig = jobTypes.find((jt) => jt.type === jobTypeKey);
+    if (!jobTypeConfig) return;
+
+    try {
+      loadingJobsRef.current.add(jobKey);
+      const docResponse = await get(
+        `/documents/job/${jobTypeConfig.documentType}/${job.id}`
+      );
+      const docs = docResponse.data || [];
+      setDocuments((prev) => ({ ...prev, [jobKey]: docs }));
+    } catch (docErr) {
+      console.error(`Error fetching documents for ${jobTypeKey} job ${job.id}:`, docErr);
+      setDocuments((prev) => ({ ...prev, [jobKey]: [] }));
+    } finally {
+      loadingJobsRef.current.delete(jobKey);
+    }
   };
 
   // Toggle job expansion
-  const toggleJobExpansion = (jobId) => {
+  const toggleJobExpansion = (jobTypeKey, job) => {
+    const jobKey = `${jobTypeKey}_${job.id}`;
     const newExpanded = new Set(expandedJobs);
 
-    if (newExpanded.has(jobId)) {
-      newExpanded.delete(jobId);
+    if (newExpanded.has(jobKey)) {
+      newExpanded.delete(jobKey);
     } else {
-      newExpanded.add(jobId);
+      newExpanded.add(jobKey);
+      if (!documents[jobKey]) {
+        // Lazy-load documents for this job on first expand
+        fetchDocumentsForJob(jobTypeKey, job);
+      }
     }
 
     setExpandedJobs(newExpanded);
@@ -267,11 +261,6 @@ const DocumentsTreeView = ({ clientId }) => {
 
     Object.entries(allJobs).forEach(([jobType, jobs]) => {
       const filteredJobs = jobs.filter((job) => {
-        // Only show jobs that have documents
-        const jobKey = `${jobType}_${job.id}`;
-        const hasDocuments = documents[jobKey] && documents[jobKey].length > 0;
-        if (!hasDocuments) return false;
-
         // Job type filter
         const matchesJobType =
           jobTypeFilter === "all" || jobType === jobTypeFilter;
@@ -557,12 +546,12 @@ const DocumentsTreeView = ({ clientId }) => {
             <div className="text-center py-12">
               <Building2 className="w-8 h-8 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
               <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">
-                No jobs with documents found
+                No jobs found
               </p>
               <p className="text-xs text-gray-400 dark:text-gray-500">
                 {searchTerm || jobTypeFilter !== "all"
                   ? "Try adjusting your filters"
-                  : "Only jobs with uploaded documents are shown here"}
+                  : "Expand a job to load its documents"}
               </p>
             </div>
           ) : (
@@ -621,9 +610,7 @@ const DocumentsTreeView = ({ clientId }) => {
                                   <div className="flex items-center gap-3 flex-1 min-w-0">
                                     <button
                                       onClick={() =>
-                                        toggleJobExpansion(
-                                          `${jobTypeKey}_${job.id}`
-                                        )
+                                        toggleJobExpansion(jobTypeKey, job)
                                       }
                                       className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
                                     >
@@ -683,9 +670,7 @@ const DocumentsTreeView = ({ clientId }) => {
                                       variant="ghost"
                                       size="sm"
                                       onClick={() =>
-                                        toggleJobExpansion(
-                                          `${jobTypeKey}_${job.id}`
-                                        )
+                                        toggleJobExpansion(jobTypeKey, job)
                                       }
                                       className="h-7 px-2 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                                     >

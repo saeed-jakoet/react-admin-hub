@@ -255,8 +255,6 @@ export default function StaffPage() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {[
-              { icon: Eye, label: "View Details" },
-              { icon: Edit, label: "Edit Staff" },
               { icon: Mail, label: "Send Email" },
               { icon: Phone, label: "Call Staff" },
             ].map((item, i) => (

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/shared/Toast";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +32,9 @@ import {
   Shield,
   Key,
   UserX,
+  CreditCard,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { get, put, post, del } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
@@ -41,6 +45,7 @@ export default function StaffDetailPage({ params }) {
   const resolvedParams = React.use(params);
   const router = useRouter();
   const { user } = useAuth();
+  const toast = useToast();
 
   const [staff, setStaff] = React.useState(null);
   const [profile, setProfile] = React.useState(null);
@@ -54,6 +59,9 @@ export default function StaffDetailPage({ params }) {
   const [savingRole, setSavingRole] = React.useState(false);
   const [roleError, setRoleError] = React.useState("");
   const [roleSuccess, setRoleSuccess] = React.useState("");
+  const [pendingRole, setPendingRole] = React.useState(null);
+  const [revealedNationalId, setRevealedNationalId] = React.useState(null);
+  const [revealingNationalId, setRevealingNationalId] = React.useState(false);
 
   const localStorageKey = `staff-${resolvedParams.id}-activeTab`;
   const [activeTab, setActiveTabState] = React.useState(() => {
@@ -77,6 +85,8 @@ export default function StaffDetailPage({ params }) {
   React.useEffect(() => {
     if (resolvedParams.id) {
       fetchStaffMember();
+      // Clear any revealed data when staff member changes
+      setRevealedNationalId(null);
     }
   }, [resolvedParams.id]);
 
@@ -122,13 +132,51 @@ export default function StaffDetailPage({ params }) {
     setFormData({ ...staff });
   };
 
+  // Helper to normalize phone numbers to +27 format
+  function normalizePhoneNumber(num) {
+    if (!num) return "";
+    let n = num.trim();
+    if (n.startsWith("+27") && n.length === 12) return n;
+    if (n.startsWith("0") && n.length === 10) return "+27" + n.slice(1);
+    n = n.replace(/\D/g, "");
+    if (n.length === 9) return "+27" + n;
+    if (n.length === 10 && n.startsWith("0")) return "+27" + n.slice(1);
+    if (n.length === 11 && n.startsWith("27")) return "+" + n;
+    return num;
+  }
+
   const handleSave = async () => {
     try {
       setSaving(true);
-      const payload = {
-        ...formData,
-        salary: formData.salary !== "" ? Number(formData.salary) : null,
-      };
+      // Only send fields allowed by backend update schema
+      const allowedFields = [
+        "phone_number",
+        "date_of_birth",
+        "address",
+        "position",
+        "department",
+        "hire_date",
+        "salary",
+        "employment_type",
+        "emergency_contact_name",
+        "emergency_contact_phone",
+        "national_id",
+        "notes",
+      ];
+      const payload = allowedFields.reduce((acc, key) => {
+        if (Object.prototype.hasOwnProperty.call(formData, key)) {
+          let val = formData[key];
+          if (key === "salary") {
+            val = val !== "" && val !== null && val !== undefined ? Number(val) : null;
+          }
+          // Normalize phone numbers
+          if (key === "phone_number" || key === "emergency_contact_phone") {
+            val = normalizePhoneNumber(val);
+          }
+          acc[key] = val;
+        }
+        return acc;
+      }, {});
       const response = await put(`/staff/${resolvedParams.id}`, payload);
       setStaff(response.data);
       setEditing(false);
@@ -146,6 +194,8 @@ export default function StaffDetailPage({ params }) {
 
   const canEdit = (user?.role || user?.user_metadata?.role) === "super_admin";
 
+  const isSelf = user?.id && staff?.auth_user_id && user.id === staff.auth_user_id;
+
   const handleRoleSubmit = async (e) => {
     e.preventDefault();
     if (!canEdit) return;
@@ -153,11 +203,34 @@ export default function StaffDetailPage({ params }) {
       setRoleError("Grant system access first to edit role."); 
       return; 
     }
+    // If super_admin is changing their own role, show warning toast first
+    if (isSelf && (profile?.role === "super_admin" || staff?.role === "super_admin") && roleForm.role !== "super_admin") {
+      setPendingRole(roleForm.role);
+      toast.warning(
+        "Warning: You are changing your own role",
+        `You are about to change your own role from Super Admin to ${roleForm.role.replace('_', ' ')}. This will immediately limit your access and you may lose the ability to manage other admins or system settings.`,
+        {
+          duration: 0,
+          action: "Proceed",
+          onAction: async () => {
+            await doRoleUpdate(roleForm.role);
+            setPendingRole(null);
+          },
+          onCancel: () => setPendingRole(null),
+        }
+      );
+      return;
+    }
+    await doRoleUpdate(roleForm.role);
+  };
+
+  // Actually perform the role update
+  const doRoleUpdate = async (newRole) => {
     try {
       setSavingRole(true);
       setRoleError("");
       setRoleSuccess("");
-      const payload = { role: roleForm.role };
+      const payload = { role: newRole };
       const res = await put(`/auth`, { id: staff.auth_user_id, ...payload });
       if (res?.data) {
         setRoleSuccess("Role updated");
@@ -167,6 +240,7 @@ export default function StaffDetailPage({ params }) {
       setRoleError(e?.message || "Failed to update role");
     } finally {
       setSavingRole(false);
+      setPendingRole(null);
     }
   };
 
@@ -209,6 +283,30 @@ export default function StaffDetailPage({ params }) {
     } finally {
       setAccessBusy(false);
     }
+  };
+
+  const handleRevealNationalId = async () => {
+    if (!canEdit) return;
+    try {
+      setRevealingNationalId(true);
+      const response = await get(`/staff/${resolvedParams.id}/reveal-national-id`);
+      if (response?.data?.national_id) {
+        setRevealedNationalId(response.data.national_id);
+        // Auto-hide after 30 seconds for security
+        setTimeout(() => {
+          setRevealedNationalId(null);
+        }, 30000);
+      }
+    } catch (error) {
+      console.error("Error revealing national ID:", error);
+      // Could add error state here if needed
+    } finally {
+      setRevealingNationalId(false);
+    }
+  };
+
+  const handleHideNationalId = () => {
+    setRevealedNationalId(null);
   };
 
   if (loading) {
@@ -516,6 +614,69 @@ export default function StaffDetailPage({ params }) {
                         )}
                       </div>
                     ))}
+
+                    {/* National ID Field with Reveal Functionality */}
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        National ID
+                      </Label>
+                      {editing ? (
+                        <Input
+                          type="text"
+                          value={formData.national_id || ""}
+                          onChange={(e) =>
+                            handleInputChange("national_id", e.target.value)
+                          }
+                          placeholder="Enter national ID"
+                          className="border-slate-300 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400"
+                        />
+                      ) : (
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 flex-1">
+                              <CreditCard className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                              <p className="text-slate-900 dark:text-white font-mono">
+                                {revealedNationalId || staff.masked_national_id || "Not provided"}
+                              </p>
+                            </div>
+                            {canEdit && staff.masked_national_id && (
+                              <div className="flex items-center gap-2">
+                                {revealedNationalId ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleHideNationalId}
+                                    className="h-8 px-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                                  >
+                                    <EyeOff className="w-4 h-4" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleRevealNationalId}
+                                    disabled={revealingNationalId}
+                                    className="h-8 px-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                                  >
+                                    {revealingNationalId ? (
+                                      <div className="w-4 h-4 border border-slate-400 border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                      <Eye className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          {revealedNationalId && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              Full ID will auto-hide in 30 seconds for security
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </Card>
 
@@ -634,15 +795,16 @@ export default function StaffDetailPage({ params }) {
                           <Button
                             variant="destructive"
                             onClick={handleRevokeAccess}
-                            disabled={accessBusy}
-                            className="w-full gap-2"
+                            disabled={accessBusy || isSelf}
+                            className={`w-full gap-2 ${isSelf ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            title={isSelf ? 'You cannot remove your own access' : ''}
                           >
                             {accessBusy ? (
                               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             ) : (
                               <UserX className="w-4 h-4" />
                             )}
-                            {accessBusy ? "Removing..." : "Remove Access"}
+                            {accessBusy ? "Removing..." : isSelf ? "Remove Access (Not Allowed)" : "Remove Access"}
                           </Button>
                         ) : (
                           <Button
@@ -848,15 +1010,16 @@ export default function StaffDetailPage({ params }) {
                           <Button
                             variant="destructive"
                             onClick={handleRevokeAccess}
-                            disabled={accessBusy}
-                            className="w-full gap-2"
+                            disabled={accessBusy || isSelf}
+                            className={`w-full gap-2 ${isSelf ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            title={isSelf ? 'You cannot remove your own access' : ''}
                           >
                             {accessBusy ? (
                               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             ) : (
                               <UserX className="w-4 h-4" />
                             )}
-                            {accessBusy ? "Removing Access..." : "Remove System Access"}
+                            {accessBusy ? "Removing Access..." : isSelf ? "Remove System Access (Not Allowed)" : "Remove System Access"}
                           </Button>
                         ) : (
                           <Button
