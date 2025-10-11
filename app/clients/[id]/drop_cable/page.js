@@ -3,660 +3,176 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
-  ArrowLeft,
   Plus,
-  Search,
-  Filter,
-  Activity,
-  Download,
   RefreshCw,
-  MoreVertical,
   Upload,
+  FileText,
+  Activity,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  MoreVertical
 } from "lucide-react";
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
 import { DataTable } from "@/components/shared/DataTable";
-import { get, put, post } from "@/lib/api/fetcher";
+import { TableControls } from "@/components/shared/TableControls";
 import { Loader } from "@/components/shared/Loader";
+
+import { get, post } from "@/lib/api/fetcher";
+import { getDropCableStatusColor, formatStatusText } from "@/lib/utils/dropCableColors";
+
 import JobFormDialog from "@/components/shared/JobFormDialog";
 import UploadDocumentDialog from "@/components/shared/UploadDocumentDialog";
 import AsBuiltDocumentDialog from "@/components/shared/AsBuiltDocumentDialog";
-import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
-import { FileText } from "lucide-react";
 
 export default function DropCablePage() {
-  const params = useParams();
+  const { id: clientId } = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const clientId = params.id;
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [editingJob, setEditingJob] = useState(null);
-  const [editFormData, setEditFormData] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
 
-  // New Job Modal State
-  const [newJobModalOpen, setNewJobModalOpen] = useState(false);
-  const [clientNameForModal, setClientNameForModal] = useState("");
+  // Dialog state
+  const [newJobOpen, setNewJobOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [asBuiltOpen, setAsBuiltOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
 
-  // Upload Document Modal State
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [selectedJobForUpload, setSelectedJobForUpload] = useState(null);
-  const [uploading, setUploading] = useState(false);
-
-  // As-Built Document Modal State
-  const [asBuiltModalOpen, setAsBuiltModalOpen] = useState(false);
-  const [selectedJobForAsBuilt, setSelectedJobForAsBuilt] = useState(null);
-  const [generatingAsBuilt, setGeneratingAsBuilt] = useState(false);
-
-  // Fetch drop cable jobs for this client
+  // Fetch jobs
   useEffect(() => {
-    async function fetchDropCableJobs() {
+    async function fetchJobs() {
+      setLoading(true);
       try {
-        setLoading(true);
-        const data = await get(`/drop-cable/client/${clientId}`);
-        console.log(data);
-
-        setJobs(data.data || []);
-      } catch (error) {
-        console.error("Error fetching drop cable jobs:", error);
-        setError(error.message);
+        const res = await get(`/drop-cable/client/${clientId}`);
+        setJobs(res.data || []);
       } finally {
         setLoading(false);
       }
     }
+    if (clientId) fetchJobs();
+  }, [clientId]);
 
-    if (clientId) {
-      fetchDropCableJobs();
-    }
-  }, [clientId, router]);
+  // Stats
+  const stats = useMemo(() => {
+    const total = jobs.length;
+    const completed = jobs.filter(j => j.status === "completed").length;
+    const inProgress = jobs.filter(j => j.status === "in_progress").length;
+    const pendingSurvey = jobs.filter(j => j.status === "survey_pending").length;
+    const docs = jobs.filter(j => j.as_built_submitted_at).length;
 
-  // Check URL parameters for new job creation
-  useEffect(() => {
-    const isNew = searchParams.get("new") === "true";
-    const clientName = searchParams.get("clientName");
-
-    if (isNew) {
-      setNewJobModalOpen(true);
-      // Store client name before clearing URL parameters
-      if (clientName) {
-        setClientNameForModal(decodeURIComponent(clientName));
-      }
-      // Clean up URL parameters
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, "", newUrl);
-    }
-  }, [searchParams]);
-
-  // Format status for display
-  const formatDropCableStatus = (status) => {
-    if (!status) return "Unknown";
-    return status
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
-
-  // Get status color for badges
-  const getDropCableStatusColor = (status) => {
-    const colors = {
-      awaiting_client_confirmation_date:
-        "text-yellow-800 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-700",
-      survey_required:
-        "text-purple-700 bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-700",
-      survey_scheduled:
-        "text-indigo-700 bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-700",
-      survey_completed:
-        "text-cyan-700 bg-cyan-50 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-700",
-      lla_required:
-        "text-yellow-700 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-700",
-      awaiting_lla_approval:
-        "text-amber-700 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700",
-      lla_received:
-        "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-700",
-      installation_scheduled:
-        "text-teal-700 bg-teal-50 border-teal-200 dark:bg-teal-900/20 dark:text-teal-300 dark:border-teal-700",
-      installation_completed:
-        "text-green-700 bg-green-50 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700",
-      as_built_submitted:
-        "text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700",
-      issue_logged:
-        "text-red-700 bg-red-50 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700",
-      on_hold:
-        "text-yellow-800 bg-yellow-100 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-700",
-      awaiting_health_and_safety:
-        "text-pink-700 bg-pink-50 border-pink-200 dark:bg-pink-900/20 dark:text-pink-300 dark:border-pink-700",
-      planning_document_submitted:
-        "text-lime-700 bg-lime-50 border-lime-200 dark:bg-lime-900/20 dark:text-lime-300 dark:border-lime-700",
-      awaiting_service_provider:
-        "text-sky-700 bg-sky-50 border-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:border-sky-700",
-      adw_required:
-        "text-amber-800 bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700",
-      site_not_ready:
-        "text-gray-700 bg-gray-200 border-gray-300 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-700",
-    };
-    return (
-      colors[status] ||
-      "text-gray-700 bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700"
-    );
-  };
-
-  // Get unique statuses for filter
-  const uniqueStatuses = useMemo(() => {
-    const statuses = jobs.map((job) => job.status).filter(Boolean);
-    return [...new Set(statuses)];
+    return { total, completed, inProgress, pendingSurvey, docs };
   }, [jobs]);
 
-  // Filter jobs based on search term and status
+  // Filter jobs
   const filteredJobs = useMemo(() => {
-    return jobs.filter((job) => {
-      const matchesSearch =
-        !searchTerm ||
-        job.circuit_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.site_b_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.physical_address_site_b
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        job.technician_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.client?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.service_provider?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesStatus =
-        statusFilter === "all" || job.status === statusFilter;
-
+    return jobs.filter(j => {
+      const matchesSearch = !searchTerm || j.circuit_number?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "all" || j.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [jobs, searchTerm, statusFilter]);
 
-  // Handle edit mode
-  const handleRowClick = (job) => {
-    setEditingJob(job.id);
-    setEditFormData({ ...job });
-    setDialogOpen(true);
-  };
-
-  // Handle upload document
-  const handleUploadDocument = (job) => {
-    setSelectedJobForUpload(job);
-    setUploadModalOpen(true);
-  };
-
-  // Handle generate as-built document
-  const handleGenerateAsBuilt = (job) => {
-    setSelectedJobForAsBuilt(job);
-    setAsBuiltModalOpen(true);
-  };
-
-  // Upload document to API
-  const uploadDocument = async ({ file, category, jobData }) => {
-    setUploading(true);
-
-    try {
-      // Validate required job fields before building payload
-      if (!jobData?.id) {
-        throw new Error("Missing job id");
-      }
-      if (!clientId) {
-        throw new Error("Missing client id in route");
-      }
-      if (
-        !jobData?.circuit_number ||
-        String(jobData.circuit_number).trim() === ""
-      ) {
-        throw new Error(
-          "This job is missing a circuit number. Please add it before uploading."
-        );
-      }
-
-      // Helper to derive a safe identifier from a name
-      const toIdentifier = (s) =>
-        String(s || "")
-          .trim()
-          .replace(/[\\/]+/g, "-")
-          .replace(/\s+/g, "_")
-          .replace(/[^a-zA-Z0-9_-]/g, "");
-
-      // Always source official client details from API to avoid abbreviated names on job rows
-      let clientName = "";
-      let clientIdentifier = "";
-      try {
-        const resp = await get(`/client/${clientId}`);
-        const client = resp?.data || {};
-        const baseName =
-          client.company_name ||
-          [client.first_name, client.last_name].filter(Boolean).join(" ");
-        clientName = String(baseName || "Client").trim();
-        clientIdentifier = toIdentifier(baseName || "client");
-      } catch (e) {
-        // Fallback: if API fails, try to use jobData fields, else defaults
-        const fallbackName =
-          (jobData.client && String(jobData.client).trim()) || "Client";
-        clientName = fallbackName;
-        clientIdentifier =
-          (jobData.client_identifier &&
-            String(jobData.client_identifier).trim()) ||
-          toIdentifier(fallbackName);
-      }
-
-      if (!clientName || !clientIdentifier) {
-        throw new Error(
-          "Missing client details (name/identifier). Please ensure the client has a name."
-        );
-      }
-
-      // Create FormData for multipart/form-data request
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("clientName", clientName);
-      formData.append("clientIdentifier", clientIdentifier);
-      formData.append("circuitNumber", String(jobData.circuit_number));
-      formData.append("jobType", "drop_cable");
-      formData.append("category", category);
-      // Use new field expected by the API/DB column
-      formData.append("dropCableJobId", String(jobData.id));
-      formData.append("clientId", String(clientId));
-
-      // Optional: debug log the payload keys (not file content)
-      try {
-        const debug = {};
-        for (const [k, v] of formData.entries()) {
-          debug[k] = k === "file" ? (v && v.name ? v.name : "[file]") : v;
-        }
-        console.debug("Uploading document with payload:", debug);
-      } catch {}
-
-      // Make API call to upload endpoint using your post provider
-      const result = await post("/documents/upload", formData);
-      console.log("Upload successful:", result);
-
-      // Show success message or refresh data if needed
-      // You could add a toast notification here
-    } catch (error) {
-      console.error("Upload error:", error);
-      throw error;
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  // Generate As-Built document
-  const generateAsBuiltDocument = async (documentData) => {
-    setGeneratingAsBuilt(true);
-
-    try {
-      // Create FormData for the API call
-      const formData = new FormData();
-
-      // Add form fields
-      Object.keys(documentData).forEach((key) => {
-        if (
-          key !== "images" &&
-          documentData[key] !== undefined &&
-          documentData[key] !== ""
-        ) {
-          formData.append(key, documentData[key]);
-        }
-      });
-
-      // Add images
-      documentData.images?.forEach((image, index) => {
-        if (image.file) {
-          formData.append(`image_${index}`, image.file);
-          formData.append(`caption_${index}`, image.caption || "");
-        }
-      });
-
-      // Add metadata
-      formData.append("jobId", documentData.jobId);
-      formData.append("clientId", clientId);
-      formData.append("documentType", "as_built");
-      formData.append("jobType", "drop_cable");
-
-      // Make API call to generate PDF
-      const result = await post("/documents/generate-as-built", formData);
-
-      if (result.success && result.downloadUrl) {
-        // Create a temporary link to download the PDF
-        const link = document.createElement("a");
-        link.href = result.downloadUrl;
-        link.download = `AsBuilt_${documentData.circuitNumber}_${
-          new Date().toISOString().split("T")[0]
-        }.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Close the modal
-        setAsBuiltModalOpen(false);
-
-        console.log("As-Built document generated successfully:", result);
-      } else {
-        throw new Error("Failed to generate As-Built document");
-      }
-    } catch (error) {
-      console.error("As-Built generation error:", error);
-      throw error;
-    } finally {
-      setGeneratingAsBuilt(false);
-    }
-  };
-
-  // Define table columns for DataTable - simplified view
+  // Table columns
   const columns = [
-    {
-      accessorKey: "circuit_number",
-      header: "Circuit",
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <span className="font-semibold">{job.circuit_number || "-"}</span>
-        );
-      },
+    { accessorKey: "circuit_number", header: "Circuit", cell: ({ row }) => <span className="font-semibold">{row.original.circuit_number}</span> },
+    { accessorKey: "site_b_name", header: "Site B" },
+    { accessorKey: "status", header: "Status", cell: ({ row }) => (
+        <Badge variant="outline" className={getDropCableStatusColor(row.original.status)}>
+          {formatStatusText(row.original.status)}
+        </Badge>
+      )
     },
-    {
-      accessorKey: "site_b_name",
-      header: "Site B",
-      cell: ({ row }) => {
-        const job = row.original;
-        return <span>{job.site_b_name || "-"}</span>;
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <Badge
-            variant="outline"
-            className={getDropCableStatusColor(job.status)}
-          >
-            {formatDropCableStatus(job.status)}
-          </Badge>
-        );
-      },
-    },
-    {
-      accessorKey: "county",
-      header: "County",
-      cell: ({ row }) => {
-        const job = row.original;
-        return <span className="capitalize">{job.county || "-"}</span>;
-      },
-    },
-    {
-      accessorKey: "technician_name",
-      header: "Technician",
-      cell: ({ row }) => {
-        const job = row.original;
-        return <span>{job.technician_name || "-"}</span>;
-      },
-    },
-    {
-      accessorKey: "as_built_submitted_at",
-      header: "as-build submission",
-      cell: ({ row }) => {
-        const job = row.original;
-        return <span>{job.as_built_submitted_at || "-"}</span>;
-      },
-    },
-    {
-      accessorKey: "survey_date",
-      header: "Survey Date",
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <span>
-            {job.survey_date
-              ? new Date(job.survey_date).toLocaleDateString()
-              : "-"}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "installation_scheduled_for",
-      header: "Install Date",
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <span>
-            {job.installation_scheduled_for
-              ? new Date(job.installation_scheduled_for).toLocaleDateString()
-              : "-"}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "created_at",
-      header: "Created",
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <span className="text-sm text-gray-500">
-            {new Date(job.created_at).toLocaleDateString()}
-          </span>
-        );
-      },
-    },
+    { accessorKey: "technician_name", header: "Technician" },
+    { accessorKey: "installation_scheduled_for", header: "Install Date", cell: ({ row }) => row.original.installation_scheduled_for ? new Date(row.original.installation_scheduled_for).toLocaleDateString() : "—" },
+    { accessorKey: "created_at", header: "Created", cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString() },
     {
       id: "actions",
-      header: "",
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <div onClick={(e) => e.stopPropagation()}>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Open menu</span>
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => handleUploadDocument(job)}
-                  className="flex items-center gap-2"
-                >
-                  <Upload className="h-4 w-4" />
-                  Upload Document
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleGenerateAsBuilt(job)}
-                  className="flex items-center gap-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  Generate As-Built
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        );
-      },
-    },
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => { setSelectedJob(row.original); setUploadOpen(true); }}>
+              <Upload className="h-4 w-4 mr-2" /> Upload Document
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { setSelectedJob(row.original); setAsBuiltOpen(true); }}>
+              <FileText className="h-4 w-4 mr-2" /> Generate As-Built
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    }
   ];
 
-  if (loading) {
-    return <Loader variant="bars" text="Loading Drop Cable data..." />;
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-red-800 dark:text-red-300 mb-2">
-            Error Loading Jobs
-          </h3>
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-          <Button
-            variant="outline"
-            onClick={() => window.location.reload()}
-            className="mt-4"
-          >
-            Try Again
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <Loader variant="bars" text="Loading Drop Cable..." />;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-[95vw] mx-auto px-4 py-8">
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.back()}
-                className="flex items-center space-x-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Drop Cable Orders
-                </h1>
-                {/* <p className="text-gray-600 dark:text-gray-400 mt-1">
-                  Click any row to edit job details
-                </p> */}
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Button variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
-              <Button
-                onClick={() => setNewJobModalOpen(true)}
-                className="bg-blue-600 text-white"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                New Drop Cable Job
-              </Button>
-            </div>
-          </div>
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Drop Cable Management</h1>
+          <p className="text-gray-600 dark:text-slate-400">Manage client jobs, documents, and field progress</p>
+        </div>
+        <Button onClick={() => setNewJobOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Plus className="w-4 h-4 mr-2" /> Create Drop Cable
+        </Button>
+      </div>
 
-          {/* Filters */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
-            <div className="flex items-center space-x-4">
-              <div className="flex-1 max-w-md">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Search circuits, sites, clients, technicians..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+        <StatCard label="Total Jobs" value={stats.total} icon={Activity} color="blue" />
+        <StatCard label="Completed" value={stats.completed} icon={CheckCircle} color="green" />
+        <StatCard label="In Progress" value={stats.inProgress} icon={Clock} color="orange" />
+        <StatCard label="Pending Survey" value={stats.pendingSurvey} icon={AlertTriangle} color="yellow" />
+        <StatCard label="With Docs" value={stats.docs} icon={FileText} color="purple" />
+      </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Filter className="w-4 h-4 mr-2" />
-                    Status:{" "}
-                    {statusFilter === "all"
-                      ? "All"
-                      : formatDropCableStatus(statusFilter)}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setStatusFilter("all")}>
-                    All Statuses
-                  </DropdownMenuItem>
-                  {uniqueStatuses.map((status) => (
-                    <DropdownMenuItem
-                      key={status}
-                      onClick={() => setStatusFilter(status)}
-                    >
-                      {formatDropCableStatus(status)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+      {/* Controls */}
+      <TableControls
+        searchTerm={searchTerm}
+        onSearch={e => setSearchTerm(e.target.value)}
+        exportData={filteredJobs}
+        exportColumns={columns}
+        exportFilename="drop-cable-export"
+        searchPlaceholder="Search jobs..."
+      />
 
-          {/* Jobs Table */}
-          <DataTable
-            columns={columns}
-            data={filteredJobs}
-            onRowClick={handleRowClick}
-          />
+      {/* Table */}
+      <Card className="shadow-sm">
+        <div className="p-6">
+          <DataTable columns={columns} data={filteredJobs} />
+        </div>
+      </Card>
 
-          {/* Edit Dialog */}
-          <JobFormDialog
-            mode="edit"
-            open={dialogOpen}
-            onOpenChange={setDialogOpen}
-            jobData={editFormData}
-            jobConfig={jobTypeConfigs["drop-cable"]}
-            onSuccess={(updatedJob) => {
-              // Update jobs list with edited job
-              setJobs((prev) =>
-                prev.map((job) =>
-                  job.id === editingJob ? { ...job, ...updatedJob } : job
-                )
-              );
-              setEditingJob(null);
-              setEditFormData({});
-            }}
-            saving={saving}
-          />
+      {/* Dialogs */}
+      <JobFormDialog open={newJobOpen} onOpenChange={setNewJobOpen} onSuccess={() => router.refresh()} />
+      <UploadDocumentDialog open={uploadOpen} onOpenChange={setUploadOpen} job={selectedJob} />
+      <AsBuiltDocumentDialog open={asBuiltOpen} onOpenChange={setAsBuiltOpen} job={selectedJob} />
+    </>
+  );
+}
 
-          {/* New Job Creation Modal */}
-          <JobFormDialog
-            mode="create"
-            open={newJobModalOpen}
-            onOpenChange={setNewJobModalOpen}
-            jobConfig={jobTypeConfigs["drop-cable"]}
-            clientId={clientId}
-            clientName={clientNameForModal}
-            onSuccess={(newJob) => {
-              // Add new job to the list
-              setJobs((prev) => [newJob, ...prev]);
-              setClientNameForModal("");
-            }}
-          />
-
-          {/* Upload Document Modal */}
-          <UploadDocumentDialog
-            open={uploadModalOpen}
-            onOpenChange={setUploadModalOpen}
-            onUpload={uploadDocument}
-            jobData={selectedJobForUpload}
-            uploading={uploading}
-          />
-
-          {/* As-Built Document Generation Modal */}
-          <AsBuiltDocumentDialog
-            open={asBuiltModalOpen}
-            onOpenChange={setAsBuiltModalOpen}
-            onGenerate={generateAsBuiltDocument}
-            jobData={selectedJobForAsBuilt}
-            generating={generatingAsBuilt}
-          />
+function StatCard({ label, value, icon: Icon, color }) {
+  return (
+    <Card className="bg-white dark:bg-slate-800 border shadow-sm">
+      <div className="p-6 flex items-center justify-between">
+        <div>
+          <p className="text-gray-600 text-sm">{label}</p>
+          <p className="text-2xl font-bold">{value}</p>
+        </div>
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-${color}-50 dark:bg-${color}-900/20`}>
+          <Icon className={`w-6 h-6 text-${color}-600 dark:text-${color}-400`} />
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

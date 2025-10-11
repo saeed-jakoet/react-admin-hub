@@ -1,11 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, Mail, AlertCircle, Shield } from "lucide-react";
+import Image from "next/image";
+import { Mail, ArrowRight, ArrowLeft } from "lucide-react";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -17,97 +14,578 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    if (email.includes("@")) {
-      setSubmitted(true);
-    } else {
-      setError("Please enter a valid email address.");
+
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (email.includes("@")) {
+        setSubmitted(true);
+      } else {
+        setError("Please enter a valid email address.");
+      }
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
     }
     setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-      </div>
-      {/* Animated Background Orbs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      {/* Forgot Password Card */}
-      <Card className="w-full max-w-md relative z-10 border-0 shadow-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
-        <CardHeader className="space-y-6 text-center pb-8">
-          {/* Logo */}
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-600 shadow-lg">
-            <Zap className="h-8 w-8 text-white" />
-          </div>
-          {/* Title */}
-          <div className="space-y-2">
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-              Forgot Password
-            </CardTitle>
-            <CardDescription className="text-base text-muted-foreground">
-              Enter your email to reset your password
-            </CardDescription>
-          </div>
-          {/* Security Badge */}
-          <div className="flex items-center justify-center gap-2 px-4 py-2 bg-green-500/10 text-green-600 rounded-full text-sm font-medium">
-            <Shield className="h-4 w-4" />
-            Secure Access Portal
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {submitted ? (
-            <div className="flex flex-col items-center gap-3 p-4 bg-green-500/10 text-green-700 rounded-lg text-center">
-              <Mail className="h-6 w-6" />
-              <span className="font-medium">Check your email for a password reset link.</span>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Error Message */}
-              {error && (
-                <div className="flex items-center gap-2 p-3 bg-red-500/10 text-red-600 rounded-lg text-sm">
-                  <AlertCircle className="h-4 w-4" />
-                  {error}
-                </div>
-              )}
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-12 bg-muted/50 border-border/50 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                  required
+    <div className="min-h-screen bg-[#0B1426] relative overflow-hidden">
+      {/* Enhanced Network Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <svg className="absolute inset-0 w-full h-full opacity-40">
+          <defs>
+            <pattern
+              id="fiber-network"
+              x="0"
+              y="0"
+              width="120"
+              height="120"
+              patternUnits="userSpaceOnUse"
+            >
+              <circle cx="30" cy="30" r="2" fill="#264C92" opacity="0.8">
+                <animate
+                  attributeName="opacity"
+                  values="0.3;1;0.3"
+                  dur="4s"
+                  repeatCount="indefinite"
                 />
-              </div>
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-medium rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl"
-                disabled={isLoading}
+                <animate
+                  attributeName="r"
+                  values="2;3;2"
+                  dur="4s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+              <circle cx="90" cy="40" r="1.5" fill="#07B857" opacity="0.7">
+                <animate
+                  attributeName="opacity"
+                  values="0.4;0.9;0.4"
+                  dur="3s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="r"
+                  values="1.5;2.5;1.5"
+                  dur="3s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+              <circle cx="60" cy="80" r="2.5" fill="#F60100" opacity="0.6">
+                <animate
+                  attributeName="opacity"
+                  values="0.2;0.8;0.2"
+                  dur="3.5s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="r"
+                  values="2.5;3.5;2.5"
+                  dur="3.5s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+              <circle cx="20" cy="90" r="1.8" fill="#F5B800" opacity="0.5">
+                <animate
+                  attributeName="opacity"
+                  values="0.3;0.7;0.3"
+                  dur="2.8s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="r"
+                  values="1.8;2.8;1.8"
+                  dur="2.8s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+
+              {/* Animated connection lines with pulse effect */}
+              <line
+                x1="30"
+                y1="30"
+                x2="90"
+                y2="40"
+                stroke="url(#connectionGradient1)"
+                strokeWidth="1"
+                opacity="0.4"
               >
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Sending...
+                <animate
+                  attributeName="opacity"
+                  values="0.1;0.8;0.1"
+                  dur="4s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="stroke-width"
+                  values="1;2;1"
+                  dur="4s"
+                  repeatCount="indefinite"
+                />
+              </line>
+              <line
+                x1="90"
+                y1="40"
+                x2="60"
+                y2="80"
+                stroke="url(#connectionGradient2)"
+                strokeWidth="1"
+                opacity="0.3"
+              >
+                <animate
+                  attributeName="opacity"
+                  values="0.1;0.7;0.1"
+                  dur="3.5s"
+                  repeatCount="indefinite"
+                  begin="1s"
+                />
+                <animate
+                  attributeName="stroke-width"
+                  values="1;2;1"
+                  dur="3.5s"
+                  repeatCount="indefinite"
+                  begin="1s"
+                />
+              </line>
+              <line
+                x1="60"
+                y1="80"
+                x2="20"
+                y2="90"
+                stroke="url(#connectionGradient3)"
+                strokeWidth="1"
+                opacity="0.4"
+              >
+                <animate
+                  attributeName="opacity"
+                  values="0.1;0.6;0.1"
+                  dur="3s"
+                  repeatCount="indefinite"
+                  begin="2s"
+                />
+                <animate
+                  attributeName="stroke-width"
+                  values="1;2;1"
+                  dur="3s"
+                  repeatCount="indefinite"
+                  begin="2s"
+                />
+              </line>
+              <line
+                x1="20"
+                y1="90"
+                x2="30"
+                y2="30"
+                stroke="url(#connectionGradient4)"
+                strokeWidth="1"
+                opacity="0.3"
+              >
+                <animate
+                  attributeName="opacity"
+                  values="0.1;0.5;0.1"
+                  dur="2.8s"
+                  repeatCount="indefinite"
+                  begin="1.5s"
+                />
+                <animate
+                  attributeName="stroke-width"
+                  values="1;2;1"
+                  dur="2.8s"
+                  repeatCount="indefinite"
+                  begin="1.5s"
+                />
+              </line>
+
+              {/* Cross connections for more dynamic feel */}
+              <line
+                x1="30"
+                y1="30"
+                x2="60"
+                y2="80"
+                stroke="url(#connectionGradient5)"
+                strokeWidth="0.5"
+                opacity="0.2"
+              >
+                <animate
+                  attributeName="opacity"
+                  values="0;0.4;0"
+                  dur="5s"
+                  repeatCount="indefinite"
+                  begin="3s"
+                />
+              </line>
+              <line
+                x1="90"
+                y1="40"
+                x2="20"
+                y2="90"
+                stroke="url(#connectionGradient6)"
+                strokeWidth="0.5"
+                opacity="0.2"
+              >
+                <animate
+                  attributeName="opacity"
+                  values="0;0.3;0"
+                  dur="4.5s"
+                  repeatCount="indefinite"
+                  begin="2.5s"
+                />
+              </line>
+
+              {/* Data flow particles */}
+              <circle r="1" fill="#264C92" opacity="0.8">
+                <animateMotion dur="6s" repeatCount="indefinite">
+                  <path d="M30,30 L90,40 L60,80 L20,90 Z" />
+                </animateMotion>
+                <animate
+                  attributeName="opacity"
+                  values="0;1;0"
+                  dur="6s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+              <circle r="0.8" fill="#07B857" opacity="0.6">
+                <animateMotion dur="7s" repeatCount="indefinite" begin="2s">
+                  <path d="M90,40 L60,80 L20,90 L30,30 Z" />
+                </animateMotion>
+                <animate
+                  attributeName="opacity"
+                  values="0;1;0"
+                  dur="7s"
+                  repeatCount="indefinite"
+                  begin="2s"
+                />
+              </circle>
+            </pattern>
+
+            {/* Gradient definitions for connection lines */}
+            <linearGradient
+              id="connectionGradient1"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop offset="0%" stopColor="#264C92" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#07B857" stopOpacity="0.8" />
+            </linearGradient>
+            <linearGradient
+              id="connectionGradient2"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop offset="0%" stopColor="#07B857" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="#F60100" stopOpacity="0.7" />
+            </linearGradient>
+            <linearGradient
+              id="connectionGradient3"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop offset="0%" stopColor="#F60100" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#F5B800" stopOpacity="0.6" />
+            </linearGradient>
+            <linearGradient
+              id="connectionGradient4"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop offset="0%" stopColor="#F5B800" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#264C92" stopOpacity="0.5" />
+            </linearGradient>
+            <linearGradient
+              id="connectionGradient5"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop offset="0%" stopColor="#264C92" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#F60100" stopOpacity="0.3" />
+            </linearGradient>
+            <linearGradient
+              id="connectionGradient6"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop offset="0%" stopColor="#07B857" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#F5B800" stopOpacity="0.3" />
+            </linearGradient>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#fiber-network)" />
+        </svg>
+
+        {/* Enhanced floating particles with connection trails */}
+        <div
+          className="absolute top-20 left-20 w-2 h-2 rounded-full opacity-60"
+          style={{ backgroundColor: "#264C92" }}
+        >
+          <div
+            className="absolute inset-0 rounded-full animate-ping"
+            style={{ backgroundColor: "#264C92" }}
+          ></div>
+          <div
+            className="absolute inset-0 rounded-full animate-pulse"
+            style={{ backgroundColor: "#264C92" }}
+          ></div>
+        </div>
+        <div
+          className="absolute top-40 right-32 w-1 h-1 rounded-full opacity-50"
+          style={{ backgroundColor: "#07B857" }}
+        >
+          <div
+            className="absolute inset-0 rounded-full animate-ping"
+            style={{ backgroundColor: "#07B857", animationDelay: "1s" }}
+          ></div>
+        </div>
+        <div
+          className="absolute bottom-32 left-40 w-1.5 h-1.5 rounded-full opacity-40"
+          style={{ backgroundColor: "#F60100" }}
+        >
+          <div
+            className="absolute inset-0 rounded-full animate-ping"
+            style={{ backgroundColor: "#F60100", animationDelay: "2s" }}
+          ></div>
+          <div
+            className="absolute inset-0 rounded-full animate-pulse"
+            style={{ backgroundColor: "#F60100", animationDelay: "2s" }}
+          ></div>
+        </div>
+        <div
+          className="absolute bottom-20 right-20 w-1 h-1 rounded-full opacity-30"
+          style={{ backgroundColor: "#F5B800" }}
+        >
+          <div
+            className="absolute inset-0 rounded-full animate-ping"
+            style={{ backgroundColor: "#F5B800", animationDelay: "3s" }}
+          ></div>
+        </div>
+
+        {/* Additional scattered connection points */}
+        <div
+          className="absolute top-1/3 left-1/3 w-1 h-1 rounded-full opacity-40 animate-pulse"
+          style={{ backgroundColor: "#264C92", animationDelay: "1.5s" }}
+        ></div>
+        <div
+          className="absolute top-2/3 right-1/3 w-0.5 h-0.5 rounded-full opacity-30 animate-ping"
+          style={{ backgroundColor: "#07B857", animationDelay: "2.5s" }}
+        ></div>
+        <div
+          className="absolute bottom-1/3 left-1/4 w-1 h-1 rounded-full opacity-35 animate-pulse"
+          style={{ backgroundColor: "#F60100", animationDelay: "3.5s" }}
+        ></div>
+      </div>
+
+      {/* Centered Content Container */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-8">
+        <div className="w-full max-w-md text-center">
+          {/* Logo and Branding - Centered Above Form */}
+          <div className="mb-12">
+            <div className="flex items-center justify-center space-x-6 mb-8">
+              <div className="relative w-20 h-20 bg-gradient-to-br from-[#264C92] to-[#1a3b73] rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300">
+                <Image
+                  src="/logo.svg"
+                  alt="Fiber Africa"
+                  width={80}
+                  height={80}
+                  className="w-20 h-20 object-contain filter brightness-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#264C92]/20 to-[#1a3b73]/20 rounded-3xl animate-pulse"></div>
+              </div>
+              <div className="text-left">
+                <h1 className="text-5xl lg:text-6xl font-bold text-white mb-2 tracking-tight">
+                  Fiber Africa
+                </h1>
+                <p
+                  className="font-semibold text-xl lg:text-2xl tracking-wider"
+                  style={{ color: "#264C92" }}
+                >
+                  WE DELIVER
+                </p>
+              </div>
+            </div>
+
+            {/* Subtitle */}
+            <div className="max-w-md mx-auto mb-8">
+              <p className="text-gray-300 text-lg mb-2">Password Recovery</p>
+              <p className="text-gray-400 text-sm">
+                Enter your email to reset your password
+              </p>
+            </div>
+          </div>
+
+          {/* Form Container */}
+          <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl p-8 border border-slate-700/50 shadow-2xl relative">
+            {/* Subtle glow effect */}
+            <div
+              className="absolute -inset-1 rounded-3xl blur-lg opacity-50"
+              style={{
+                background:
+                  "linear-gradient(to right, rgba(38, 76, 146, 0.2), rgba(148, 163, 184, 0.2))",
+              }}
+            ></div>
+
+            <div className="relative">
+              {submitted ? (
+                <div className="text-center space-y-6">
+                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
+                    <Mail className="w-8 h-8 text-green-400" />
                   </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Send Reset Link
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-2">
+                      Check Your Email
+                    </h2>
+                    <p className="text-slate-400 mb-6">
+                      We've sent a password reset link to{" "}
+                      <span className="text-green-400">{email}</span>
+                    </p>
                   </div>
-                )}
-              </Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+                  <div className="text-center">
+                    <a
+                      href="/auth/login"
+                      className="inline-flex items-center gap-2 text-slate-400 text-sm transition-colors font-medium"
+                      style={{ "--hover-color": "#264C92" }}
+                      onMouseEnter={(e) => {
+                        e.target.style.color = "#264C92";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.color = "rgb(148 163 184)";
+                      }}
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Back to Sign In
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-center mb-8">
+                    <h2 className="text-2xl font-bold text-white mb-2">
+                      Reset Password
+                    </h2>
+                    <div
+                      className="inline-flex items-center px-4 py-2 rounded-full border"
+                      style={{
+                        backgroundColor: "#264C92/10",
+                        borderColor: "#264C92/20",
+                      }}
+                    >
+                      <span
+                        className="text-sm font-medium"
+                        style={{ color: "#264C92" }}
+                      >
+                        🔒 Secure Recovery
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Error Message */}
+                  {error && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
+                      <p className="text-red-400 text-sm font-medium">
+                        {error}
+                      </p>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                      <div className="relative group">
+                        <Mail
+                          className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors"
+                          style={{
+                            "--tw-text-opacity": "1",
+                            color: "rgb(148 163 184 / var(--tw-text-opacity))",
+                          }}
+                        />
+                        <style jsx>{`
+                          .group:focus-within .lucide-mail {
+                            color: #264c92 !important;
+                          }
+                        `}</style>
+                        <input
+                          type="email"
+                          className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-opacity-50 transition-all"
+                          style={{
+                            "--tw-ring-color": "#264C92",
+                            "--tw-border-color": "#264C92",
+                          }}
+                          placeholder="Enter your email address"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                          disabled={isLoading}
+                          autoComplete="email"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full text-white font-semibold py-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
+                      style={{
+                        background:
+                          "linear-gradient(to right, #264C92, #1a3b73)",
+                        boxShadow: "0 10px 25px rgba(38, 76, 146, 0.25)",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isLoading) {
+                          e.target.style.background =
+                            "linear-gradient(to right, #1a3b73, #264C92)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isLoading) {
+                          e.target.style.background =
+                            "linear-gradient(to right, #264C92, #1a3b73)";
+                        }
+                      }}
+                    >
+                      {isLoading ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Sending Reset Link...
+                        </>
+                      ) : (
+                        <>
+                          <span>Send Reset Link</span>
+                          <ArrowRight className="w-5 h-5" />
+                        </>
+                      )}
+                    </button>
+
+                    <div className="text-center">
+                      <a
+                        href="/auth/login"
+                        className="inline-flex items-center gap-2 text-slate-400 text-sm transition-colors font-medium"
+                        style={{ "--hover-color": "#264C92" }}
+                        onMouseEnter={(e) => {
+                          e.target.style.color = "#264C92";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.color = "rgb(148 163 184)";
+                        }}
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Sign In
+                      </a>
+                    </div>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

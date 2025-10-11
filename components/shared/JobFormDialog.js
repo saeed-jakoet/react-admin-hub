@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { X, Save, RefreshCw, Plus, AlertCircle } from "lucide-react";
 import { post, put } from "@/lib/api/fetcher";
+import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
 
 /**
  * JobFormDialog
@@ -109,7 +110,7 @@ export default function JobFormDialog({
         : [];
 
     const missing = requiredFields.filter(
-      (f) => !formData[f] || String(formData[f]).trim() === ""
+      (f) => !formData[f] || String(formData[f]).trim() === "",
     );
 
     if (missing.length) {
@@ -117,7 +118,7 @@ export default function JobFormDialog({
         (f) =>
           jobConfig?.sections
             ?.flatMap((s) => s.fields)
-            ?.find((x) => x.name === f)?.label || f
+            ?.find((x) => x.name === f)?.label || f,
       );
       return `Please fill all required fields: ${fieldLabels.join(", ")}`;
     }
@@ -221,8 +222,8 @@ export default function JobFormDialog({
           value = value.includes("T")
             ? value.split("T")[0]
             : value.includes(" ")
-            ? value.split(" ")[0]
-            : value;
+              ? value.split(" ")[0]
+              : value;
         }
       }
 
@@ -303,7 +304,7 @@ export default function JobFormDialog({
     } catch (error) {
       console.error(
         `Error ${mode === "create" ? "creating" : "updating"} job:`,
-        error
+        error,
       );
       const msg =
         error?.response?.data?.message ||
@@ -399,8 +400,8 @@ export default function JobFormDialog({
                   ? value.includes("T")
                     ? value.split("T")[0]
                     : value.includes(" ")
-                    ? value.split(" ")[0]
-                    : value
+                      ? value.split(" ")[0]
+                      : value
                   : value || ""
               }
               onChange={(e) =>
@@ -486,16 +487,24 @@ export default function JobFormDialog({
 
   // Get display title
   const getTitle = () => {
-    // For drop-cable jobs, show circuit number left, status right
+    // For drop-cable jobs, show dynamic title/subtitle for create/edit
     if (jobConfig.apiEndpoint === "/drop-cable") {
-      const displayName =
-        formData.circuit_number ||
-        formData.project_id ||
-        formData.ticket_number ||
-        formData.link_id ||
-        formData.access_id ||
-        formData.relocation_id ||
-        "Edit Installation";
+      let displayName;
+      let subtitle;
+      if (mode === "create") {
+        displayName = "New Order";
+        subtitle = `Create ${jobConfig.shortName || "installation"} details`;
+      } else {
+        displayName =
+          formData.circuit_number ||
+          formData.project_id ||
+          formData.ticket_number ||
+          formData.link_id ||
+          formData.access_id ||
+          formData.relocation_id ||
+          "Edit Installation";
+        subtitle = `Edit ${jobConfig.shortName || "installation"} details`;
+      }
       return (
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
@@ -507,12 +516,12 @@ export default function JobFormDialog({
                 {displayName}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
-                Edit {jobConfig.shortName || "installation"} details
+                {subtitle}
               </p>
             </div>
           </div>
           {/* Status dropdown on the right */}
-          {statusFieldConfig && (
+          {statusFieldConfig && mode !== "create" && (
             <div className="relative min-w-[240px]">
               <div className="relative">
                 {/* Status indicator */}
@@ -520,7 +529,7 @@ export default function JobFormDialog({
                   <div
                     className={`w-2.5 h-2.5 rounded-full ${
                       getDropCableStatusColor(
-                        formData.status || statusFieldConfig.defaultValue || ""
+                        formData.status || statusFieldConfig.defaultValue || "",
                       )
                         .split(" ")
                         .find((cls) => cls.startsWith("bg-"))
@@ -537,7 +546,7 @@ export default function JobFormDialog({
                   onChange={(e) => handleInputChange("status", e.target.value)}
                   aria-label="Status"
                   className={`block w-full appearance-none pl-10 pr-12 py-3 rounded-lg text-sm font-medium border-0 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${getDropCableStatusColor(
-                    formData.status || statusFieldConfig.defaultValue || ""
+                    formData.status || statusFieldConfig.defaultValue || "",
                   )}`}
                 >
                   {(statusFieldConfig.options || []).map((option) => (
@@ -604,50 +613,6 @@ export default function JobFormDialog({
     ?.flatMap((section) => section.fields)
     ?.find((f) => f.name === "status");
 
-  // Get status color for drop cable jobs (matching table colors)
-  const getDropCableStatusColor = (status) => {
-    const colors = {
-      awaiting_client_confirmation_date:
-        "text-yellow-800 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-700",
-      survey_required:
-        "text-purple-700 bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-700",
-      survey_scheduled:
-        "text-indigo-700 bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-700",
-      survey_completed:
-        "text-cyan-700 bg-cyan-50 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-700",
-      lla_required:
-        "text-yellow-700 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-700",
-      awaiting_lla_approval:
-        "text-amber-700 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700",
-      lla_received:
-        "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-700",
-      installation_scheduled:
-        "text-teal-700 bg-teal-50 border-teal-200 dark:bg-teal-900/20 dark:text-teal-300 dark:border-teal-700",
-      installation_completed:
-        "text-green-700 bg-green-50 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700",
-      as_built_submitted:
-        "text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700",
-      issue_logged:
-        "text-red-700 bg-red-50 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700",
-      on_hold:
-        "text-yellow-800 bg-yellow-100 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-700",
-      awaiting_health_and_safety:
-        "text-pink-700 bg-pink-50 border-pink-200 dark:bg-pink-900/20 dark:text-pink-300 dark:border-pink-700",
-      planning_document_submitted:
-        "text-lime-700 bg-lime-50 border-lime-200 dark:bg-lime-900/20 dark:text-lime-300 dark:border-lime-700",
-      awaiting_service_provider:
-        "text-sky-700 bg-sky-50 border-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:border-sky-700",
-      adw_required:
-        "text-amber-800 bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700",
-      site_not_ready:
-        "text-gray-700 bg-gray-200 border-gray-300 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-700",
-    };
-    return (
-      colors[status] ||
-      "text-gray-700 bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700"
-    );
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
@@ -684,7 +649,7 @@ export default function JobFormDialog({
             ) {
               // Find the circuit_number field
               const circuitField = section.fields.find(
-                (f) => f.name === "circuit_number"
+                (f) => f.name === "circuit_number",
               );
               // Render both fields in a flex row
               return (
@@ -707,7 +672,7 @@ export default function JobFormDialog({
                     <div className="space-y-1">{renderField(circuitField)}</div>
                     <div className="space-y-1">
                       {renderField(
-                        section.fields.find((f) => f.name === "county")
+                        section.fields.find((f) => f.name === "county"),
                       )}
                     </div>
                   </div>
@@ -718,7 +683,7 @@ export default function JobFormDialog({
                         (f) =>
                           f.name !== "circuit_number" &&
                           f.name !== "county" &&
-                          f.name !== "status"
+                          f.name !== "status",
                       )
                       .map(renderField)}
                   </div>
@@ -753,7 +718,7 @@ export default function JobFormDialog({
                         ? f.name !== "status" &&
                           f.name !== "circuit_number" &&
                           f.name !== "notes"
-                        : f.name !== "status" && f.name !== "notes"
+                        : f.name !== "status" && f.name !== "notes",
                     )
                     ?.map(renderField)}
                 </div>
@@ -763,7 +728,7 @@ export default function JobFormDialog({
 
           {/* Notes Section */}
           {jobConfig.sections?.some((s) =>
-            s.fields?.some((f) => f.name === "notes")
+            s.fields?.some((f) => f.name === "notes"),
           ) && (
             <Card className="p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3 mb-6">
