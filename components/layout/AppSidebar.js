@@ -6,7 +6,7 @@ import { useCallback } from "react";
 import { get } from "@/lib/api/fetcher";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
-import axios from "axios";
+// import axios from "axios";
 import { isAllowed } from "@/components/providers/accessControl";
 import {
   Users,
@@ -156,12 +156,6 @@ export function AppSidebar() {
     }
   }, [fetchClients, clients.length, clientsLoading]);
 
-  const [supabaseStatus, setSupabaseStatus] = useState({
-    status: "loading",
-    message: "Checking connection...",
-    indicator: "default",
-  });
-
   const filteredNavigationSections = navigationSections
     .map((section) => ({
       ...section,
@@ -171,80 +165,6 @@ export function AppSidebar() {
       }),
     }))
     .filter((section) => section.items.length > 0);
-
-  useEffect(() => {
-    const checkSupabaseStatus = async () => {
-      try {
-        const response = await axios.get(
-          "https://status.supabase.com/api/v2/status.json"
-        );
-
-        if (response.data?.status?.indicator === "none") {
-          setSupabaseStatus({
-            status: "operational",
-            message: "All systems operational",
-            indicator: "success",
-          });
-        } else if (response.data?.status?.indicator === "minor") {
-          setSupabaseStatus({
-            status: "degraded",
-            message: "Minor issues detected",
-            indicator: "warning",
-          });
-        } else if (
-          response.data?.status?.indicator === "major" ||
-          response.data?.status?.indicator === "critical"
-        ) {
-          setSupabaseStatus({
-            status: "outage",
-            message: "Service disruption",
-            indicator: "error",
-          });
-        } else {
-          setSupabaseStatus({
-            status: "unknown",
-            message: "Status unknown",
-            indicator: "warning",
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch Supabase status:", error);
-        setSupabaseStatus({
-          status: "error",
-          message: "Connection failed",
-          indicator: "error",
-        });
-      }
-    };
-
-    checkSupabaseStatus();
-    const interval = setInterval(checkSupabaseStatus, 60000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const getStatusStyles = () => {
-    switch (supabaseStatus.indicator) {
-      case "success":
-        return {
-          dotColor: "bg-emerald-500",
-        };
-      case "warning":
-        return {
-          dotColor: "bg-amber-500",
-        };
-      case "error":
-        return {
-          dotColor: "bg-rose-500",
-        };
-      default:
-        return {
-          dotColor: "bg-slate-400",
-        };
-    }
-  };
-
-  const styles = getStatusStyles();
 
   return (
     <>
@@ -275,12 +195,6 @@ export function AppSidebar() {
                     className="object-contain"
                   />
                 </div>
-                <div
-                  className={cn(
-                    "absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-slate-950",
-                    styles.dotColor
-                  )}
-                ></div>
               </div>
               <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap overflow-hidden">
                 <h1 className="text-base font-semibold text-slate-900 dark:text-slate-50 tracking-tight">
@@ -340,7 +254,7 @@ export function AppSidebar() {
                               className={cn(
                                 "w-[18px] h-[18px]",
                                 isActive
-                                  ? "text-white"
+                                  ? "text-slate-500"
                                   : "text-slate-500 dark:text-slate-400"
                               )}
                             />
@@ -380,7 +294,7 @@ export function AppSidebar() {
                                   className={cn(
                                     "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm group/client",
                                     activeClient
-                                      ? "bg-slate-900 dark:bg-slate-800 text-white font-medium shadow-sm"
+                                      ? "bg-slate-100 dark:bg-slate-800 text-slate-600 font-medium shadow-sm"
                                       : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900/50"
                                   )}
                                   style={{
@@ -394,7 +308,7 @@ export function AppSidebar() {
                                     className={cn(
                                       "w-1.5 h-1.5 rounded-full transition-all duration-200",
                                       activeClient
-                                        ? "bg-white scale-110"
+                                        ? "bg-emerald-500 scale-110"
                                         : "bg-slate-300 dark:bg-slate-700 group-hover/client:bg-slate-400 dark:group-hover/client:bg-slate-600"
                                     )}
                                   />
@@ -439,7 +353,7 @@ export function AppSidebar() {
                             className={cn(
                               "w-[18px] h-[18px]",
                               isActive
-                                ? "text-white"
+                                ? "text-slate-500"
                                 : "text-slate-500 dark:text-slate-400"
                             )}
                           />

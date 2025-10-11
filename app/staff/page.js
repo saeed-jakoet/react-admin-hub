@@ -34,7 +34,7 @@ import { get } from "@/lib/api/fetcher";
 import { AddStaffDialog } from "@/components/staff/AddStaffDialog";
 import { StaffGridView } from "@/components/staff/StaffGridView";
 import { Loader } from "@/components/shared/Loader";
-import { TableControls } from "@/components/shared/TableControls";
+import Header from "@/components/shared/Header";
 import { useAuth } from "@/components/providers/AuthProvider";
 
 export default function StaffPage() {
@@ -271,126 +271,85 @@ export default function StaffPage() {
 
   const canAddStaff = (user?.role || user?.user_metadata?.role) === "super_admin";
 
+  // Stats cards for Header
+  const statsCards = [
+    {
+      label: "Total Staff",
+      value: staffStats.total,
+      desc: "Team members",
+      icon: Users,
+      color: "blue",
+      trend: TrendingUp,
+      bgGradient: "from-blue-500/10 to-blue-600/10",
+      iconBg: "bg-blue-500",
+    },
+    {
+      label: "System Access",
+      value: staffStats.withAccess,
+      desc: "Active accounts",
+      icon: UserCheck,
+      color: "green",
+      trend: TrendingUp,
+      bgGradient: "from-emerald-500/10 to-emerald-600/10",
+      iconBg: "bg-emerald-500",
+    },
+    {
+      label: "No Access",
+      value: staffStats.withoutAccess,
+      desc: "Pending setup",
+      icon: UserX,
+      color: "red",
+      trend: TrendingDown,
+      bgGradient: "from-red-500/10 to-red-600/10",
+      iconBg: "bg-red-500",
+    },
+    {
+      label: "Departments",
+      value: Object.keys(staffStats.byRole).length,
+      desc: "Active roles",
+      icon: Shield,
+      color: "purple",
+      trend: TrendingUp,
+      bgGradient: "from-purple-500/10 to-purple-600/10",
+      iconBg: "bg-purple-500",
+    },
+  ];
+
   return (
     <>
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Staff Management
-          </h1>
+      <Header
+        title={
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <Users className="w-8 h-8 text-white" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white dark:border-slate-900"></div>
+            </div>
+            <span>Staff Management</span>
+          </div>
+        }
+        stats={
           <p className="text-gray-600 dark:text-slate-400">
             Manage employees, roles, and system access
           </p>
-        </div>
-        {canAddStaff && (
-          <Button
-            onClick={() => setIsAddDialogOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 font-semibold"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Staff
-          </Button>
-        )}
-      </div>
+        }
+        actions={
+          canAddStaff && (
+            <Button
+              onClick={() => setIsAddDialogOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 font-semibold"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Staff
+            </Button>
+          )
+        }
+        // showStatsCards={true}
+        statsCards={statsCards}
+      />
 
       <div className="space-y-6">
-        {/* Staff Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            {
-              label: "Total Staff",
-              value: staffStats.total,
-              desc: "Team members",
-              icon: Users,
-              color: "blue",
-              trend: TrendingUp,
-            },
-            {
-              label: "System Access",
-              value: staffStats.withAccess,
-              desc: "Active accounts",
-              icon: UserCheck,
-              color: "green",
-              trend: TrendingUp,
-            },
-            {
-              label: "No Access",
-              value: staffStats.withoutAccess,
-              desc: "Pending setup",
-              icon: UserX,
-              color: "red",
-              trend: TrendingDown,
-            },
-            {
-              label: "Departments",
-              value: Object.keys(staffStats.byRole).length,
-              desc: "Active roles",
-              icon: Shield,
-              color: "purple",
-              trend: TrendingUp,
-            },
-          ].map((stat, i) => (
-            <Card
-              key={i}
-              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md"
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div
-                    className={`w-12 h-12 bg-${stat.color}-50 dark:bg-${stat.color}-900/20 rounded-lg flex items-center justify-center`}
-                  >
-                    <stat.icon
-                      className={`w-6 h-6 text-${stat.color}-600 dark:text-${stat.color}-400`}
-                    />
-                  </div>
-                  <stat.trend
-                    className={`w-5 h-5 ${
-                      stat.color === "red"
-                        ? "text-red-500"
-                        : stat.color === "green"
-                        ? "text-green-500"
-                        : "text-purple-500"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <p className="text-gray-600 dark:text-slate-400 text-sm font-medium mb-1">
-                    {stat.label}
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {stat.value}
-                  </p>
-                  <p
-                    className={`text-sm font-medium ${
-                      stat.color === "green"
-                        ? "text-green-600 dark:text-green-400"
-                        : stat.color === "red"
-                        ? "text-red-600 dark:text-red-400"
-                        : "text-gray-600 dark:text-slate-400"
-                    }`}
-                  >
-                    {stat.desc}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {/* Staff Controls */}
-        <TableControls
-          searchTerm={searchTerm}
-          onSearch={(e) => setSearchTerm(e.target.value)}
-          exportData={filteredStaff}
-          exportColumns={exportColumns}
-          exportFilename="staff-export"
-          exportTitle="Staff Report"
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          searchPlaceholder="Search staff..."
-        />
-
         {/* Staff Display */}
         {viewMode === "grid" ? (
           <StaffGridView
@@ -400,17 +359,23 @@ export default function StaffPage() {
             onStaffClick={handleRowClick}
           />
         ) : (
-          // Table View
-          <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
-            <div className="p-6">
-              <DataTable
-                showToolbar={false}
-                columns={allColumns}
-                data={filteredStaff}
-                onRowClick={handleRowClick}
-              />
-            </div>
-          </Card>
+          <DataTable
+            columns={allColumns}
+            data={filteredStaff}
+            searchEnabled={true}
+            searchTerm={searchTerm}
+            onSearch={(e) => setSearchTerm(e.target.value)}
+            searchPlaceholder="Search staff..."
+            exportEnabled={true}
+            exportData={filteredStaff}
+            exportColumns={exportColumns}
+            exportFilename="staff-export"
+            exportTitle="Staff Report"
+            viewModeEnabled={true}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            onRowClick={handleRowClick}
+          />
         )}
       </div>
 

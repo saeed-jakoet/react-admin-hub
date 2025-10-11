@@ -167,7 +167,7 @@ export default function OverviewPage() {
     try {
       setLoading(true);
       const response = await get(
-        `/${selectedOrderType}/client/${selectedClient}`,
+        `/${selectedOrderType}/client/${selectedClient}`
       );
       if (response?.data) {
         setOrders(response.data);
@@ -259,7 +259,7 @@ export default function OverviewPage() {
             } catch (error) {
               console.warn(
                 `Invalid time format for ${timeField}:`,
-                order[timeField],
+                order[timeField]
               );
             }
           }
@@ -418,218 +418,206 @@ export default function OverviewPage() {
   const events = transformOrdersToEvents(filteredOrders);
   console.log("Calendar events:", events);
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      {/* Clean Header with KPIs */}
-
-      {/* Main Calendar Section */}
-      <div className="p-6">
-        <div className="grid lg:grid-cols-4 gap-6">
-          {/* Calendar - Main Feature */}
-          <div className="lg:col-span-3">
-            <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-lg rounded-2xl overflow-hidden">
-              <div className="p-6 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-                      <Calendar className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                        Business Overview
-                      </h2>
-                      <p className="text-gray-600 dark:text-slate-400 text-sm">
-                        {selectedClient && selectedOrderType
-                          ? `${orders.length} orders • ${filteredOrders.length} filtered`
-                          : "Select client and order type to view calendar"}
-                      </p>
-                    </div>
-                  </div>
+  // --- Extracted Components ---
+  function CalendarSection() {
+    return (
+      <div className="lg:col-span-3">
+        <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-lg rounded-2xl overflow-hidden">
+          <div className="p-6 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-white" />
                 </div>
-
-                {/* Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Client Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
-                      Client *
-                    </label>
-                    <select
-                      value={selectedClient}
-                      onChange={(e) => setSelectedClient(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Select Client...</option>
-                      {clients.map((client) => (
-                        <option key={client.id} value={client.id}>
-                          {client.company_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Order Type Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
-                      Order Type *
-                    </label>
-                    <select
-                      value={selectedOrderType}
-                      onChange={(e) => setSelectedOrderType(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Select Order Type...</option>
-                      {orderTypes.map((type) => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Status Filter */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
-                      Status
-                    </label>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      disabled={!selectedClient || !selectedOrderType}
-                      className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-                    >
-                      <option value="all">All Statuses</option>
-                      {uniqueStatuses.map((status) => (
-                        <option key={status} value={status}>
-                          {formatStatusText(status)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Status Legend */}
-                <div className="mt-6 flex flex-wrap gap-2">
-                  {Object.entries(statusColors)
-                    .filter(
-                      ([key]) =>
-                        key !== "default" && uniqueStatuses.includes(key),
-                    )
-                    .slice(0, 8)
-                    .map(([status, color]) => (
-                      <div
-                        key={status}
-                        className="flex items-center space-x-2 bg-gray-50 dark:bg-slate-700 rounded-lg px-3 py-1.5"
-                      >
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: color }}
-                        ></div>
-                        <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
-                          {formatStatusText(status)}
-                        </span>
-                      </div>
-                    ))}
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Business Overview
+                  </h2>
+                  <p className="text-gray-600 dark:text-slate-400 text-sm">
+                    {selectedClient && selectedOrderType
+                      ? `${orders.length} orders • ${filteredOrders.length} filtered`
+                      : "Select client and order type to view calendar"}
+                  </p>
                 </div>
               </div>
-
-              <div className="p-6 bg-gray-50 dark:bg-slate-900/50">
-                {!selectedClient || !selectedOrderType ? (
-                  <div className="flex items-center justify-center h-96">
-                    <div className="text-center">
-                      <Calendar className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        Select Client & Order Type
-                      </h3>
-                      <p className="text-gray-600 dark:text-slate-400 mb-4">
-                        Choose a client and order type to view the orders
-                        calendar
-                      </p>
-                    </div>
+            </div>
+            {/* Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Client Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                  Client *
+                </label>
+                <select
+                  value={selectedClient}
+                  onChange={(e) => setSelectedClient(e.target.value)}
+                  className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select Client...</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.company_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* Order Type Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                  Order Type *
+                </label>
+                <select
+                  value={selectedOrderType}
+                  onChange={(e) => setSelectedOrderType(e.target.value)}
+                  className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select Order Type...</option>
+                  {orderTypes.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* Status Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+                  Status
+                </label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  disabled={!selectedClient || !selectedOrderType}
+                  className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                >
+                  <option value="all">All Statuses</option>
+                  {uniqueStatuses.map((status) => (
+                    <option key={status} value={status}>
+                      {formatStatusText(status)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {/* Status Legend */}
+            <div className="mt-6 flex flex-wrap gap-2">
+              {Object.entries(statusColors)
+                .filter(
+                  ([key]) => key !== "default" && uniqueStatuses.includes(key)
+                )
+                .slice(0, 8)
+                .map(([status, color]) => (
+                  <div
+                    key={status}
+                    className="flex items-center space-x-2 bg-gray-50 dark:bg-slate-700 rounded-lg px-3 py-1.5"
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: color }}
+                    ></div>
+                    <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
+                      {formatStatusText(status)}
+                    </span>
                   </div>
-                ) : loading ? (
-                  <Loader variant="bars" text="Calendar Loading..." />
-                ) : orders.length === 0 ? (
-                  <div className="flex items-center justify-center h-96">
-                    <div className="text-center">
-                      <Calendar className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        No Orders Found
-                      </h3>
-                      <p className="text-gray-600 dark:text-slate-400 mb-4">
-                        No orders found for the selected client and order type
-                      </p>
-                      <Button
-                        onClick={handleNewJobClick}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Create Order
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-[600px] bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
-                    <BigCalendar
-                      localizer={localizer}
-                      events={transformOrdersToEvents(filteredOrders)}
-                      startAccessor="start"
-                      endAccessor="end"
-                      date={currentDate}
-                      view={currentView}
-                      onNavigate={handleNavigate}
-                      onView={handleViewChange}
-                      onSelectEvent={handleEventClick}
-                      eventPropGetter={getEventProp}
-                      style={{ height: "100%" }}
-                      className="premium-calendar"
-                      views={["month", "week", "day", "agenda"]}
-                      popup={true}
-                      popupOffset={{ x: 10, y: 10 }}
-                      showMultiDayTimes={true}
-                      step={60}
-                      timeslots={2}
-                      scrollToTime={new Date(1970, 1, 1, 8)}
-                      formats={{
-                        timeGutterFormat: "HH:mm",
-                        eventTimeRangeFormat: (
-                          { start, end },
-                          culture,
-                          localizer,
-                        ) =>
-                          localizer.format(start, "HH:mm", culture) +
-                          " - " +
-                          localizer.format(end, "HH:mm", culture),
-                        agendaTimeFormat: "HH:mm",
-                        agendaTimeRangeFormat: (
-                          { start, end },
-                          culture,
-                          localizer,
-                        ) =>
-                          localizer.format(start, "HH:mm", culture) +
-                          " - " +
-                          localizer.format(end, "HH:mm", culture),
-                      }}
-                      messages={{
-                        next: "Next",
-                        previous: "Previous",
-                        today: "Today",
-                        month: "Month",
-                        week: "Week",
-                        day: "Day",
-                        agenda: "Agenda",
-                        date: "Date",
-                        time: "Time",
-                        event: "Event",
-                        noEventsInRange: "No orders in this range.",
-                        showMore: (total) => `+${total} more`,
-                      }}
-                      components={{
-                        event: ({ event }) => {
-                          const order = event.resource;
-                          const tooltipText = `Circuit: ${
-                            order.circuit_number || "No Circuit"
-                          }
+                ))}
+            </div>
+          </div>
+          <div className="p-6 bg-gray-50 dark:bg-slate-900/50">
+            {!selectedClient || !selectedOrderType ? (
+              <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                  <Calendar className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Select Client & Order Type
+                  </h3>
+                  <p className="text-gray-600 dark:text-slate-400 mb-4">
+                    Choose a client and order type to view the orders calendar
+                  </p>
+                </div>
+              </div>
+            ) : loading ? (
+              <Loader variant="bars" text="Calendar Loading..." />
+            ) : orders.length === 0 ? (
+              <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                  <Calendar className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    No Orders Found
+                  </h3>
+                  <p className="text-gray-600 dark:text-slate-400 mb-4">
+                    No orders found for the selected client and order type
+                  </p>
+                  <Button
+                    onClick={handleNewJobClick}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Create Order
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="h-[600px] bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <BigCalendar
+                  localizer={localizer}
+                  events={transformOrdersToEvents(filteredOrders)}
+                  startAccessor="start"
+                  endAccessor="end"
+                  date={currentDate}
+                  view={currentView}
+                  onNavigate={handleNavigate}
+                  onView={handleViewChange}
+                  onSelectEvent={handleEventClick}
+                  eventPropGetter={getEventProp}
+                  style={{ height: "100%" }}
+                  className="premium-calendar"
+                  views={["month", "week", "day", "agenda"]}
+                  popup={true}
+                  popupOffset={{ x: 10, y: 10 }}
+                  showMultiDayTimes={true}
+                  step={60}
+                  timeslots={2}
+                  scrollToTime={new Date(1970, 1, 1, 8)}
+                  formats={{
+                    timeGutterFormat: "HH:mm",
+                    eventTimeRangeFormat: (
+                      { start, end },
+                      culture,
+                      localizer
+                    ) =>
+                      localizer.format(start, "HH:mm", culture) +
+                      " - " +
+                      localizer.format(end, "HH:mm", culture),
+                    agendaTimeFormat: "HH:mm",
+                    agendaTimeRangeFormat: (
+                      { start, end },
+                      culture,
+                      localizer
+                    ) =>
+                      localizer.format(start, "HH:mm", culture) +
+                      " - " +
+                      localizer.format(end, "HH:mm", culture),
+                  }}
+                  messages={{
+                    next: "Next",
+                    previous: "Previous",
+                    today: "Today",
+                    month: "Month",
+                    week: "Week",
+                    day: "Day",
+                    agenda: "Agenda",
+                    date: "Date",
+                    time: "Time",
+                    event: "Event",
+                    noEventsInRange: "No orders in this range.",
+                    showMore: (total) => `+${total} more`,
+                  }}
+                  components={{
+                    event: ({ event }) => {
+                      const order = event.resource;
+                      const tooltipText = `Circuit: ${
+                        order.circuit_number || "No Circuit"
+                      }
 Client: ${order.clients?.company_name || order.client || "Unknown"}
 Status: ${formatStatusText(order.status)}
 Event: ${order.eventType}
@@ -637,138 +625,139 @@ ${order.eventTime ? `Time: ${order.eventTime}` : ""}
 ${order.pm ? `PM: ${order.pm}` : ""}
 
 Click to edit this job`;
-
-                          return (
-                            <div
-                              className="text-xs font-medium truncate px-1 cursor-pointer hover:opacity-80"
-                              title={tooltipText}
-                            >
-                              {event.title}
-                            </div>
-                          );
-                        },
-                      }}
-                    />
-                  </div>
-                )}
+                      return (
+                        <div
+                          className="text-xs font-medium truncate px-1 cursor-pointer hover:opacity-80"
+                          title={tooltipText}
+                        >
+                          {event.title}
+                        </div>
+                      );
+                    },
+                  }}
+                />
               </div>
-            </Card>
+            )}
           </div>
-
-          {/* Sidebar - Clean and Minimal */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Quick Actions */}
-            <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm rounded-xl">
-              <div className="p-4">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center uppercase tracking-wide">
-                  <Activity className="w-4 h-4 mr-2" />
-                  Quick Actions
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-14 flex-col text-xs bg bg-emerald-600 hover:bg-emerald-700 text-white"
-                  >
-                    <FileText className="w-4 h-4 mb-1 text-white" />
-                    Quote
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleNewJobClick}
-                    className="h-14 flex-col text-xs bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Calendar className="w-4 h-4 mb-1" />
-                    New Order
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-14 flex-col text-xs bg-purple-600 hover:bg-purple-700 text-white"
-                  >
-                    <Truck className="w-4 h-4 mb-1 text-white" />
-                    Track
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-14 flex-col text-xs bg-orange-600 hover:bg-orange-700 text-white"
-                  >
-                    <Package className="w-4 h-4 mb-1 text-white" />
-                    Stock
-                  </Button>
-                </div>
-              </div>
-            </Card>
-
-            {/* Critical Alerts */}
-            <Card className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/50 shadow-sm rounded-xl">
-              <div className="p-4">
-                <h3 className="text-sm font-semibold text-red-900 dark:text-red-100 mb-3 flex items-center uppercase tracking-wide">
-                  <AlertTriangle className="w-4 h-4 mr-2" />
-                  Alerts
-                </h3>
-                <div className="space-y-2">
-                  <div className="p-3 bg-red-100/60 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800/30">
-                    <p className="text-xs font-medium text-red-900 dark:text-red-100">
-                      Low Stock
-                    </p>
-                    <p className="text-xs text-red-700 dark:text-red-300">
-                      Fiber cable: 500m
-                    </p>
-                  </div>
-                  <div className="p-3 bg-orange-100/60 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800/30">
-                    <p className="text-xs font-medium text-orange-900 dark:text-orange-100">
-                      Overdue
-                    </p>
-                    <p className="text-xs text-orange-700 dark:text-orange-300">
-                      3 payments pending
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Performance Metrics */}
-            <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm rounded-xl">
-              <div className="p-4">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center uppercase tracking-wide">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Performance
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                    <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
-                      Completed
-                    </span>
-                    <span className="text-sm font-bold text-gray-900 dark:text-white">
-                      47
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                    <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
-                      Success Rate
-                    </span>
-                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                      94%
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                    <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
-                      Rating
-                    </span>
-                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                      4.8★
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
+        </Card>
       </div>
+    );
+  }
 
-      {/* New Job Dialog */}
+  function Sidebar() {
+    return (
+      <div className="lg:col-span-1 space-y-6">
+        {/* Quick Actions */}
+        <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm rounded-xl">
+          <div className="p-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center uppercase tracking-wide">
+              <Activity className="w-4 h-4 mr-2" />
+              Quick Actions
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-14 flex-col text-xs bg bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <FileText className="w-4 h-4 mb-1 text-white" />
+                Quote
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleNewJobClick}
+                className="h-14 flex-col text-xs bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Calendar className="w-4 h-4 mb-1" />
+                New Order
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-14 flex-col text-xs bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <Truck className="w-4 h-4 mb-1 text-white" />
+                Track
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-14 flex-col text-xs bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                <Package className="w-4 h-4 mb-1 text-white" />
+                Stock
+              </Button>
+            </div>
+          </div>
+        </Card>
+        {/* Critical Alerts */}
+        <Card className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/50 shadow-sm rounded-xl">
+          <div className="p-4">
+            <h3 className="text-sm font-semibold text-red-900 dark:text-red-100 mb-3 flex items-center uppercase tracking-wide">
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              Alerts
+            </h3>
+            <div className="space-y-2">
+              <div className="p-3 bg-red-100/60 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800/30">
+                <p className="text-xs font-medium text-red-900 dark:text-red-100">
+                  Low Stock
+                </p>
+                <p className="text-xs text-red-700 dark:text-red-300">
+                  Fiber cable: 500m
+                </p>
+              </div>
+              <div className="p-3 bg-orange-100/60 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800/30">
+                <p className="text-xs font-medium text-orange-900 dark:text-orange-100">
+                  Overdue
+                </p>
+                <p className="text-xs text-orange-700 dark:text-orange-300">
+                  3 payments pending
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+        {/* Performance Metrics */}
+        <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm rounded-xl">
+          <div className="p-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center uppercase tracking-wide">
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Performance
+            </h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
+                  Completed
+                </span>
+                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                  47
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
+                  Success Rate
+                </span>
+                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                  94%
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
+                  Rating
+                </span>
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  4.8★
+                </span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  function NewJobDialog() {
+    return (
       <Dialog
         open={newJobDialogOpen}
         onOpenChange={(open) => {
@@ -785,7 +774,6 @@ Click to edit this job`;
               Select a job type and client to create a new job.
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-4 py-4">
             {/* Job Type Dropdown */}
             <div className="space-y-2">
@@ -813,7 +801,6 @@ Click to edit this job`;
                 ))}
               </select>
             </div>
-
             {/* Client Dropdown */}
             <div className="space-y-2">
               <Label htmlFor="client">Client</Label>
@@ -835,7 +822,6 @@ Click to edit this job`;
               </select>
             </div>
           </div>
-
           <DialogFooter>
             <Button variant="outline" onClick={resetDialog}>
               <X className="w-4 h-4 mr-2" />
@@ -852,8 +838,11 @@ Click to edit this job`;
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    );
+  }
 
-      {/* Order Details Dialog */}
+  function OrderDetailsDialog() {
+    return (
       <Dialog open={orderDetailsDialog} onOpenChange={setOrderDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -865,7 +854,6 @@ Click to edit this job`;
               View comprehensive order information and timeline
             </DialogDescription>
           </DialogHeader>
-
           {selectedEvent && (
             <div className="space-y-6 py-4">
               {/* Order Header */}
@@ -907,7 +895,6 @@ Click to edit this job`;
                   </p>
                 </div>
               </div>
-
               {/* Order Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
@@ -920,7 +907,6 @@ Click to edit this job`;
                       {selectedEvent.client_contact_name || "Not assigned"}
                     </p>
                   </div>
-
                   <div className="p-3 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700/50">
                     <p className="text-sm font-medium text-gray-600 dark:text-slate-400 mb-1">
                       End Client Contact
@@ -931,7 +917,6 @@ Click to edit this job`;
                     </p>
                   </div>
                 </div>
-
                 <div className="space-y-3">
                   <div className="p-3 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700/50">
                     <p className="text-sm font-medium text-gray-600 dark:text-slate-400 mb-1">
@@ -941,7 +926,6 @@ Click to edit this job`;
                       {selectedEvent.service_provider || "Not assigned"}
                     </p>
                   </div>
-
                   <div className="p-3 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700/50">
                     <p className="text-sm font-medium text-gray-600 dark:text-slate-400 mb-1">
                       Created Date
@@ -950,14 +934,13 @@ Click to edit this job`;
                       <Clock className="w-4 h-4 mr-2" />
                       {selectedEvent.created_at
                         ? new Date(
-                            selectedEvent.created_at,
+                            selectedEvent.created_at
                           ).toLocaleDateString()
                         : "Unknown"}
                     </p>
                   </div>
                 </div>
               </div>
-
               {/* Additional Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-3 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700/50">
@@ -968,7 +951,6 @@ Click to edit this job`;
                     {selectedEvent.pm || "Not assigned"}
                   </p>
                 </div>
-
                 <div className="p-3 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700/50">
                   <p className="text-sm font-medium text-gray-600 dark:text-slate-400 mb-1">
                     County
@@ -979,7 +961,6 @@ Click to edit this job`;
                   </p>
                 </div>
               </div>
-
               {/* Notes */}
               {selectedEvent.notes && selectedEvent.notes.length > 0 && (
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -1001,7 +982,6 @@ Click to edit this job`;
               )}
             </div>
           )}
-
           <DialogFooter>
             <Button
               variant="outline"
@@ -1023,6 +1003,21 @@ Click to edit this job`;
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    );
+  }
+
+  // --- Main Render ---
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+      {/* Clean Header with KPIs */}
+      <div className="p-6">
+        <div className="grid lg:grid-cols-4 gap-6">
+          <CalendarSection />
+          <Sidebar />
+        </div>
+      </div>
+      <NewJobDialog />
+      <OrderDetailsDialog />
     </div>
   );
 }

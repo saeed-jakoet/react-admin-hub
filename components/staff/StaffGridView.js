@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Mail, Phone, MapPin, Briefcase, Shield, Eye, Edit, Key, UserX } from "lucide-react";
+import { Mail, Phone, MapPin, Briefcase, Shield, Eye, Edit, Key, UserX, Table } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   GridView, 
@@ -16,7 +16,8 @@ export function StaffGridView({
   staff, 
   getAccessColor, 
   getAccessIcon, 
-  onStaffClick 
+  onStaffClick, 
+  onViewModeChange
 }) {
   const renderStaffCard = (member) => {
     const dropdownItems = [
@@ -124,5 +125,22 @@ export function StaffGridView({
     );
   };
 
-  return <GridView items={staff} renderCard={renderStaffCard} />;
+  return (
+    <>
+      <div className="flex justify-end mb-4">
+        {onViewModeChange && (
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+            onClick={() => onViewModeChange("table")}
+            title="Switch to Table View"
+          >
+            <Table className="w-4 h-4" />
+            Table View
+          </button>
+        )}
+      </div>
+      <GridView items={staff} renderCard={renderStaffCard} />
+    </>
+  );
 }

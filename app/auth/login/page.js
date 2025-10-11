@@ -414,8 +414,8 @@ export default function LoginPage() {
                   Fiber Africa
                 </h1>
                 <p
-                  className="font-semibold text-xl lg:text-2xl tracking-wider"
-                  style={{ color: "#264C92" }}
+                  className="font-semibold text-xl lg:text-2xl tracking-wider text-yellow-500"
+                  // style={{ color: "#264C92" }}
                 >
                   WE DELIVER
                 </p>

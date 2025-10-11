@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Package, MapPin, Eye, Edit, Trash2 } from "lucide-react";
+import { Package, MapPin, Eye, Edit, Trash2, Table } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { 
   GridView, 
   GridCard, 
@@ -16,7 +17,8 @@ export function InventoryGridView({
   getCategoryColor, 
   getCategoryDotColor, 
   getStockIcon, 
-  getStockStatus 
+  getStockStatus,
+  onViewModeChange 
 }) {
   const renderInventoryCard = (item) => {
     const status = getStockStatus(item.quantity, item.minimum_quantity);
@@ -93,5 +95,22 @@ export function InventoryGridView({
     );
   };
 
-  return <GridView items={items} renderCard={renderInventoryCard} />;
+  return (
+    <div className="space-y-4">
+      {/* View Mode Toggle for Grid View */}
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onViewModeChange("table")}
+          className="flex items-center gap-2"
+        >
+          <Table className="w-4 h-4" />
+          Switch to Table View
+        </Button>
+      </div>
+      
+      <GridView items={items} renderCard={renderInventoryCard} />
+    </div>
+  );
 }

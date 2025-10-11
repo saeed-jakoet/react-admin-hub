@@ -30,7 +30,7 @@ import { get } from "@/lib/api/fetcher";
 import { AddInventoryDialog } from "@/components/inventory/AddInventoryDialog";
 import { InventoryGridView } from "@/components/inventory/InventoryGridView";
 import { Loader } from "@/components/shared/Loader";
-import { TableControls } from "@/components/shared/TableControls";
+import Header from "@/components/shared/Header";
 
 export default function InventoryPage() {
   const [inventory, setInventory] = React.useState([]);
@@ -179,7 +179,8 @@ export default function InventoryPage() {
     };
   };
 
-  if (loading) return <Loader variant="bars" text="Loading inventory system..." />;
+  if (loading)
+    return <Loader variant="bars" text="Loading inventory system..." />;
 
   const allColumns = [
     {
@@ -299,133 +300,85 @@ export default function InventoryPage() {
     },
   ];
 
+  // Stats cards data for Header component
+  const statsCards = [
+    {
+      label: "Total Items",
+      value: stockStats.total,
+      desc: "Across all categories",
+      icon: Package,
+      color: "blue",
+      trend: TrendingUp,
+    },
+    {
+      label: "In Stock",
+      value: stockStats.inStock,
+      desc: "Items available",
+      icon: CheckCircle,
+      color: "green",
+      trend: TrendingUp,
+    },
+    {
+      label: "Low Stock",
+      value: stockStats.lowStock,
+      desc: "Need reorder",
+      icon: AlertTriangle,
+      color: "orange",
+      trend: TrendingDown,
+    },
+    {
+      label: "Out of Stock",
+      value: stockStats.outOfStock,
+      desc: "Critical items",
+      icon: XCircle,
+      color: "red",
+      trend: Minus,
+    },
+    {
+      label: "Total Value",
+      value: `R${(stockStats.totalValue / 1000).toFixed(1)}K`,
+      desc: "Stock valuation",
+      icon: Truck,
+      color: "purple",
+      trend: TrendingUp,
+    },
+  ];
+
   return (
-    <>
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Inventory Management
-          </h1>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      {/* Page Header with Stats */}
+      <Header
+        title={
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+                <Package className="w-8 h-8 text-white" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white dark:border-slate-900"></div>
+            </div>
+            <span>Inventory Management</span>
+          </div>
+        }
+        stats={
           <p className="text-gray-600 dark:text-slate-400">
             Track and manage your stock levels
           </p>
-        </div>
-        <Button
-          onClick={() => setIsAddDialogOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 font-semibold"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Item
-        </Button>
-      </div>
+        }
+        actions={
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 font-semibold"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Item
+          </Button>
+        }
+        // showStatsCards={true}
+        statsCards={statsCards}
+      />
 
+      {/* Content */}
       <div className="space-y-6">
-        {/* Inventory Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          {[
-            {
-              label: "Total Items",
-              value: stockStats.total,
-              desc: "Across all categories",
-              icon: Package,
-              color: "blue",
-              trend: TrendingUp,
-            },
-            {
-              label: "In Stock",
-              value: stockStats.inStock,
-              desc: "Items available",
-              icon: CheckCircle,
-              color: "green",
-              trend: TrendingUp,
-            },
-            {
-              label: "Low Stock",
-              value: stockStats.lowStock,
-              desc: "Need reorder",
-              icon: AlertTriangle,
-              color: "orange",
-              trend: TrendingDown,
-            },
-            {
-              label: "Out of Stock",
-              value: stockStats.outOfStock,
-              desc: "Critical items",
-              icon: XCircle,
-              color: "red",
-              trend: Minus,
-            },
-            {
-              label: "Total Value",
-              value: `R${(stockStats.totalValue / 1000).toFixed(1)}K`,
-              desc: "Stock valuation",
-              icon: Truck,
-              color: "purple",
-              trend: TrendingUp,
-            },
-          ].map((stat, i) => (
-            <Card
-              key={i}
-              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md"
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div
-                    className={`w-12 h-12 bg-${stat.color}-50 dark:bg-${stat.color}-900/20 rounded-lg flex items-center justify-center`}
-                  >
-                    <stat.icon
-                      className={`w-6 h-6 text-${stat.color}-600 dark:text-${stat.color}-400`}
-                    />
-                  </div>
-                  <stat.trend
-                    className={`w-5 h-5 ${
-                      stat.color === "red"
-                        ? "text-red-500"
-                        : stat.color === "orange"
-                        ? "text-orange-500"
-                        : "text-green-500"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <p className="text-gray-600 dark:text-slate-400 text-sm font-medium mb-1">
-                    {stat.label}
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {stat.value}
-                  </p>
-                  <p
-                    className={`text-sm font-medium ${
-                      stat.color === "green"
-                        ? "text-green-600 dark:text-green-400"
-                        : stat.color === "orange"
-                        ? "text-orange-600 dark:text-orange-400"
-                        : stat.color === "red"
-                        ? "text-red-600 dark:text-red-400"
-                        : "text-gray-600 dark:text-slate-400"
-                    }`}
-                  >
-                    {stat.desc}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        <TableControls
-          searchTerm={searchTerm}
-          onSearch={(e) => setSearchTerm(e.target.value)}
-          exportData={filteredInventory}
-          exportColumns={exportColumns}
-          exportFilename="inventory-export"
-          exportTitle="Inventory Report"
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          searchPlaceholder="Search inventory..."
-        />
-
         {/* Inventory Display */}
         {viewMode === "grid" ? (
           <InventoryGridView
@@ -434,18 +387,25 @@ export default function InventoryPage() {
             getCategoryDotColor={getCategoryDotColor}
             getStockIcon={getStockIcon}
             getStockStatus={getStockStatus}
+            onViewModeChange={setViewMode}
           />
         ) : (
-          // Table View
-          <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
-            <div className="p-6">
-              <DataTable
-                showToolbar={false}
-                columns={allColumns}
-                data={filteredInventory}
-              />
-            </div>
-          </Card>
+          <DataTable
+            columns={allColumns}
+            data={filteredInventory}
+            searchEnabled={true}
+            searchTerm={searchTerm}
+            onSearch={(e) => setSearchTerm(e.target.value)}
+            searchPlaceholder="Search inventory..."
+            exportEnabled={true}
+            exportData={filteredInventory}
+            exportColumns={exportColumns}
+            exportFilename="inventory-export"
+            exportTitle="Inventory Report"
+            viewModeEnabled={true}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+          />
         )}
       </div>
 
@@ -454,6 +414,6 @@ export default function InventoryPage() {
         onOpenChange={setIsAddDialogOpen}
         onSuccess={fetchInventory}
       />
-    </>
+    </div>
   );
 }
