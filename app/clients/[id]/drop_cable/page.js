@@ -3,24 +3,15 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
-  ArrowLeft,
   Plus,
   Activity,
-  Download,
   MoreVertical,
   Upload,
   FileText,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  AlertCircle,
   Cable,
   MapPin,
   User,
-  Briefcase,
-  Eye,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,15 +20,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Filter } from "lucide-react";
 import { DataTable } from "@/components/shared/DataTable";
-import { get, put, post } from "@/lib/api/fetcher";
+import { get, post } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
 import JobFormDialog from "@/components/shared/JobFormDialog";
 import UploadDocumentDialog from "@/components/shared/UploadDocumentDialog";
 import AsBuiltDocumentDialog from "@/components/shared/AsBuiltDocumentDialog";
 import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
-import { TableControls } from "@/components/shared/TableControls";
 import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
 import Header from "@/components/shared/Header";
 
@@ -122,6 +111,23 @@ export default function DropCablePage() {
       window.history.replaceState({}, "", newUrl);
     }
   }, [searchParams]);
+
+  // Open edit dialog if edit=true and jobId are present in query params
+  useEffect(() => {
+    const isEdit = searchParams.get("edit") === "true";
+    const jobId = searchParams.get("jobId");
+    if (isEdit && jobId && jobs.length > 0) {
+      const job = jobs.find((j) => String(j.id) === String(jobId));
+      if (job) {
+        setEditingJob(job.id);
+        setEditFormData({ ...job });
+        setDialogOpen(true);
+        // Clean up the URL so dialog can be closed without params
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, "", newUrl);
+      }
+    }
+  }, [searchParams, jobs]);
 
   // Format status for display
   const formatDropCableStatus = (status) => {

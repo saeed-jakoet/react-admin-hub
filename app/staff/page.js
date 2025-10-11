@@ -148,7 +148,10 @@ export default function StaffPage() {
     },
     {
       header: "Hire Date",
-      accessor: (member) => member.hire_date ? new Date(member.hire_date).toLocaleDateString() : "—",
+      accessor: (member) =>
+        member.hire_date
+          ? new Date(member.hire_date).toLocaleDateString()
+          : "—",
     },
   ];
 
@@ -168,7 +171,7 @@ export default function StaffPage() {
         <div className="flex items-center space-x-3">
           <Avatar className="w-10 h-10 shadow-md ring-2 ring-white dark:ring-slate-800 bg-blue-600">
             <AvatarFallback className="bg-blue-600 text-white font-semibold text-sm">
-              {`${(row.original.first_name?.[0] || '').toUpperCase()}${(row.original.surname?.[0] || '').toUpperCase()}`}
+              {`${(row.original.first_name?.[0] || "").toUpperCase()}${(row.original.surname?.[0] || "").toUpperCase()}`}
             </AvatarFallback>
           </Avatar>
           <div>
@@ -223,7 +226,7 @@ export default function StaffPage() {
         <div className="flex items-center space-x-2">
           <Shield className="w-4 h-4 text-gray-400" />
           <span className="text-gray-900 dark:text-white font-medium capitalize">
-            {row.original.role?.replace('_', ' ') || "—"}
+            {row.original.role?.replace("_", " ") || "—"}
           </span>
         </div>
       ),
@@ -269,7 +272,8 @@ export default function StaffPage() {
     },
   ];
 
-  const canAddStaff = (user?.role || user?.user_metadata?.role) === "super_admin";
+  const canAddStaff =
+    (user?.role || user?.user_metadata?.role) === "super_admin";
 
   // Stats cards for Header
   const statsCards = [
@@ -357,6 +361,7 @@ export default function StaffPage() {
             getAccessColor={getAccessColor}
             getAccessIcon={getAccessIcon}
             onStaffClick={handleRowClick}
+            onViewModeChange={setViewMode}
           />
         ) : (
           <DataTable
