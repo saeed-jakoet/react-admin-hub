@@ -100,13 +100,13 @@ const navigationSections = [
   {
     label: "Analytics",
     items: [
-      {
-        id: "reports",
-        label: "Reports",
-        href: "/reports",
-        icon: BarChart3,
-        notification: null,
-      },
+      // {
+      //   id: "reports",
+      //   label: "Reports",
+      //   href: "/reports",
+      //   icon: BarChart3,
+      //   notification: null,
+      // },
       {
         id: "planning",
         label: "Planning",

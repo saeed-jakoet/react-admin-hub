@@ -6,33 +6,40 @@ import { Grid3X3, List } from "lucide-react";
 
 export function ViewModeToggle({ viewMode, onViewModeChange, className = "" }) {
   return (
-    <div className={`flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg p-1 ${className}`}>
-      <Button
-        variant={viewMode === "grid" ? "default" : "ghost"}
-        size="sm"
+    <div
+      className={`inline-flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg ${className}`}
+    >
+      <button
         onClick={() => onViewModeChange("grid")}
-        className={`px-3 py-2 transition-all duration-200 ${
-          viewMode === "grid"
-            ? "bg-white dark:bg-slate-600 shadow-sm text-gray-900 dark:text-white"
-            : "text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-600/50"
-        }`}
+        className={`
+          flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200
+          ${
+            viewMode === "grid"
+              ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          }
+        `}
       >
-        <Grid3X3 className="w-4 h-4 mr-2" />
-        Grid
-      </Button>
-      <Button
-        variant={viewMode === "table" ? "default" : "ghost"}
-        size="sm"
+        <Grid3X3 className="w-4 h-4" />
+        <span className="hidden sm:inline">Grid</span>
+      </button>
+      <button
         onClick={() => onViewModeChange("table")}
-        className={`px-3 py-2 transition-all duration-200 ${
-          viewMode === "table"
-            ? "bg-white dark:bg-slate-600 shadow-sm text-gray-900 dark:text-white"
-            : "text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-600/50"
-        }`}
+        className={`
+          flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200
+          ${
+            viewMode === "table"
+              ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          }
+        `}
       >
-        <List className="w-4 h-4 mr-2" />
-        Table
-      </Button>
+        <List className="w-4 h-4" />
+        <span className="hidden sm:inline">Table</span>
+      </button>
     </div>
   );
 }
+
+// Usage example - you can remove the wrapper div entirely now
+// Just use: <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />

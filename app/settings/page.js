@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { get } from "@/lib/api/fetcher";
+import { get, put } from "@/lib/api/fetcher";
+import { useToast } from "@/components/shared/Toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,8 +32,10 @@ import {
   EyeOff,
 } from "lucide-react";
 import { Loader } from "@/components/shared/Loader";
+import Header from "@/components/shared/Header";
 
 function UserSettingsPage() {
+  const { success: toastSuccess, error: toastError } = useToast();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -116,12 +119,60 @@ function UserSettingsPage() {
     setFormData({ ...userData });
   };
 
+  const [saveError, setSaveError] = useState("");
+  console.log(userData);
+
+  const editableFields = [
+    "first_name",
+    "surname",
+    "email",
+    "phone_number",
+    "date_of_birth",
+    "address",
+    "position",
+    "department",
+    "hire_date",
+    "salary",
+    "employment_type",
+    "emergency_contact_name",
+    "emergency_contact_phone",
+    "national_id",
+    "notes",
+  ];
+
   const handleSave = async () => {
     setSaving(true);
-    // Simulate API call (replace with actual PUT if needed)
-    setUserData(formData);
-    setEditing(false);
-    setSaving(false);
+    setSaveError("");
+    //
+    if (!formData) {
+      setSaveError("No form data to save.");
+      setSaving(false);
+      return;
+    }
+    const payload = {};
+    editableFields.forEach((field) => {
+      if (formData[field] !== undefined) payload[field] = formData[field];
+    });
+    try {
+      const res = await put(`/staff/${userData.id}`, payload);
+      if (res?.data) {
+        setUserData(res.data);
+        setFormData(res.data);
+        setEditing(false);
+        toastSuccess(
+          "Profile Updated",
+          "Your profile was updated successfully."
+        );
+      } else {
+        setSaveError("Failed to update profile.");
+        toastError("Update Failed", "Failed to update profile.");
+      }
+    } catch (e) {
+      setSaveError(e?.message || "Failed to update profile.");
+      toastError("Update Failed", e?.message || "Failed to update profile.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleInputChange = (field, value) => {
@@ -157,55 +208,51 @@ function UserSettingsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Header */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
-        <div className="px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                Account Settings
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-1">
-                Manage your profile and account preferences
-              </p>
-            </div>
+      {saveError && (
+        <div className="mx-auto max-w-2xl mt-4 mb-2 p-3 bg-red-100 text-red-700 rounded border border-red-300 text-center">
+          {saveError}
+        </div>
+      )}
 
-            {editing ? (
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={saving}
-                  className="gap-2"
-                >
-                  <X className="w-4 h-4" />
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
-                >
-                  {saving ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  Save Changes
-                </Button>
-              </div>
-            ) : (
+      <Header
+        title="Account Settings"
+        subtitle="Manage your profile and account preferences"
+        actions={
+          editing ? (
+            <div className="flex items-center gap-3">
               <Button
-                onClick={handleEdit}
+                variant="outline"
+                onClick={handleCancel}
+                disabled={saving}
+                className="gap-2"
+              >
+                <X className="w-4 h-4" />
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving}
                 className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
               >
-                <Edit3 className="w-4 h-4" />
-                Edit Profile
+                {saving ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                Save Changes
               </Button>
-            )}
-          </div>
-        </div>
-      </div>
+            </div>
+          ) : (
+            <Button
+              onClick={handleEdit}
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
+            >
+              <Edit3 className="w-4 h-4" />
+              Edit Profile
+            </Button>
+          )
+        }
+      />
 
       <div className="p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

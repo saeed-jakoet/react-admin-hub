@@ -258,10 +258,8 @@ export default function FleetPage() {
   ];
 
   return (
-    <div>
-      <h1 className="text-center mt-50">
-        Implement endpoints and backend Functionality
-      </h1>
+    <div className="flex items-center justify-center mt-10">
+      <h1 className="text-center mt-50 text-xl">Coming soon...</h1>
     </div>
     // <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
     //   {/* Page Header with Stats */}

@@ -11,8 +11,8 @@ export default function TeamsPage() {
   const [teams] = React.useState(mockTeams);
 
   return (
-    <div>
-      <h1 className="text-center">Coming Soon...</h1>
+    <div className="flex items-center justify-center mt-10">
+      <h1 className="text-center mt-50 text-xl">Coming soon...</h1>
     </div>
     // <div className="p-6 space-y-6">
     //   <div className="flex items-center justify-between">

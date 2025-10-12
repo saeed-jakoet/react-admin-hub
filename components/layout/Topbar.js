@@ -195,10 +195,10 @@ export function Topbar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="my-2 bg-slate-200 dark:bg-slate-700" />
-              <DropdownMenuItem className="cursor-pointer rounded-lg px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700">
+              {/* <DropdownMenuItem className="cursor-pointer rounded-lg px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700">
                 <User className="mr-3 h-4.5 w-4.5 text-slate-500 dark:text-slate-400" />
                 <span className="font-medium">My Profile</span>
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
               <DropdownMenuItem
                 className="cursor-pointer rounded-lg px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700"
                 onClick={() => router.push("/settings")}

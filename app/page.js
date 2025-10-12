@@ -540,7 +540,7 @@ export default function OverviewPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-600 dark:text-slate-400">
-                    Completed Jobs
+                    Completed Orders
                   </span>
                   <span className="text-xl font-semibold text-slate-900 dark:text-white">
                     47

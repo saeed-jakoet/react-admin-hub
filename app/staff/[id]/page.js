@@ -338,8 +338,8 @@ export default function StaffDetailPage({ params }) {
             Staff Member Not Found
           </h1>
           <p className="text-slate-600 dark:text-slate-400 max-w-md">
-            The staff member you&apos;re looking for doesn&apos;t exist or has been
-            removed.
+            The staff member you&apos;re looking for doesn&apos;t exist or has
+            been removed.
           </p>
         </div>
         <Button
@@ -410,7 +410,15 @@ export default function StaffDetailPage({ params }) {
               </div>
 
               <div className="flex items-center gap-3">
-                {editing ? (
+                {isSelf ? (
+                  <Button
+                    onClick={() => router.push("/settings")}
+                    className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    Go to Your Profile
+                  </Button>
+                ) : editing ? (
                   <>
                     <Button
                       variant="outline"

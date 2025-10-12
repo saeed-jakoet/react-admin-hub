@@ -178,17 +178,11 @@ export function DataTable({
                   )}
 
                   {/* View Toggle */}
-                  {viewModeEnabled && (
-                    <div className="flex items-center gap-3 px-4 h-12 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-xl shadow-sm">
-                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider hidden sm:inline">
-                        View
-                      </span>
-                      <ViewModeToggle
-                        viewMode={viewMode}
-                        onViewModeChange={setViewMode}
-                      />
-                    </div>
-                  )}
+
+                  <ViewModeToggle
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                  />
                 </div>
               )}
             </div>
