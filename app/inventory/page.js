@@ -1,9 +1,8 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState, useMemo } from "react";
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Plus,
   MoreVertical,
@@ -33,13 +32,13 @@ import { Loader } from "@/components/shared/Loader";
 import Header from "@/components/shared/Header";
 
 export default function InventoryPage() {
-  const [inventory, setInventory] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
-  const [viewMode, setViewMode] = React.useState("table"); // table, grid
-  const [searchTerm, setSearchTerm] = React.useState("");
+  const [inventory, setInventory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("table"); // table, grid
+  const [searchTerm, setSearchTerm] = useState("");
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchInventory();
   }, []);
 
@@ -56,7 +55,7 @@ export default function InventoryPage() {
   };
 
   // Stock status calculations
-  const stockStats = React.useMemo(() => {
+  const stockStats = useMemo(() => {
     if (!inventory.length)
       return {
         total: 0,
@@ -121,7 +120,7 @@ export default function InventoryPage() {
   };
 
   // Filter inventory based on search term
-  const filteredInventory = React.useMemo(() => {
+  const filteredInventory = useMemo(() => {
     if (!searchTerm) return inventory;
 
     return inventory.filter(

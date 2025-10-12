@@ -1,10 +1,9 @@
 "use client";
 
-import * as React from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Plus,
   MoreVertical,
@@ -14,8 +13,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  Eye,
-  Edit,
   TrendingUp,
   TrendingDown,
   CheckCircle,
@@ -40,26 +37,26 @@ import { useAuth } from "@/components/providers/AuthProvider";
 export default function StaffPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [staff, setStaff] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
-  const [viewMode, setViewModeState] = React.useState(() => {
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [viewMode, setViewModeState] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("staffViewMode") || "table";
     }
     return "table";
   });
-  const [searchTerm, setSearchTerm] = React.useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Wrap setViewMode to persist
-  const setViewMode = React.useCallback((mode) => {
+  const setViewMode = useCallback((mode) => {
     setViewModeState(mode);
     if (typeof window !== "undefined") {
       localStorage.setItem("staffViewMode", mode);
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchStaff();
   }, []);
 
@@ -76,7 +73,7 @@ export default function StaffPage() {
   };
 
   // Staff stats calculations
-  const staffStats = React.useMemo(() => {
+  const staffStats = useMemo(() => {
     if (!staff.length)
       return {
         total: 0,
@@ -117,7 +114,7 @@ export default function StaffPage() {
   };
 
   // Filter staff based on search term
-  const filteredStaff = React.useMemo(() => {
+  const filteredStaff = useMemo(() => {
     if (!searchTerm) return staff;
 
     return staff.filter(

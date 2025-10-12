@@ -16,7 +16,6 @@ import {
 import { DataTable } from "@/components/shared/DataTable";
 import { get, post } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
-import JobCreationModal from "@/components/shared/JobCreationModal";
 import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
 
 export default function MaintenancePage() {
@@ -358,7 +357,7 @@ export default function MaintenancePage() {
           <DataTable columns={columns} data={filteredJobs} />
 
           {/* New Job Creation Modal */}
-          <JobCreationModal
+          {/* <JobCreationModal
             isOpen={newJobModalOpen}
             onClose={handleCloseNewJobModal}
             onJobCreated={handleJobCreated}
@@ -367,7 +366,7 @@ export default function MaintenancePage() {
             jobConfig={jobTypeConfigs["maintenance"]}
             clientId={clientId}
             clientName={clientNameForModal}
-          />
+          /> */}
         </div>
       </div>
     </div>

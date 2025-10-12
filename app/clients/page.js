@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,30 +33,29 @@ import { ClientsGridView } from "@/components/clients/ClientsGridView";
 import { Loader } from "@/components/shared/Loader";
 import { TableControls } from "@/components/shared/TableControls";
 
-
 export default function ClientsPage() {
   const router = useRouter();
-  const [clients, setClients] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   // Persist view mode in localStorage
-  const [viewMode, setViewModeState] = React.useState(() => {
+  const [viewMode, setViewModeState] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("clientsViewMode") || "table";
     }
     return "table";
   });
-  const [searchTerm, setSearchTerm] = React.useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Wrap setViewMode to persist
-  const setViewMode = React.useCallback((mode) => {
+  const setViewMode = useCallback((mode) => {
     setViewModeState(mode);
     if (typeof window !== "undefined") {
       localStorage.setItem("clientsViewMode", mode);
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchClients();
   }, []);
 
@@ -76,7 +74,7 @@ export default function ClientsPage() {
   };
 
   // Client stats calculations
-  const clientStats = React.useMemo(() => {
+  const clientStats = useMemo(() => {
     if (!clients.length)
       return {
         total: 0,
@@ -120,7 +118,7 @@ export default function ClientsPage() {
   };
 
   // Filter clients based on search term
-  const filteredClients = React.useMemo(() => {
+  const filteredClients = useMemo(() => {
     if (!searchTerm) return clients;
 
     return clients.filter(
@@ -348,8 +346,8 @@ export default function ClientsPage() {
                       stat.color === "red"
                         ? "text-red-500"
                         : stat.color === "green"
-                        ? "text-green-500"
-                        : "text-purple-500"
+                          ? "text-green-500"
+                          : "text-purple-500"
                     }`}
                   />
                 </div>
@@ -365,8 +363,8 @@ export default function ClientsPage() {
                       stat.color === "green"
                         ? "text-green-600 dark:text-green-400"
                         : stat.color === "red"
-                        ? "text-red-600 dark:text-red-400"
-                        : "text-gray-600 dark:text-slate-400"
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-gray-600 dark:text-slate-400"
                     }`}
                   >
                     {stat.desc}

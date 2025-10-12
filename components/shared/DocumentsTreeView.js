@@ -49,7 +49,7 @@ const DocumentsTreeView = ({ clientId }) => {
 
   // Job types configuration - only include implemented endpoints
   // TO ENABLE A NEW JOB TYPE: Set implemented: true when you create the API endpoint
-  const jobTypes = [
+  const jobTypes = useMemo(() => [
     {
       name: "Drop Cable Installations",
       type: "drop_cable",
@@ -122,12 +122,12 @@ const DocumentsTreeView = ({ clientId }) => {
       color: "pink",
       implemented: false, // ❌ TODO: Implement /relocations/client/:id endpoint
     },
-  ];
+  ], []);
 
   // Reset fetch guard when client changes
   useEffect(() => {
     hasFetchedRef.current = false;
-  }, [clientId]);
+  }, [clientId, jobTypes]);
 
   // Fetch only jobs for implemented job types (documents will be lazy-loaded per expansion)
   useEffect(() => {
@@ -184,7 +184,7 @@ const DocumentsTreeView = ({ clientId }) => {
     };
 
     fetchAllJobsAndDocuments();
-  }, [clientId]);
+  }, [clientId, jobTypes]);
 
   // Fetch documents for a job (lazy-load on expand, with de-dupe)
   const fetchDocumentsForJob = async (jobTypeKey, job) => {
@@ -291,7 +291,7 @@ const DocumentsTreeView = ({ clientId }) => {
     });
 
     return result;
-  }, [allJobs, documents, searchTerm, jobTypeFilter]);
+  }, [allJobs, searchTerm, jobTypeFilter]);
 
   // Get all documents for filtering
   const allDocuments = useMemo(() => {
@@ -311,7 +311,7 @@ const DocumentsTreeView = ({ clientId }) => {
   const availableJobTypes = useMemo(
     () =>
       jobTypes.filter((jt) => allJobs[jt.type] && allJobs[jt.type].length > 0),
-    [allJobs]
+    [allJobs, jobTypes]
   );
 
   const uniqueCategories = useMemo(

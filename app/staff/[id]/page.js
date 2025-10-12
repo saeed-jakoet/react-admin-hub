@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, useEffect, useMemo, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/shared/Toast";
@@ -17,16 +17,11 @@ import {
   Mail,
   Phone,
   Users,
-  MapPin,
   Calendar,
   FileText,
   Briefcase,
-  CheckCircle,
   AlertTriangle,
   Activity,
-  TrendingUp,
-  Plus,
-  Clock,
   ArrowRight,
   MoreVertical,
   Shield,
@@ -42,29 +37,29 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { StaffDocumentViewer } from "@/components/staff/StaffDocumentViewer";
 
 export default function StaffDetailPage({ params }) {
-  const resolvedParams = React.use(params);
+  const resolvedParams = use(params);
   const router = useRouter();
   const { user } = useAuth();
   const toast = useToast();
 
-  const [staff, setStaff] = React.useState(null);
-  const [profile, setProfile] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
-  const [editing, setEditing] = React.useState(false);
-  const [saving, setSaving] = React.useState(false);
-  const [formData, setFormData] = React.useState({});
-  const [accessBusy, setAccessBusy] = React.useState(false);
-  const [accessMsg, setAccessMsg] = React.useState("");
-  const [roleForm, setRoleForm] = React.useState({ role: "" });
-  const [savingRole, setSavingRole] = React.useState(false);
-  const [roleError, setRoleError] = React.useState("");
-  const [roleSuccess, setRoleSuccess] = React.useState("");
-  const [pendingRole, setPendingRole] = React.useState(null);
-  const [revealedNationalId, setRevealedNationalId] = React.useState(null);
-  const [revealingNationalId, setRevealingNationalId] = React.useState(false);
+  const [staff, setStaff] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({});
+  const [accessBusy, setAccessBusy] = useState(false);
+  const [accessMsg, setAccessMsg] = useState("");
+  const [roleForm, setRoleForm] = useState({ role: "" });
+  const [savingRole, setSavingRole] = useState(false);
+  const [roleError, setRoleError] = useState("");
+  const [roleSuccess, setRoleSuccess] = useState("");
+  const [pendingRole, setPendingRole] = useState(null);
+  const [revealedNationalId, setRevealedNationalId] = useState(null);
+  const [revealingNationalId, setRevealingNationalId] = useState(false);
 
   const localStorageKey = `staff-${resolvedParams.id}-activeTab`;
-  const [activeTab, setActiveTabState] = React.useState(() => {
+  const [activeTab, setActiveTabState] = useState(() => {
     if (typeof window !== "undefined") {
       const stored = window.localStorage.getItem(localStorageKey);
       return stored || "overview";
@@ -72,7 +67,7 @@ export default function StaffDetailPage({ params }) {
     return "overview";
   });
 
-  const setActiveTab = React.useCallback(
+  const setActiveTab = useCallback(
     (tab) => {
       setActiveTabState(tab);
       if (typeof window !== "undefined") {
@@ -82,15 +77,7 @@ export default function StaffDetailPage({ params }) {
     [localStorageKey]
   );
 
-  React.useEffect(() => {
-    if (resolvedParams.id) {
-      fetchStaffMember();
-      // Clear any revealed data when staff member changes
-      setRevealedNationalId(null);
-    }
-  }, [resolvedParams.id]);
-
-  const fetchStaffMember = async () => {
+  const fetchStaffMember = useCallback(async () => {
     try {
       setLoading(true);
       // 1) Fetch staff row by staff id
@@ -120,7 +107,15 @@ export default function StaffDetailPage({ params }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [resolvedParams.id]);
+
+  useEffect(() => {
+    if (resolvedParams.id) {
+      fetchStaffMember();
+      // Clear any revealed data when staff member changes
+      setRevealedNationalId(null);
+    }
+  }, [resolvedParams.id, fetchStaffMember]);
 
   const handleEdit = () => {
     setEditing(true);
@@ -343,7 +338,7 @@ export default function StaffDetailPage({ params }) {
             Staff Member Not Found
           </h1>
           <p className="text-slate-600 dark:text-slate-400 max-w-md">
-            The staff member you're looking for doesn't exist or has been
+            The staff member you&apos;re looking for doesn&apos;t exist or has been
             removed.
           </p>
         </div>

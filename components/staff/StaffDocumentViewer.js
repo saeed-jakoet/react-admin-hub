@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,13 +10,11 @@ import {
   FileText,
   Download,
   Eye,
-  Upload,
   Search,
   Filter,
   MoreVertical,
   File,
   FileImage,
-  FileSpreadsheet,
   AlertCircle,
   RefreshCw,
   User,
@@ -311,9 +310,11 @@ export function StaffDocumentViewer({ staffId }) {
                     title="Document Preview"
                   />
                 ) : selectedDocument.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                  <img 
+                  <Image 
                     src={selectedDocument.url}
                     alt="Document Preview"
+                    width={1200}
+                    height={800}
                     className="w-full max-h-96 object-contain rounded-lg"
                   />
                 ) : (

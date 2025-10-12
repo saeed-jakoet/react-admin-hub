@@ -47,7 +47,6 @@ export default function DropCablePage() {
   const [editFormData, setEditFormData] = useState({});
   const [saving, setSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("all");
 
   // Persist view mode in localStorage
   const [viewMode, setViewModeState] = useState(() => {

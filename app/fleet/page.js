@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,13 +30,13 @@ import { Loader } from "@/components/shared/Loader";
 import Header from "@/components/shared/Header";
 
 export default function FleetPage() {
-  const [fleet, setFleet] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
-  const [viewMode, setViewMode] = React.useState("table"); // table, grid
-  const [searchTerm, setSearchTerm] = React.useState("");
+  const [fleet, setFleet] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("table"); // table, grid
+  const [searchTerm, setSearchTerm] = useState("");
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchFleet();
   }, []);
 
@@ -55,7 +55,7 @@ export default function FleetPage() {
   };
 
   // Example fleet stats (replace with real logic)
-  const fleetStats = React.useMemo(() => {
+  const fleetStats = useMemo(() => {
     if (!fleet.length)
       return {
         total: 0,
@@ -77,7 +77,7 @@ export default function FleetPage() {
   }, [fleet]);
 
   // Filter fleet based on search term
-  const filteredFleet = React.useMemo(() => {
+  const filteredFleet = useMemo(() => {
     if (!searchTerm) return fleet;
     return fleet.filter(
       (item) =>
@@ -258,70 +258,75 @@ export default function FleetPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      {/* Page Header with Stats */}
-      <Header
-        title={
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Truck className="w-8 h-8 text-white" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white dark:border-slate-900"></div>
-            </div>
-            <span>Fleet Management</span>
-          </div>
-        }
-        stats={
-          <p className="text-gray-600 dark:text-slate-400">
-            Track and manage your fleet vehicles
-          </p>
-        }
-        actions={
-          <Button
-            onClick={() => setIsAddDialogOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 font-semibold"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Vehicle
-          </Button>
-        }
-        statsCards={statsCards}
-      />
-
-      {/* Content */}
-      <div className="space-y-6">
-        {viewMode === "grid" ? (
-          <FleetGridView
-            items={filteredFleet}
-            getStatusIcon={getStatusIcon}
-            onViewModeChange={setViewMode}
-          />
-        ) : (
-          <DataTable
-            columns={allColumns}
-            data={filteredFleet}
-            searchEnabled={true}
-            searchTerm={searchTerm}
-            onSearch={(e) => setSearchTerm(e.target.value)}
-            searchPlaceholder="Search fleet..."
-            exportEnabled={true}
-            exportData={filteredFleet}
-            exportColumns={exportColumns}
-            exportFilename="fleet-export"
-            exportTitle="Fleet Report"
-            viewModeEnabled={true}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-          />
-        )}
-      </div>
-
-      <AddFleetDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        onSuccess={fetchFleet}
-      />
+    <div>
+      <h1 className="text-center mt-50">
+        Implement endpoints and backend Functionality
+      </h1>
     </div>
+    // <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    //   {/* Page Header with Stats */}
+    //   <Header
+    //     title={
+    //       <div className="flex items-center gap-4">
+    //         <div className="relative">
+    //           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+    //             <Truck className="w-8 h-8 text-white" />
+    //           </div>
+    //           <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white dark:border-slate-900"></div>
+    //         </div>
+    //         <span>Fleet Management</span>
+    //       </div>
+    //     }
+    //     stats={
+    //       <p className="text-gray-600 dark:text-slate-400">
+    //         Track and manage your fleet vehicles
+    //       </p>
+    //     }
+    //     actions={
+    //       <Button
+    //         onClick={() => setIsAddDialogOpen(true)}
+    //         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 font-semibold"
+    //       >
+    //         <Plus className="w-4 h-4 mr-2" />
+    //         Add Vehicle
+    //       </Button>
+    //     }
+    //     statsCards={statsCards}
+    //   />
+
+    //   {/* Content */}
+    //   <div className="space-y-6">
+    //     {viewMode === "grid" ? (
+    //       <FleetGridView
+    //         items={filteredFleet}
+    //         getStatusIcon={getStatusIcon}
+    //         onViewModeChange={setViewMode}
+    //       />
+    //     ) : (
+    //       <DataTable
+    //         columns={allColumns}
+    //         data={filteredFleet}
+    //         searchEnabled={true}
+    //         searchTerm={searchTerm}
+    //         onSearch={(e) => setSearchTerm(e.target.value)}
+    //         searchPlaceholder="Search fleet..."
+    //         exportEnabled={true}
+    //         exportData={filteredFleet}
+    //         exportColumns={exportColumns}
+    //         exportFilename="fleet-export"
+    //         exportTitle="Fleet Report"
+    //         viewModeEnabled={true}
+    //         viewMode={viewMode}
+    //         setViewMode={setViewMode}
+    //       />
+    //     )}
+    //   </div>
+
+    //   <AddFleetDialog
+    //     open={isAddDialogOpen}
+    //     onOpenChange={setIsAddDialogOpen}
+    //     onSuccess={fetchFleet}
+    //   />
+    // </div>
   );
 }

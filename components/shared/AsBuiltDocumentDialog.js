@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { X, Upload, FileText, Camera, MapPin, Calendar, User, Building, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -688,9 +689,11 @@ export default function AsBuiltDocumentDialog({
                 {images.map((image) => (
                   <div key={image.id} className="flex gap-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
                     <div className="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
-                      <img
+                      <Image
                         src={image.preview}
                         alt="Preview"
+                        width={128}
+                        height={128}
                         className="w-full h-full object-cover"
                       />
                     </div>

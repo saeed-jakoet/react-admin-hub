@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, useEffect, useMemo, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -35,15 +35,15 @@ import DocumentsTreeView from "@/components/shared/DocumentsTreeView";
 import Header from "@/components/shared/Header";
 
 export default function ClientDetailPage({ params }) {
-  const resolvedParams = React.use(params);
+  const resolvedParams = use(params);
   const router = useRouter();
-  const [client, setClient] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
-  const [editing, setEditing] = React.useState(false);
-  const [saving, setSaving] = React.useState(false);
-  const [formData, setFormData] = React.useState({});
+  const [client, setClient] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({});
   const localStorageKey = `client-${resolvedParams.id}-activeTab`;
-  const [activeTab, setActiveTabState] = React.useState(() => {
+  const [activeTab, setActiveTabState] = useState(() => {
     if (typeof window !== "undefined") {
       const stored = window.localStorage.getItem(localStorageKey);
       return stored || "overview";
@@ -53,16 +53,16 @@ export default function ClientDetailPage({ params }) {
 
   // --- Logo state hooks (must be top-level) ---
   const logoExtensions = [".png", ".jpg", ".jpeg", ".svg"];
-  const [logoError, setLogoError] = React.useState(false);
-  const [currentLogoIdx, setCurrentLogoIdx] = React.useState(0);
+  const [logoError, setLogoError] = useState(false);
+  const [currentLogoIdx, setCurrentLogoIdx] = useState(0);
 
   // Reset logo error/index when company changes
-  React.useEffect(() => {
+  useEffect(() => {
     setLogoError(false);
     setCurrentLogoIdx(0);
-  }, [client && client.company_name]);
+  }, [client?.company_name]);
 
-  const setActiveTab = React.useCallback(
+  const setActiveTab = useCallback(
     (tab) => {
       setActiveTabState(tab);
       if (typeof window !== "undefined") {
@@ -72,18 +72,18 @@ export default function ClientDetailPage({ params }) {
     [localStorageKey]
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = window.localStorage.getItem(localStorageKey);
       if (stored && stored !== activeTab) {
         setActiveTabState(stored);
       }
     }
-  }, [localStorageKey]);
+  }, [localStorageKey, activeTab]);
 
-  const [dropCableJobs, setDropCableJobs] = React.useState([]);
+  const [dropCableJobs, setDropCableJobs] = useState([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchClient = async () => {
       try {
         setLoading(true);
@@ -147,7 +147,7 @@ export default function ClientDetailPage({ params }) {
       .join(" ");
   };
 
-  const jobStats = React.useMemo(() => {
+  const jobStats = useMemo(() => {
     const dropCableStatusCounts = dropCableJobs.reduce((acc, job) => {
       acc[job.status] = (acc[job.status] || 0) + 1;
       return acc;
@@ -248,7 +248,7 @@ export default function ClientDetailPage({ params }) {
             Client Not Found
           </h1>
           <p className="text-slate-600 dark:text-slate-400 max-w-md">
-            The client you're looking for doesn't exist or has been removed.
+            The client you&apos;re looking for doesn&apos;t exist or has been removed.
           </p>
         </div>
         <Button

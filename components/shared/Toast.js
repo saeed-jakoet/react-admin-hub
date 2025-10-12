@@ -19,33 +19,36 @@ export const useToast = () => {
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = React.useState([]);
 
-  const showToast = React.useCallback((options) => {
-    const id = Date.now() + Math.random();
-    const toast = {
-      id,
-      type: options.type || "info",
-      title: options.title,
-      message: options.message,
-      duration: options.duration ?? 5000,
-      action: options.action,
-      onAction: options.onAction,
-      onCancel: options.onCancel,
-    };
-
-    setToasts((prev) => [...prev, toast]);
-
-    if (toast.duration > 0 && !toast.action) {
-      setTimeout(() => {
-        removeToast(id);
-      }, toast.duration);
-    }
-
-    return id;
-  }, []);
-
   const removeToast = React.useCallback((id) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
+
+  const showToast = React.useCallback(
+    (options) => {
+      const id = Date.now() + Math.random();
+      const toast = {
+        id,
+        type: options.type || "info",
+        title: options.title,
+        message: options.message,
+        duration: options.duration ?? 5000,
+        action: options.action,
+        onAction: options.onAction,
+        onCancel: options.onCancel,
+      };
+
+      setToasts((prev) => [...prev, toast]);
+
+      if (toast.duration > 0 && !toast.action) {
+        setTimeout(() => {
+          removeToast(id);
+        }, toast.duration);
+      }
+
+      return id;
+    },
+    [removeToast]
+  );
 
   const success = React.useCallback(
     (title, message, options = {}) => {

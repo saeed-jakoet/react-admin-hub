@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,14 +18,16 @@ const typeColors = {
 };
 
 export default function DocumentsPage() {
-  const [documents] = React.useState(mockDocuments);
+  const [documents] = useState(mockDocuments);
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Documents</h1>
-          <p className="text-muted-foreground">Manage contracts, plans, and reports</p>
+          <p className="text-muted-foreground">
+            Manage contracts, plans, and reports
+          </p>
         </div>
         <Button>
           <Upload className="mr-2 h-4 w-4" />
@@ -42,7 +44,10 @@ export default function DocumentsPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {documents.map((doc) => (
-          <Card key={doc.id} className="hover:shadow-md transition-shadow cursor-pointer">
+          <Card
+            key={doc.id}
+            className="hover:shadow-md transition-shadow cursor-pointer"
+          >
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
                 <div className="rounded-lg bg-muted p-3">
@@ -56,7 +61,8 @@ export default function DocumentsPage() {
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    {(doc.size / 1024 / 1024).toFixed(2)} MB • {doc.uploadedAt.toLocaleDateString()}
+                    {(doc.size / 1024 / 1024).toFixed(2)} MB •{" "}
+                    {doc.uploadedAt.toLocaleDateString()}
                   </p>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {doc.tags.map((tag) => (

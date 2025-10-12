@@ -1,11 +1,9 @@
 "use client";
 
-import * as React from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Package,
-  TrendingUp,
-  Activity,
   AlertTriangle,
   Calendar,
   FileText,
@@ -39,21 +37,21 @@ export default function OverviewPage() {
   const router = useRouter();
 
   // Calendar and Orders State
-  const [orders, setOrders] = React.useState([]);
-  const [filteredOrders, setFilteredOrders] = React.useState([]);
-  const [loading, setLoading] = React.useState(false);
-  const [selectedEvent, setSelectedEvent] = React.useState(null);
-  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [orders, setOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Calendar Navigation State
-  const [currentDate, setCurrentDate] = React.useState(new Date());
-  const [currentView, setCurrentView] = React.useState("month");
-  const [selectedClient, setSelectedClient] = React.useState("");
-  const [selectedOrderType, setSelectedOrderType] = React.useState("");
-  const [clients, setClients] = React.useState([]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentView, setCurrentView] = useState("month");
+  const [selectedClient, setSelectedClient] = useState("");
+  const [selectedOrderType, setSelectedOrderType] = useState("");
+  const [clients, setClients] = useState([]);
 
   // Load saved selections from localStorage on component mount
-  React.useEffect(() => {
+  useEffect(() => {
     const savedClient = localStorage.getItem("calendar-selected-client");
     const savedOrderType = localStorage.getItem("calendar-selected-order-type");
 
@@ -66,7 +64,7 @@ export default function OverviewPage() {
   }, []);
 
   // Save selections to localStorage when they change
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedClient) {
       localStorage.setItem("calendar-selected-client", selectedClient);
     } else {
@@ -74,7 +72,7 @@ export default function OverviewPage() {
     }
   }, [selectedClient]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedOrderType) {
       localStorage.setItem("calendar-selected-order-type", selectedOrderType);
     } else {
@@ -94,13 +92,13 @@ export default function OverviewPage() {
   ];
 
   // New Job Dialog State
-  const [newJobDialogOpen, setNewJobDialogOpen] = React.useState(false);
-  const [selectedJobTypeForNew, setSelectedJobTypeForNew] = React.useState("");
-  const [selectedClientForNew, setSelectedClientForNew] = React.useState("");
-  const [loadingClients, setLoadingClients] = React.useState(false);
+  const [newJobDialogOpen, setNewJobDialogOpen] = useState(false);
+  const [selectedJobTypeForNew, setSelectedJobTypeForNew] = useState("");
+  const [selectedClientForNew, setSelectedClientForNew] = useState("");
+  const [loadingClients, setLoadingClients] = useState(false);
 
   // Use centralized status colors
-  const statusColors = React.useMemo(() => {
+  const statusColors = useMemo(() => {
     const colors = {};
     const allKeys = [
       "awaiting_client_confirmation_date",
@@ -128,30 +126,11 @@ export default function OverviewPage() {
     return colors;
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchClients();
   }, []);
 
-  React.useEffect(() => {
-    if (selectedClient && selectedOrderType) {
-      fetchOrders();
-    } else {
-      setOrders([]);
-      setFilteredOrders([]);
-    }
-  }, [selectedClient, selectedOrderType]);
-
-  React.useEffect(() => {
-    let filtered = orders;
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((order) => order.status === statusFilter);
-    }
-
-    setFilteredOrders(filtered);
-  }, [orders, statusFilter]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     if (!selectedClient || !selectedOrderType) return;
 
     try {
@@ -168,7 +147,28 @@ export default function OverviewPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedClient, selectedOrderType]);
+
+  useEffect(() => {
+    if (selectedClient && selectedOrderType) {
+      fetchOrders();
+    } else {
+      setOrders([]);
+      setFilteredOrders([]);
+    }
+  }, [selectedClient, selectedOrderType, fetchOrders]);
+
+  useEffect(() => {
+    let filtered = orders;
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((order) => order.status === statusFilter);
+    }
+
+    setFilteredOrders(filtered);
+  }, [orders, statusFilter]);
+
+  
 
   const fetchClients = async () => {
     try {
@@ -350,7 +350,7 @@ export default function OverviewPage() {
   };
 
   // Dynamically get unique statuses from the actual order data
-  const uniqueStatuses = React.useMemo(() => {
+  const uniqueStatuses = useMemo(() => {
     const statuses = new Set();
     orders.forEach((order) => {
       if (order.status) {
@@ -440,152 +440,155 @@ export default function OverviewPage() {
     );
   }
 
-function Sidebar() {
-  return (
-    <div className="lg:col-span-1 space-y-6">
-      {/* Quick Actions */}
-      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="p-6">
-          <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4">
-            Quick Actions
-          </h3>
-          <div className="space-y-3">
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
-            >
-              <FileText className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
-              Create Quote
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleNewJobClick}
-              className="w-full justify-start h-11 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Calendar className="w-4 h-4 mr-3" />
-              New Order
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
-            >
-              <Truck className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
-              Track Delivery
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
-            >
-              <Package className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
-              Check Stock
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Critical Alerts */}
-      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">
-              Alerts
+  function Sidebar() {
+    return (
+      <div className="lg:col-span-1 space-y-6">
+        {/* Quick Actions */}
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="p-6">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4">
+              Quick Actions
             </h3>
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            <div className="space-y-3">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+              >
+                <FileText className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
+                Create Quote
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleNewJobClick}
+                className="w-full justify-start h-11 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Calendar className="w-4 h-4 mr-3" />
+                New Order
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+              >
+                <Truck className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
+                Track Delivery
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+              >
+                <Package className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
+                Check Stock
+              </Button>
+            </div>
           </div>
-          <div className="space-y-3">
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-l-4 border-red-500">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
-                    Low Stock Alert
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Fiber cable: 500m remaining
-                  </p>
+        </Card>
+
+        {/* Critical Alerts */}
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+                Alerts
+              </h3>
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            </div>
+            <div className="space-y-3">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-l-4 border-red-500">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
+                      Low Stock Alert
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Fiber cable: 500m remaining
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-l-4 border-amber-500">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
-                    Overdue Payments
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    3 payments pending review
-                  </p>
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-l-4 border-amber-500">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
+                      Overdue Payments
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      3 payments pending review
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      {/* Performance Metrics */}
-      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="p-6">
-          <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4">
-            Performance
-          </h3>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  Completed Jobs
-                </span>
-                <span className="text-xl font-semibold text-slate-900 dark:text-white">
-                  47
-                </span>
-              </div>
-              <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-600 rounded-full" style={{ width: '78%' }}></div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  Success Rate
-                </span>
-                <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                  94%
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  Average Rating
-                </span>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                    4.8
+        {/* Performance Metrics */}
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="p-6">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4">
+              Performance
+            </h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                    Completed Jobs
                   </span>
-                  <span className="text-amber-500">★</span>
+                  <span className="text-xl font-semibold text-slate-900 dark:text-white">
+                    47
+                  </span>
+                </div>
+                <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-600 rounded-full"
+                    style={{ width: "78%" }}
+                  ></div>
                 </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  On-Time Delivery
-                </span>
-                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                  89%
-                </span>
+
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                    Success Rate
+                  </span>
+                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    94%
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                    Average Rating
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                      4.8
+                    </span>
+                    <span className="text-amber-500">★</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                    On-Time Delivery
+                  </span>
+                  <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                    89%
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </Card>
-    </div>
-  );
-}
+        </Card>
+      </div>
+    );
+  }
 
   function NewJobDialog() {
     return (

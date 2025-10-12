@@ -444,7 +444,7 @@ export default function ForgotPasswordPage() {
                       Check Your Email
                     </h2>
                     <p className="text-slate-400 mb-6">
-                      We've sent a password reset link to{" "}
+                      We&apos;ve sent a password reset link to{" "}
                       <span className="text-green-400">{email}</span>
                     </p>
                   </div>

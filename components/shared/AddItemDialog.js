@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,9 +17,9 @@ import { ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { post } from "@/lib/api/fetcher";
 
 export function AddItemDialog({ open, onOpenChange, onSuccess, config }) {
-  const [currentStep, setCurrentStep] = React.useState(1);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [formData, setFormData] = React.useState(config.initialFormData);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState(config.initialFormData);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -50,7 +51,6 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config }) {
     let n = num.trim();
     if (n.startsWith("+27") && n.length === 12) return n;
     if (n.startsWith("0") && n.length === 10) return "+27" + n.slice(1);
-    // Remove all non-digits and try again
     n = n.replace(/\D/g, "");
     if (n.length === 9) return "+27" + n;
     if (n.length === 10 && n.startsWith("0")) return "+27" + n.slice(1);
@@ -66,7 +66,9 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config }) {
       const normalizedFormData = {
         ...formData,
         phone_number: normalizePhoneNumber(formData.phone_number),
-        emergency_contact_phone: normalizePhoneNumber(formData.emergency_contact_phone),
+        emergency_contact_phone: normalizePhoneNumber(
+          formData.emergency_contact_phone
+        ),
       };
 
       // Check if we have any file fields
@@ -361,7 +363,7 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config }) {
     );
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) {
       setFormData(config.initialFormData);
       setCurrentStep(1);
@@ -390,8 +392,8 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config }) {
                     currentStep === step.id
                       ? "border-blue-600 bg-blue-600 text-white"
                       : currentStep > step.id
-                      ? "border-green-600 bg-green-600 text-white"
-                      : "border-gray-300 bg-white text-gray-400"
+                        ? "border-green-600 bg-green-600 text-white"
+                        : "border-gray-300 bg-white text-gray-400"
                   }`}
                 >
                   {currentStep > step.id ? (

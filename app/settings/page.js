@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { get } from "@/lib/api/fetcher";
 import { Card } from "@/components/ui/card";
@@ -33,21 +33,21 @@ import {
 import { Loader } from "@/components/shared/Loader";
 
 function UserSettingsPage() {
-  const [editing, setEditing] = React.useState(false);
-  const [saving, setSaving] = React.useState(false);
-  const [mfaEnabled, setMfaEnabled] = React.useState(false);
-  const [showMfaSetup, setShowMfaSetup] = React.useState(false);
-  const [showNationalId, setShowNationalId] = React.useState(false);
-  const [revealedNationalId, setRevealedNationalId] = React.useState(null);
-  const [revealingNationalId, setRevealingNationalId] = React.useState(false);
-  const [revealNationalIdError, setRevealNationalIdError] = React.useState("");
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [showMfaSetup, setShowMfaSetup] = useState(false);
+  const [showNationalId, setShowNationalId] = useState(false);
+  const [revealedNationalId, setRevealedNationalId] = useState(null);
+  const [revealingNationalId, setRevealingNationalId] = useState(false);
+  const [revealNationalIdError, setRevealNationalIdError] = useState("");
 
   const { user } = useAuth();
-  const [userData, setUserData] = React.useState(null);
-  const [formData, setFormData] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
+  const [userData, setUserData] = useState(null);
+  const [formData, setFormData] = useState(null);
+  const [loading, setLoading] = useState(true);
   // Hide revealed national ID after 30 seconds
-  React.useEffect(() => {
+  useEffect(() => {
     if (showNationalId && revealedNationalId) {
       const timer = setTimeout(() => {
         setShowNationalId(false);
@@ -83,7 +83,7 @@ function UserSettingsPage() {
     setRevealNationalIdError("");
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchStaff = async () => {
       if (!user?.id) return;
       setLoading(true);
@@ -423,8 +423,16 @@ function UserSettingsPage() {
                         <button
                           type="button"
                           className="ml-2 p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
-                          onClick={showNationalId ? handleHideNationalId : handleRevealNationalId}
-                          aria-label={showNationalId ? "Hide National ID" : "Show National ID"}
+                          onClick={
+                            showNationalId
+                              ? handleHideNationalId
+                              : handleRevealNationalId
+                          }
+                          aria-label={
+                            showNationalId
+                              ? "Hide National ID"
+                              : "Show National ID"
+                          }
                           disabled={revealingNationalId}
                         >
                           {revealingNationalId ? (
@@ -439,7 +447,9 @@ function UserSettingsPage() {
                     </div>
                   )}
                   {!editing && revealNationalIdError && (
-                    <div className="text-xs text-red-600 mt-1">{revealNationalIdError}</div>
+                    <div className="text-xs text-red-600 mt-1">
+                      {revealNationalIdError}
+                    </div>
                   )}
                   {!editing && showNationalId && revealedNationalId && (
                     <div className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
@@ -850,10 +860,8 @@ function UserSettingsPage() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }
 
 export default UserSettingsPage;
-

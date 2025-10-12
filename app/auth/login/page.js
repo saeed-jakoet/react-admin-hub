@@ -9,9 +9,6 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  AlertCircle,
-  Shield,
-  Network,
 } from "lucide-react";
 import Link from "next/link";
 
