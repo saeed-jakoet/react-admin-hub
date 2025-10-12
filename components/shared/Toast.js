@@ -3,7 +3,6 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, AlertTriangle, XCircle, Info, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 // Toast Context
 const ToastContext = React.createContext(null);
@@ -97,36 +96,15 @@ const ToastContainer = ({ toasts, removeToast }) => {
   if (!mounted) return null;
 
   return createPortal(
-    <>
-      {/* Blurred overlay only when toast is open */}
-      {toasts.length > 0 && (
-        <div
-          className="fixed inset-0 bg-transparent backdrop-blur-sm transition-all duration-300 pointer-events-none"
-          style={{ zIndex: 2147483646 }}
+    <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none">
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          toast={toast}
+          onClose={() => removeToast(toast.id)}
         />
-      )}
-      <div 
-        className="fixed top-0 left-0 right-0 flex items-start justify-center pointer-events-none" 
-        style={{ 
-          zIndex: 2147483647,
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none'
-        }}
-      >
-        <div className="flex flex-col gap-3">
-          {toasts.map((toast) => (
-            <Toast key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
-          ))}
-        </div>
-      </div>
-    </>,
+      ))}
+    </div>,
     document.body
   );
 };
@@ -188,35 +166,27 @@ const Toast = ({ toast, onClose }) => {
     switch (toast.type) {
       case "success":
         return {
-          bg: "bg-white dark:bg-slate-900",
-          border: "border-emerald-200 dark:border-emerald-800",
-          iconBg: "bg-emerald-50 dark:bg-emerald-900/20",
-          iconColor: "text-emerald-600 dark:text-emerald-400",
-          progress: "bg-emerald-500",
+          border: "border-l-green-500",
+          iconColor: "text-green-600 dark:text-green-500",
+          progress: "bg-green-500",
         };
       case "error":
         return {
-          bg: "bg-white dark:bg-slate-900",
-          border: "border-red-200 dark:border-red-800",
-          iconBg: "bg-red-50 dark:bg-red-900/20",
-          iconColor: "text-red-600 dark:text-red-400",
+          border: "border-l-red-500",
+          iconColor: "text-red-600 dark:text-red-500",
           progress: "bg-red-500",
         };
       case "warning":
         return {
-          bg: "bg-white dark:bg-slate-900",
-          border: "border-amber-200 dark:border-amber-800",
-          iconBg: "bg-amber-50 dark:bg-amber-900/20",
-          iconColor: "text-amber-600 dark:text-amber-400",
+          border: "border-l-amber-500",
+          iconColor: "text-amber-600 dark:text-amber-500",
           progress: "bg-amber-500",
         };
       case "info":
       default:
         return {
-          bg: "bg-white dark:bg-slate-900",
-          border: "border-blue-200 dark:border-blue-800",
-          iconBg: "bg-blue-50 dark:bg-blue-900/20",
-          iconColor: "text-blue-600 dark:text-blue-400",
+          border: "border-l-blue-500",
+          iconColor: "text-blue-600 dark:text-blue-500",
           progress: "bg-blue-500",
         };
     }
@@ -226,73 +196,60 @@ const Toast = ({ toast, onClose }) => {
 
   return (
     <div
-      className={
-        `${colors.bg} ${colors.border} pointer-events-auto w-96 rounded-xl border shadow-lg overflow-hidden transition-all duration-200 ` +
-        (isExiting
-          ? "opacity-0 scale-95"
-          : "opacity-100 scale-100"
-        )
-      }
-      style={{
-        backgroundColor: 'white',
-        opacity: 1,
-        zIndex: 2147483647,
-        transformOrigin: 'center',
-        transitionProperty: 'opacity, transform',
-        transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
-        transitionDuration: '200ms',
-      }}
+      className={`
+        pointer-events-auto w-96 bg-white dark:bg-gray-800 
+        rounded-lg border border-gray-200 dark:border-gray-700 
+        border-l-4 ${colors.border}
+        shadow-lg 
+        transition-all duration-300 ease-out
+        ${isExiting ? "opacity-0 translate-x-8" : "opacity-100 translate-x-0"}
+      `}
     >
       <div className="p-4">
         <div className="flex items-start gap-3">
-          <div className={`${colors.iconBg} ${colors.iconColor} rounded-lg p-2 flex-shrink-0`}>
-            {getIcon()}
-          </div>
+          <div className={`flex-shrink-0 ${colors.iconColor}`}>{getIcon()}</div>
 
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-slate-900 dark:text-white mb-1">
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1">
               {toast.title}
             </h4>
             {toast.message && (
-              <p className="text-sm text-slate-600 dark:text-slate-400">
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                 {toast.message}
               </p>
             )}
 
             {toast.action && (
               <div className="flex gap-2 mt-3">
-                <Button
-                  size="sm"
+                <button
                   onClick={handleAction}
-                  className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-3 text-xs"
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
                 >
                   {toast.action}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
+                </button>
+                <button
                   onClick={handleCancel}
-                  className="h-8 px-3 text-xs"
+                  className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel
-                </Button>
+                </button>
               </div>
             )}
           </div>
 
           <button
             onClick={handleClose}
-            className="flex-shrink-0 w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
+            className="flex-shrink-0 w-6 h-6 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
           >
-            <X className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            <X className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           </button>
         </div>
       </div>
 
       {toast.duration > 0 && !toast.action && (
-        <div className="h-1 bg-slate-100 dark:bg-slate-800">
+        <div className="h-1 bg-gray-100 dark:bg-gray-700">
           <div
-            className={`h-full ${colors.progress} transition-all duration-50 ease-linear`}
+            className={`h-full ${colors.progress} transition-all duration-100 ease-linear`}
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -300,3 +257,98 @@ const Toast = ({ toast, onClose }) => {
     </div>
   );
 };
+
+// Demo Component
+export default function ToastDemo() {
+  return (
+    <ToastProvider>
+      <DemoContent />
+    </ToastProvider>
+  );
+}
+
+function DemoContent() {
+  const toast = useToast();
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-8">
+          Toast Notifications
+        </h1>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Try the toasts
+          </h2>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() =>
+                toast.success(
+                  "Success",
+                  "Your changes have been saved successfully."
+                )
+              }
+              className="px-4 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+            >
+              Show Success
+            </button>
+
+            <button
+              onClick={() =>
+                toast.error("Error", "Something went wrong. Please try again.")
+              }
+              className="px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+            >
+              Show Error
+            </button>
+
+            <button
+              onClick={() =>
+                toast.warning(
+                  "Warning",
+                  "Please review your settings before continuing."
+                )
+              }
+              className="px-4 py-2.5 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
+            >
+              Show Warning
+            </button>
+
+            <button
+              onClick={() =>
+                toast.info(
+                  "Info",
+                  "New updates are available for your application."
+                )
+              }
+              className="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+            >
+              Show Info
+            </button>
+          </div>
+
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() =>
+                toast.showToast({
+                  type: "info",
+                  title: "Confirm Action",
+                  message: "Are you sure you want to proceed with this action?",
+                  action: "Confirm",
+                  duration: 0,
+                  onAction: () => console.log("Confirmed"),
+                  onCancel: () => console.log("Cancelled"),
+                })
+              }
+              className="w-full px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+            >
+              Show Toast with Actions
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

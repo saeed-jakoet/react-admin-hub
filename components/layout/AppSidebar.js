@@ -68,17 +68,24 @@ const navigationSections = [
         notification: null,
       },
       {
-        id: "teams",
-        label: "Field Teams",
-        href: "/teams",
-        icon: Truck,
-        notification: null,
-      },
-      {
         id: "staff",
         label: "Staff",
         href: "/staff",
         icon: Users,
+        notification: null,
+      },
+      {
+        id: "teams",
+        label: "Field Teams",
+        href: "/teams",
+        icon: Layers,
+        notification: null,
+      },
+      {
+        id: "fleet",
+        label: "Fleet Management",
+        href: "/fleet",
+        icon: Truck,
         notification: null,
       },
       {

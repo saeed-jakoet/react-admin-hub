@@ -167,7 +167,10 @@ export default function StaffDetailPage({ params }) {
         if (Object.prototype.hasOwnProperty.call(formData, key)) {
           let val = formData[key];
           if (key === "salary") {
-            val = val !== "" && val !== null && val !== undefined ? Number(val) : null;
+            val =
+              val !== "" && val !== null && val !== undefined
+                ? Number(val)
+                : null;
           }
           // Normalize phone numbers
           if (key === "phone_number" || key === "emergency_contact_phone") {
@@ -177,10 +180,12 @@ export default function StaffDetailPage({ params }) {
         }
         return acc;
       }, {});
+      console.log(payload);
+
       const response = await put(`/staff/${resolvedParams.id}`, payload);
       setStaff(response.data);
       setEditing(false);
-      await fetchStaffMember();
+      toast.success("Success", "Staff member details updated successfully.");
     } catch (error) {
       console.error("Error updating staff member:", error);
     } finally {
@@ -194,21 +199,26 @@ export default function StaffDetailPage({ params }) {
 
   const canEdit = (user?.role || user?.user_metadata?.role) === "super_admin";
 
-  const isSelf = user?.id && staff?.auth_user_id && user.id === staff.auth_user_id;
+  const isSelf =
+    user?.id && staff?.auth_user_id && user.id === staff.auth_user_id;
 
   const handleRoleSubmit = async (e) => {
     e.preventDefault();
     if (!canEdit) return;
-    if (!staff?.auth_user_id) { 
-      setRoleError("Grant system access first to edit role."); 
-      return; 
+    if (!staff?.auth_user_id) {
+      setRoleError("Grant system access first to edit role.");
+      return;
     }
     // If super_admin is changing their own role, show warning toast first
-    if (isSelf && (profile?.role === "super_admin" || staff?.role === "super_admin") && roleForm.role !== "super_admin") {
+    if (
+      isSelf &&
+      (profile?.role === "super_admin" || staff?.role === "super_admin") &&
+      roleForm.role !== "super_admin"
+    ) {
       setPendingRole(roleForm.role);
       toast.warning(
         "Warning: You are changing your own role",
-        `You are about to change your own role from Super Admin to ${roleForm.role.replace('_', ' ')}. This will immediately limit your access and you may lose the ability to manage other admins or system settings.`,
+        `You are about to change your own role from Super Admin to ${roleForm.role.replace("_", " ")}. This will immediately limit your access and you may lose the ability to manage other admins or system settings.`,
         {
           duration: 0,
           action: "Proceed",
@@ -255,10 +265,17 @@ export default function StaffDetailPage({ params }) {
       setAccessBusy(true);
       setAccessMsg("");
       const role = roleForm.role || staff?.role || "field_worker";
-      const res = await post(`/staff/${resolvedParams.id}/grant-access`, { email, role });
+      const res = await post(`/staff/${resolvedParams.id}/grant-access`, {
+        email,
+        role,
+      });
       if (res?.data) {
         const temp = res?.data?.auth?.tempPassword;
-        setAccessMsg(temp ? `System access granted. Temporary password: ${temp}` : "System access granted");
+        setAccessMsg(
+          temp
+            ? `System access granted. Temporary password: ${temp}`
+            : "System access granted"
+        );
         await fetchStaffMember();
       }
     } catch (e) {
@@ -289,7 +306,9 @@ export default function StaffDetailPage({ params }) {
     if (!canEdit) return;
     try {
       setRevealingNationalId(true);
-      const response = await get(`/staff/${resolvedParams.id}/reveal-national-id`);
+      const response = await get(
+        `/staff/${resolvedParams.id}/reveal-national-id`
+      );
       if (response?.data?.national_id) {
         setRevealedNationalId(response.data.national_id);
         // Auto-hide after 30 seconds for security
@@ -324,7 +343,8 @@ export default function StaffDetailPage({ params }) {
             Staff Member Not Found
           </h1>
           <p className="text-slate-600 dark:text-slate-400 max-w-md">
-            The staff member you're looking for doesn't exist or has been removed.
+            The staff member you're looking for doesn't exist or has been
+            removed.
           </p>
         </div>
         <Button
@@ -370,7 +390,8 @@ export default function StaffDetailPage({ params }) {
 
                   <div className="space-y-1">
                     <h1 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">
-                      {`${(profile?.first_name ?? staff?.first_name) || ""} ${(profile?.surname ?? staff?.surname) || ""}`.trim() || "Staff Member"}
+                      {`${(profile?.first_name ?? staff?.first_name) || ""} ${(profile?.surname ?? staff?.surname) || ""}`.trim() ||
+                        "Staff Member"}
                     </h1>
                     <div className="flex items-center gap-3 text-sm">
                       <span className="text-slate-600 dark:text-slate-400 flex items-center gap-2">
@@ -407,6 +428,7 @@ export default function StaffDetailPage({ params }) {
                     </Button>
                     <Button
                       onClick={handleSave}
+                      type="button"
                       disabled={saving}
                       className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
                     >
@@ -636,7 +658,9 @@ export default function StaffDetailPage({ params }) {
                             <div className="flex items-center gap-2 flex-1">
                               <CreditCard className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                               <p className="text-slate-900 dark:text-white font-mono">
-                                {revealedNationalId || staff.masked_national_id || "Not provided"}
+                                {revealedNationalId ||
+                                  staff.masked_national_id ||
+                                  "Not provided"}
                               </p>
                             </div>
                             {canEdit && staff.masked_national_id && (
@@ -796,15 +820,21 @@ export default function StaffDetailPage({ params }) {
                             variant="destructive"
                             onClick={handleRevokeAccess}
                             disabled={accessBusy || isSelf}
-                            className={`w-full gap-2 ${isSelf ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            title={isSelf ? 'You cannot remove your own access' : ''}
+                            className={`w-full gap-2 ${isSelf ? "opacity-50 cursor-not-allowed" : ""}`}
+                            title={
+                              isSelf ? "You cannot remove your own access" : ""
+                            }
                           >
                             {accessBusy ? (
                               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             ) : (
                               <UserX className="w-4 h-4" />
                             )}
-                            {accessBusy ? "Removing..." : isSelf ? "Remove Access (Not Allowed)" : "Remove Access"}
+                            {accessBusy
+                              ? "Removing..."
+                              : isSelf
+                                ? "Remove Access (Not Allowed)"
+                                : "Remove Access"}
                           </Button>
                         ) : (
                           <Button
@@ -821,7 +851,9 @@ export default function StaffDetailPage({ params }) {
                           </Button>
                         )}
                         {accessMsg && (
-                          <p className={`text-sm ${accessMsg.includes('Failed') || accessMsg.includes('required') ? 'text-red-500' : 'text-green-600'}`}>
+                          <p
+                            className={`text-sm ${accessMsg.includes("Failed") || accessMsg.includes("required") ? "text-red-500" : "text-green-600"}`}
+                          >
                             {accessMsg}
                           </p>
                         )}
@@ -849,7 +881,9 @@ export default function StaffDetailPage({ params }) {
                         </Label>
                         <select
                           value={roleForm.role}
-                          onChange={(e) => setRoleForm({ role: e.target.value })}
+                          onChange={(e) =>
+                            setRoleForm({ role: e.target.value })
+                          }
                           disabled={!canEdit || !staff?.auth_user_id}
                           className="w-full h-10 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-blue-500 dark:focus:border-blue-400 disabled:opacity-50"
                         >
@@ -860,17 +894,27 @@ export default function StaffDetailPage({ params }) {
                           <option value="client">Client</option>
                         </select>
                         {!canEdit && (
-                          <p className="text-xs text-slate-500">Only super_admin can edit roles.</p>
+                          <p className="text-xs text-slate-500">
+                            Only super_admin can edit roles.
+                          </p>
                         )}
                         {canEdit && !staff?.auth_user_id && (
-                          <p className="text-xs text-slate-500">Grant system access first to assign a role.</p>
+                          <p className="text-xs text-slate-500">
+                            Grant system access first to assign a role.
+                          </p>
                         )}
                       </div>
-                      {roleError && <p className="text-sm text-red-500">{roleError}</p>}
-                      {roleSuccess && <p className="text-sm text-green-600">{roleSuccess}</p>}
-                      <Button 
-                        type="submit" 
-                        disabled={!canEdit || savingRole || !staff?.auth_user_id}
+                      {roleError && (
+                        <p className="text-sm text-red-500">{roleError}</p>
+                      )}
+                      {roleSuccess && (
+                        <p className="text-sm text-green-600">{roleSuccess}</p>
+                      )}
+                      <Button
+                        type="submit"
+                        disabled={
+                          !canEdit || savingRole || !staff?.auth_user_id
+                        }
                         className="w-full"
                       >
                         {savingRole ? "Saving..." : "Update Role"}
@@ -947,7 +991,8 @@ export default function StaffDetailPage({ params }) {
                   System Access Management
                 </h2>
                 <p className="text-slate-600 dark:text-slate-400 text-sm">
-                  Control system access and role permissions for this staff member
+                  Control system access and role permissions for this staff
+                  member
                 </p>
               </div>
 
@@ -963,7 +1008,9 @@ export default function StaffDetailPage({ params }) {
                           System Account
                         </p>
                         <p className="text-sm text-slate-600 dark:text-slate-400">
-                          {staff.auth_user_id ? "Active authentication account" : "No system account"}
+                          {staff.auth_user_id
+                            ? "Active authentication account"
+                            : "No system account"}
                         </p>
                       </div>
                       <Badge
@@ -991,7 +1038,12 @@ export default function StaffDetailPage({ params }) {
                             Role: {profile.role || "Not set"}
                           </p>
                           <p className="text-slate-600 dark:text-slate-400">
-                            Last Sign In: {profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleDateString() : "Never"}
+                            Last Sign In:{" "}
+                            {profile.last_sign_in_at
+                              ? new Date(
+                                  profile.last_sign_in_at
+                                ).toLocaleDateString()
+                              : "Never"}
                           </p>
                         </div>
                       </div>
@@ -1011,15 +1063,21 @@ export default function StaffDetailPage({ params }) {
                             variant="destructive"
                             onClick={handleRevokeAccess}
                             disabled={accessBusy || isSelf}
-                            className={`w-full gap-2 ${isSelf ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            title={isSelf ? 'You cannot remove your own access' : ''}
+                            className={`w-full gap-2 ${isSelf ? "opacity-50 cursor-not-allowed" : ""}`}
+                            title={
+                              isSelf ? "You cannot remove your own access" : ""
+                            }
                           >
                             {accessBusy ? (
                               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             ) : (
                               <UserX className="w-4 h-4" />
                             )}
-                            {accessBusy ? "Removing Access..." : isSelf ? "Remove System Access (Not Allowed)" : "Remove System Access"}
+                            {accessBusy
+                              ? "Removing Access..."
+                              : isSelf
+                                ? "Remove System Access (Not Allowed)"
+                                : "Remove System Access"}
                           </Button>
                         ) : (
                           <Button
@@ -1032,11 +1090,15 @@ export default function StaffDetailPage({ params }) {
                             ) : (
                               <Key className="w-4 h-4" />
                             )}
-                            {accessBusy ? "Granting Access..." : "Grant System Access"}
+                            {accessBusy
+                              ? "Granting Access..."
+                              : "Grant System Access"}
                           </Button>
                         )}
                         {accessMsg && (
-                          <div className={`p-3 rounded-lg text-sm ${accessMsg.includes('Failed') || accessMsg.includes('required') ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400' : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'}`}>
+                          <div
+                            className={`p-3 rounded-lg text-sm ${accessMsg.includes("Failed") || accessMsg.includes("required") ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400" : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"}`}
+                          >
                             {accessMsg}
                           </div>
                         )}

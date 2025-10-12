@@ -11,6 +11,7 @@ import {
   Cable,
   MapPin,
   User,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,7 @@ import { Loader } from "@/components/shared/Loader";
 import JobFormDialog from "@/components/shared/JobFormDialog";
 import UploadDocumentDialog from "@/components/shared/UploadDocumentDialog";
 import AsBuiltDocumentDialog from "@/components/shared/AsBuiltDocumentDialog";
+import { EmailDropCableDialog } from "@/components/clients/EmailDropCableDialog";
 import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
 import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
 import Header from "@/components/shared/Header";
@@ -75,6 +77,10 @@ export default function DropCablePage() {
   const [asBuiltModalOpen, setAsBuiltModalOpen] = useState(false);
   const [selectedJobForAsBuilt, setSelectedJobForAsBuilt] = useState(null);
   const [generatingAsBuilt, setGeneratingAsBuilt] = useState(false);
+
+  // Email Modal State
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [clientForEmail, setClientForEmail] = useState(null);
 
   // Fetch drop cable jobs for this client
   useEffect(() => {
@@ -239,6 +245,20 @@ export default function DropCablePage() {
   const handleGenerateAsBuilt = (job) => {
     setSelectedJobForAsBuilt(job);
     setAsBuiltModalOpen(true);
+  };
+
+  const handleSendEmail = async (job) => {
+    // Fetch client data for email
+    try {
+      const clientResponse = await get(`/client/${clientId}`);
+      setClientForEmail(clientResponse.data);
+      setEmailModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching client data:", error);
+      // Still open dialog with empty client data
+      setClientForEmail(null);
+      setEmailModalOpen(true);
+    }
   };
 
   const uploadDocument = async ({ file, category, jobData }) => {
@@ -479,6 +499,13 @@ export default function DropCablePage() {
                   <FileText className="h-4 w-4" />
                   Generate As-Built
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleSendEmail(job)}
+                  className="flex items-center gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  Send Email
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -631,6 +658,13 @@ export default function DropCablePage() {
         onGenerate={generateAsBuiltDocument}
         jobData={selectedJobForAsBuilt}
         generating={generatingAsBuilt}
+      />
+
+      {/* Email Dialog */}
+      <EmailDropCableDialog
+        open={emailModalOpen}
+        onOpenChange={setEmailModalOpen}
+        clientData={clientForEmail}
       />
     </div>
   );
