@@ -29,10 +29,10 @@ import {
   ArrowRight,
   MoreVertical,
 } from "lucide-react";
-import Image from "next/image";
 import { get, put } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
 import DocumentsTreeView from "@/components/shared/DocumentsTreeView";
+import Header from "@/components/shared/Header";
 
 export default function ClientDetailPage({ params }) {
   const resolvedParams = React.use(params);
@@ -266,160 +266,95 @@ export default function ClientDetailPage({ params }) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="h-full">
-        {/* Modern Header with Glassmorphism Effect */}
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
-          <div className="px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
+        {/* Modern Header with Glassmorphism Effect (using shared Header component) */}
+        <Header
+          title={client.company_name}
+          subtitle={client.email}
+          logo={(() => {
+            const logoBase = client.company_name
+              ? client.company_name.toLowerCase().replace(/[^a-z0-9]/g, "_")
+              : "";
+            const logoSrc = logoExtensions.map(
+              (ext) => `/logos/${logoBase}_logo${ext}`
+            );
+            if (logoError || !client.company_name) {
+              return {
+                src: null,
+                alt: `${client.company_name || "Client"} Logo`,
+                fallbackIcon: User,
+              };
+            }
+            return {
+              src: logoSrc[currentLogoIdx],
+              alt: `${client.company_name} Logo`,
+              fallbackIcon: User,
+              onError: () => {
+                if (currentLogoIdx < logoSrc.length - 1) {
+                  setCurrentLogoIdx(currentLogoIdx + 1);
+                } else {
+                  setLogoError(true);
+                }
+              },
+            };
+          })()}
+          statusIndicator={client.is_active}
+          badge={{
+            label: client.is_active ? "Active" : "Inactive",
+            active: client.is_active,
+          }}
+          actions={
+            editing ? (
+              <>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => router.push("/clients")}
-                  className="h-10 w-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={saving}
+                  className="gap-2"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <X className="w-4 h-4" />
+                  Cancel
                 </Button>
-
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                      {(() => {
-                        const logoBase = client.company_name
-                          ? client.company_name.toLowerCase().replace(/[^a-z0-9]/g, "_")
-                          : "";
-                        const logoSrc = logoExtensions.map(ext => `/logos/${logoBase}_logo${ext}`);
-                        if (logoError || !client.company_name) {
-                          return (
-                            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                              <User className="w-8 h-8 text-white" />
-                            </div>
-                          );
-                        }
-                        return (
-                          <div className="w-16 h-16 flex items-center justify-center">
-                            <Image
-                              src={logoSrc[currentLogoIdx]}
-                              alt={`${client.company_name} Logo`}
-                              width={56}
-                              height={56}
-                              style={{ objectFit: "contain" }}
-                              priority
-                              onError={() => {
-                                if (currentLogoIdx < logoSrc.length - 1) {
-                                  setCurrentLogoIdx(currentLogoIdx + 1);
-                                } else {
-                                  setLogoError(true);
-                                }
-                              }}
-                            />
-                          </div>
-                        );
-                      })()}
-                    <div
-                      className={`absolute -bottom-1 -right-1 w-5 h-5 ${
-                        client.is_active ? "bg-emerald-500" : "bg-slate-400"
-                      } rounded-full border-4 border-white dark:border-slate-900`}
-                    ></div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <h1 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">
-                      {client.company_name}
-                    </h1>
-                    <div className="flex items-center gap-3 text-sm">
-                      <span className="text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                        <Mail className="w-3.5 h-3.5" />
-                        {client.email}
-                      </span>
-                      <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></div>
-                      <Badge
-                        variant={client.is_active ? "default" : "secondary"}
-                        className={`${
-                          client.is_active
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800"
-                            : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400"
-                        } font-medium`}
-                      >
-                        {client.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {editing ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={handleCancel}
-                      disabled={saving}
-                      className="gap-2"
-                    >
-                      <X className="w-4 h-4" />
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
-                    >
-                      {saving ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Save className="w-4 h-4" />
-                      )}
-                      Save Changes
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-10 w-10 rounded-xl"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      onClick={handleEdit}
-                      className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                      Edit Client
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Tab Navigation */}
-          <div className="px-8">
-            <div className="flex gap-1 border-b border-slate-200 dark:border-slate-800">
-              {[
-                { id: "overview", label: "Overview", icon: User },
-                { id: "projects", label: "Projects", icon: Briefcase },
-                { id: "documents", label: "Documents", icon: FileText },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all ${
-                      activeTab === tab.id
-                        ? "border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10"
-                        : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                    } rounded-t-lg`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
+                >
+                  {saving ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  Save Changes
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-xl"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+                <Button
+                  onClick={handleEdit}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  Edit Client
+                </Button>
+              </>
+            )
+          }
+          onBack={() => router.push("/clients")}
+          tabs={[
+            { id: "overview", label: "Overview", icon: User },
+            { id: "projects", label: "Projects", icon: Briefcase },
+            { id: "documents", label: "Documents", icon: FileText },
+          ]}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
 
         <div className="p-8">
           {/* Statistics Cards */}

@@ -123,7 +123,7 @@ export function Topbar() {
 
           {/* Theme Toggle */}
           <div className="pl-2">
-            <ThemeToggle />
+            <ThemeToggle className="h-11 w-11 rounded-xl text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all" />
           </div>
 
           {/* Divider */}

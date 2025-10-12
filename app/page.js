@@ -440,117 +440,152 @@ export default function OverviewPage() {
     );
   }
 
-  function Sidebar() {
-    return (
-      <div className="lg:col-span-1 space-y-6">
-        {/* Quick Actions */}
-        <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm rounded-xl">
-          <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center uppercase tracking-wide">
-              <Activity className="w-4 h-4 mr-2" />
-              Quick Actions
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-14 flex-col text-xs bg bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                <FileText className="w-4 h-4 mb-1 text-white" />
-                Quote
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleNewJobClick}
-                className="h-14 flex-col text-xs bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Calendar className="w-4 h-4 mb-1" />
-                New Order
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-14 flex-col text-xs bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                <Truck className="w-4 h-4 mb-1 text-white" />
-                Track
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-14 flex-col text-xs bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                <Package className="w-4 h-4 mb-1 text-white" />
-                Stock
-              </Button>
-            </div>
+function Sidebar() {
+  return (
+    <div className="lg:col-span-1 space-y-6">
+      {/* Quick Actions */}
+      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="p-6">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4">
+            Quick Actions
+          </h3>
+          <div className="space-y-3">
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+            >
+              <FileText className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
+              Create Quote
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleNewJobClick}
+              className="w-full justify-start h-11 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Calendar className="w-4 h-4 mr-3" />
+              New Order
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+            >
+              <Truck className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
+              Track Delivery
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+            >
+              <Package className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
+              Check Stock
+            </Button>
           </div>
-        </Card>
-        {/* Critical Alerts */}
-        <Card className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/50 shadow-sm rounded-xl">
-          <div className="p-4">
-            <h3 className="text-sm font-semibold text-red-900 dark:text-red-100 mb-3 flex items-center uppercase tracking-wide">
-              <AlertTriangle className="w-4 h-4 mr-2" />
+        </div>
+      </Card>
+
+      {/* Critical Alerts */}
+      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">
               Alerts
             </h3>
-            <div className="space-y-2">
-              <div className="p-3 bg-red-100/60 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800/30">
-                <p className="text-xs font-medium text-red-900 dark:text-red-100">
-                  Low Stock
-                </p>
-                <p className="text-xs text-red-700 dark:text-red-300">
-                  Fiber cable: 500m
-                </p>
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+          </div>
+          <div className="space-y-3">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-l-4 border-red-500">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
+                    Low Stock Alert
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    Fiber cable: 500m remaining
+                  </p>
+                </div>
               </div>
-              <div className="p-3 bg-orange-100/60 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800/30">
-                <p className="text-xs font-medium text-orange-900 dark:text-orange-100">
-                  Overdue
-                </p>
-                <p className="text-xs text-orange-700 dark:text-orange-300">
-                  3 payments pending
-                </p>
+            </div>
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-l-4 border-amber-500">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
+                    Overdue Payments
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    3 payments pending review
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </Card>
-        {/* Performance Metrics */}
-        <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm rounded-xl">
-          <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center uppercase tracking-wide">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Performance
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
-                  Completed
+        </div>
+      </Card>
+
+      {/* Performance Metrics */}
+      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="p-6">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4">
+            Performance
+          </h3>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  Completed Jobs
                 </span>
-                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                <span className="text-xl font-semibold text-slate-900 dark:text-white">
                   47
                 </span>
               </div>
-              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
+              <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-600 rounded-full" style={{ width: '78%' }}></div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
                   Success Rate
                 </span>
-                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                   94%
                 </span>
               </div>
-              <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
-                  Rating
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  Average Rating
                 </span>
-                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                  4.8★
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                    4.8
+                  </span>
+                  <span className="text-amber-500">★</span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  On-Time Delivery
+                </span>
+                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                  89%
                 </span>
               </div>
             </div>
           </div>
-        </Card>
-      </div>
-    );
-  }
+        </div>
+      </Card>
+    </div>
+  );
+}
 
   function NewJobDialog() {
     return (
