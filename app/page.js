@@ -602,23 +602,23 @@ export default function OverviewPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="w-5 h-5" />
-              Create New Job
+              New Order
             </DialogTitle>
             <DialogDescription>
-              Select a job type and client to create a new job.
+              Select a order type and client to create a new order.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {/* Job Type Dropdown */}
             <div className="space-y-2">
-              <Label htmlFor="jobType">Job Type</Label>
+              <Label htmlFor="jobType">Order Type</Label>
               <select
                 id="jobType"
                 value={selectedJobTypeForNew}
                 onChange={(e) => setSelectedJobTypeForNew(e.target.value)}
                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="">Select job type...</option>
+                <option value="">Select order type...</option>
                 {[
                   "Drop Cable Installations",
                   "Link Build",

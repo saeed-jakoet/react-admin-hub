@@ -450,8 +450,7 @@ export default function LoginPage() {
                   }}
                 >
                   <span
-                    className="text-sm font-medium"
-                    style={{ color: "#264C92" }}
+                    className="text-sm font-medium text-green-600"
                   >
                     🔒 Secure Access
                   </span>
