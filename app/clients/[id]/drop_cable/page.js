@@ -596,9 +596,9 @@ export default function DropCablePage() {
             exportColumns={exportColumns}
             exportFilename="drop-cable-jobs"
             exportTitle="Export"
-            viewModeEnabled={false}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
+            // viewModeEnabled={false}
+            // viewMode={viewMode}
+            // setViewMode={setViewMode}
             statusFilterEnabled={true}
             statuses={uniqueStatuses}
             statusFilter={statusFilter}

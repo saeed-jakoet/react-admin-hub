@@ -14,9 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ChevronRight, ChevronLeft, Check } from "lucide-react";
-import { post } from "@/lib/api/fetcher";
+import { post, put } from "@/lib/api/fetcher";
 
-export function AddItemDialog({ open, onOpenChange, onSuccess, config }) {
+export function AddItemDialog({ open, onOpenChange, onSuccess, config, onBeforeSubmit }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState(config.initialFormData);
@@ -119,9 +119,18 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config }) {
           {}
         );
 
-        // Log JSON payload
-        console.log("[AddItemDialog] POST payload (JSON):", sanitized);
-        await post(config.apiEndpoint, sanitized);
+        // Allow custom transformation of data before submission
+        let finalData = sanitized;
+        if (onBeforeSubmit) {
+          finalData = onBeforeSubmit(sanitized);
+        }
+
+        let response;
+        if (config.mode === "edit" || config.apiMethod === "PUT") {
+          response = await put(config.apiEndpoint, finalData);
+        } else {
+          response = await post(config.apiEndpoint, finalData);
+        }
       }
       setFormData(config.initialFormData);
       setCurrentStep(1);
@@ -139,6 +148,40 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config }) {
 
   const renderField = (field) => {
     switch (field.type) {
+      case "dropdown":
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label
+              htmlFor={field.id}
+              className="text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              {field.label}
+            </Label>
+            <div className="relative">
+              {field.icon && (
+                <field.icon className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              )}
+              <select
+                id={field.id}
+                value={formData[field.id] || ""}
+                onChange={(e) => handleInputChange(field.id, e.target.value)}
+                className={
+                  (field.icon ? "pl-10 " : "") +
+                  "w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:border-blue-500 dark:focus:border-blue-400"
+                }
+              >
+                <option value="">{field.placeholder || "Select..."}</option>
+                {Array.isArray(field.options) &&
+                  field.options.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+        );
+
       case "text":
       case "email":
       case "number":
@@ -168,8 +211,6 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config }) {
             </div>
           </div>
         );
-
-      case "textarea":
         return (
           <div key={field.id} className="space-y-2">
             <Label
@@ -493,12 +534,13 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config }) {
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Creating...
+                    {config.mode === "edit" ? "Updating..." : "Creating..."}
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4" />
-                    Create {config.entityName}
+                    {config.mode === "edit" ? "Update" : "Create"}{" "}
+                    {config.entityName}
                   </>
                 )}
               </Button>

@@ -178,11 +178,12 @@ export function DataTable({
                   )}
 
                   {/* View Toggle */}
-
-                  <ViewModeToggle
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
-                  />
+                  {viewModeEnabled && (
+                    <ViewModeToggle
+                      viewMode={viewMode}
+                      onViewModeChange={setViewMode}
+                    />
+                  )}
                 </div>
               )}
             </div>
