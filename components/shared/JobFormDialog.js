@@ -45,7 +45,7 @@ export default function JobFormDialog({
   onError,
   saving: externalSaving = false,
 }) {
-  const { success, error } = useToast();
+  const { success, error: toastError } = useToast();
   // Initialize form data based on mode
   const getInitialData = () => {
     if (mode === "edit") {
@@ -325,7 +325,7 @@ export default function JobFormDialog({
         } the job.`;
       setErrorMsg(msg);
       // Show error toast
-      error(
+      toastError(
         "Error",
         mode === "create"
           ? `Failed to create ${jobConfig.shortName || "Order"}. Please try again.`
