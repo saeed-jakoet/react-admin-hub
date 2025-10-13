@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
+import useSWR, { mutate } from "swr";
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Plus, MoreVertical, Truck, Edit, TrendingUp } from "lucide-react";
@@ -15,31 +16,26 @@ import { AddFleetDialog } from "@/components/fleet/AddFleetDialog";
 import { FleetGridView } from "@/components/fleet/FleetGridView";
 import { Loader } from "@/components/shared/Loader";
 import Header from "@/components/shared/Header";
+import { useToast } from "@/components/shared/Toast";
 
 export default function FleetPage() {
-  const [fleet, setFleet] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState("add"); // 'add' or 'edit'
   const [editVehicle, setEditVehicle] = useState(null);
   const [viewMode, setViewMode] = useState("table"); // table, grid
   const [searchTerm, setSearchTerm] = useState("");
+  const toast = useToast();
 
-  useEffect(() => {
-    fetchFleet();
-  }, []);
-
-  const fetchFleet = async () => {
-    try {
-      setLoading(true);
-      const response = await get("/fleet");
-      setFleet(response.data || []);
-    } catch (error) {
-      console.error("Error fetching fleet:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // SWR for fleet data
+  const {
+    data: fleetData,
+    isLoading: loading,
+    error,
+  } = useSWR(["/fleet"], () => get("/fleet"), {
+    revalidateOnFocus: true,
+    dedupingInterval: 60000,
+  });
+  const fleet = fleetData?.data || [];
 
   // Example fleet stats (replace with real logic)
   // Example fleet stats (replace with real logic)
@@ -82,11 +78,25 @@ export default function FleetPage() {
 
   if (loading)
     return <Loader variant="bars" text="Loading fleet management..." />;
+  if (error) {
+    toast.error("Error", "Failed to load fleet data.");
+    return <div className="p-8 text-red-600">Failed to load fleet data.</div>;
+  }
 
   const handleEditVehicle = (vehicle) => {
     setEditVehicle(vehicle);
     setDialogMode("edit");
     setIsDialogOpen(true);
+  };
+
+  // Toast handlers for Add/Edit
+  const handleDialogSuccess = (action = "add") => {
+    mutate(["/fleet"]);
+    if (action === "edit") {
+      toast.success("Success", "Vehicle updated successfully.");
+    } else {
+      toast.success("Success", "Vehicle added successfully.");
+    }
   };
 
   const allColumns = [
@@ -257,7 +267,7 @@ export default function FleetPage() {
             setDialogMode("add");
           }
         }}
-        onSuccess={fetchFleet}
+        onSuccess={() => handleDialogSuccess(dialogMode)}
         mode={dialogMode}
         initialData={editVehicle}
       />

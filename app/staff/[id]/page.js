@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
+import useSWR, { mutate } from "swr";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/shared/Toast";
 import { Card } from "@/components/ui/card";
@@ -40,11 +41,8 @@ export default function StaffDetailPage({ params }) {
   const resolvedParams = use(params);
   const router = useRouter();
   const { user } = useAuth();
-  const toast = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
 
-  const [staff, setStaff] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({});
@@ -57,6 +55,22 @@ export default function StaffDetailPage({ params }) {
   const [pendingRole, setPendingRole] = useState(null);
   const [revealedNationalId, setRevealedNationalId] = useState(null);
   const [revealingNationalId, setRevealingNationalId] = useState(false);
+
+  // SWR for staff data
+  const { data: staffData, isLoading: loading, error: staffError } = useSWR(
+    resolvedParams.id ? `/staff/${resolvedParams.id}` : null,
+    () => get(`/staff/${resolvedParams.id}`),
+    { revalidateOnFocus: true, dedupingInterval: 60000 }
+  );
+  const staff = staffData?.data || null;
+
+  // SWR for profile data (only fetch if auth_user_id exists)
+  const { data: profileData } = useSWR(
+    staff?.auth_user_id ? `/auth/accounts/${staff.auth_user_id}` : null,
+    () => get(`/auth/accounts/${staff.auth_user_id}`),
+    { revalidateOnFocus: true, dedupingInterval: 60000 }
+  );
+  const profile = profileData?.data || null;
 
   const localStorageKey = `staff-${resolvedParams.id}-activeTab`;
   const [activeTab, setActiveTabState] = useState(() => {
@@ -77,47 +91,19 @@ export default function StaffDetailPage({ params }) {
     [localStorageKey]
   );
 
-  const fetchStaffMember = useCallback(
-    async (showLoader = false) => {
-      try {
-        if (showLoader) setLoading(true);
-        // 1) Fetch staff row by staff id
-        const s = await get(`/staff/${resolvedParams.id}`);
-        const staffData = s?.data || null;
-        setStaff(staffData);
-        setFormData(staffData || {});
-        setRoleForm({ role: staffData?.role || "" });
-
-        // 2) Try to fetch auth profile if linked
-        if (staffData?.auth_user_id) {
-          try {
-            const res = await get(`/auth/accounts/${staffData.auth_user_id}`);
-            const data = res?.data || null;
-            setProfile(data);
-            setRoleForm({ role: data?.role || staffData?.role || "" });
-          } catch {
-            setProfile(null);
-            setRoleForm({ role: staffData?.role || "" });
-          }
-        } else {
-          setProfile(null);
-          setRoleForm({ role: staffData?.role || "" });
-        }
-      } catch (error) {
-        console.error("Error fetching staff member:", error);
-      } finally {
-        if (showLoader) setLoading(false);
-      }
-    },
-    [resolvedParams.id]
-  );
+  // Update form data and role form when staff data changes
+  useEffect(() => {
+    if (staff) {
+      setFormData(staff);
+      setRoleForm({ role: profile?.role || staff?.role || "" });
+    }
+  }, [staff, profile]);
 
   useEffect(() => {
     if (resolvedParams.id) {
-      fetchStaffMember(true); // Only show loader on initial load
       setRevealedNationalId(null);
     }
-  }, [resolvedParams.id, fetchStaffMember]);
+  }, [resolvedParams.id]);
 
   const handleEdit = () => {
     setEditing(true);
@@ -177,14 +163,14 @@ export default function StaffDetailPage({ params }) {
         }
         return acc;
       }, {});
-      console.log(payload);
 
-      const response = await put(`/staff/${resolvedParams.id}`, payload);
-      setStaff(response.data);
+      await put(`/staff/${resolvedParams.id}`, payload);
+      await mutate(`/staff/${resolvedParams.id}`);
       setEditing(false);
-      toast.success("Success", "Staff member details updated successfully.");
+      toastSuccess("Success", "Staff member details updated successfully.");
     } catch (error) {
       console.error("Error updating staff member:", error);
+      toastError("Error", "Failed to update staff member.");
     } finally {
       setSaving(false);
     }
@@ -213,7 +199,7 @@ export default function StaffDetailPage({ params }) {
       roleForm.role !== "super_admin"
     ) {
       setPendingRole(roleForm.role);
-      toast.warning(
+      toastSuccess(
         "Warning: You are changing your own role",
         `You are about to change your own role from Super Admin to ${roleForm.role.replace("_", " ")}. This will immediately limit your access and you may lose the ability to manage other admins or system settings.`,
         {
@@ -241,14 +227,18 @@ export default function StaffDetailPage({ params }) {
       const res = await put(`/auth`, { id: staff.auth_user_id, ...payload });
       if (res?.data) {
         setRoleSuccess("Role updated");
-        toast.success(
+        toastSuccess(
           "Success",
           `Role updated to ${newRole.replace("_", " ")}`
         );
-        await fetchStaffMember(false);
+        await mutate(`/staff/${resolvedParams.id}`);
+        if (staff.auth_user_id) {
+          await mutate(`/auth/accounts/${staff.auth_user_id}`);
+        }
       }
     } catch (e) {
       setRoleError(e?.message || "Failed to update role");
+      toastError("Error", "Failed to update role.");
     } finally {
       setSavingRole(false);
       setPendingRole(null);
@@ -277,10 +267,12 @@ export default function StaffDetailPage({ params }) {
             ? `System access granted. Temporary password: ${temp}`
             : "System access granted"
         );
-        await fetchStaffMember(false);
+        toastSuccess("Success", "System access granted successfully.");
+        await mutate(`/staff/${resolvedParams.id}`);
       }
     } catch (e) {
       setAccessMsg(`Failed to grant access: ${e?.message}`);
+      toastError("Error", "Failed to grant system access.");
     } finally {
       setAccessBusy(false);
     }
@@ -294,10 +286,12 @@ export default function StaffDetailPage({ params }) {
       const res = await del(`/staff/${resolvedParams.id}/access`);
       if (res?.data) {
         setAccessMsg("System access removed");
-        await fetchStaffMember(false);
+        toastSuccess("Success", "System access removed successfully.");
+        await mutate(`/staff/${resolvedParams.id}`);
       }
     } catch (e) {
       setAccessMsg(`Failed to remove access: ${e?.message}`);
+      toastError("Error", "Failed to remove system access.");
     } finally {
       setAccessBusy(false);
     }
@@ -331,6 +325,11 @@ export default function StaffDetailPage({ params }) {
 
   if (loading) {
     return <Loader variant="bars" text="Loading staff member..." />;
+  }
+
+  if (staffError) {
+    toastError("Error", "Failed to load staff data.");
+    return <div className="p-8 text-red-600">Failed to load staff data.</div>;
   }
 
   if (!staff) {
@@ -589,6 +588,7 @@ export default function StaffDetailPage({ params }) {
                         value: staff.first_name || "",
                         type: "text",
                         icon: User,
+                        disabled: true,
                       },
                       {
                         label: "Surname",
@@ -596,6 +596,7 @@ export default function StaffDetailPage({ params }) {
                         value: staff.surname || "",
                         type: "text",
                         icon: User,
+                        disabled: true,
                       },
                       {
                         label: "Email",
@@ -604,6 +605,7 @@ export default function StaffDetailPage({ params }) {
                         type: "email",
                         icon: Mail,
                         fullWidth: true,
+                        disabled: true,
                       },
                       {
                         label: "Phone",
@@ -612,6 +614,7 @@ export default function StaffDetailPage({ params }) {
                         type: "tel",
                         icon: Phone,
                         fullWidth: true,
+                        disabled: false,
                       },
                     ].map((item, i) => (
                       <div
@@ -631,7 +634,8 @@ export default function StaffDetailPage({ params }) {
                               handleInputChange(item.field, e.target.value)
                             }
                             placeholder={`Enter ${item.label.toLowerCase()}`}
-                            className="border-slate-300 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400"
+                            className={`border-slate-300 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 ${item.disabled ? 'bg-slate-100 dark:bg-slate-800/50 text-slate-400 cursor-not-allowed' : ''}`}
+                            disabled={item.disabled}
                           />
                         ) : (
                           <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">

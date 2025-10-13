@@ -298,15 +298,7 @@ export default function JobFormDialog({
         result = await put(jobConfig.apiEndpoint, payload);
       }
 
-      // Show success toast
-      success(
-        "Success",
-        mode === "create"
-          ? `${jobConfig.apiEndpoint === "/drop-cable" ? "Order" : (jobConfig.shortName || "Order")} created successfully!`
-          : `${jobConfig.apiEndpoint === "/drop-cable" ? "Order" : (jobConfig.shortName || "Order")} updated successfully!`
-      );
-
-      // Notify parent of success
+      // Notify parent of success (toast will be shown in parent component)
       onSuccess?.(result.data || payload);
 
       // Close dialog and reset after success

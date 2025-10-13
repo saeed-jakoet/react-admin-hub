@@ -81,7 +81,7 @@ export function AuthProvider({ children }) {
   // On mount, check for existing session
   // ---------------------------
   useEffect(() => {
-    const publicPages = ["/auth/login", "/auth/forgot-password"];
+    const publicPages = ["/auth/login", "/auth/forgot-password", "/auth/reset-password"]; 
 
     if (publicPages.includes(pathname)) {
       setIsBootstrapping(false);
@@ -107,7 +107,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (isBootstrapping || isLoading) return;
 
-    const publicPages = ["/auth/login", "/auth/forgot-password", "/403"];
+    const publicPages = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/403"]; 
     const onPublic = publicPages.includes(pathname);
 
     if (!user) {

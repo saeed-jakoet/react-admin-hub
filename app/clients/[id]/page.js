@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
+import useSWR, { mutate } from "swr";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,11 +40,25 @@ export default function ClientDetailPage({ params }) {
   const resolvedParams = use(params);
   const router = useRouter();
   const { success, error } = useToast();
-  const [client, setClient] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({});
+
+  // SWR for client data
+  const { data: clientData, isLoading: loading, error: clientError } = useSWR(
+    resolvedParams.id ? `/client/${resolvedParams.id}` : null,
+    () => get(`/client/${resolvedParams.id}`),
+    { revalidateOnFocus: true, dedupingInterval: 60000 }
+  );
+  const client = clientData?.data || null;
+
+  // SWR for drop cable jobs
+  const { data: jobsData } = useSWR(
+    resolvedParams.id ? `/drop-cable/client/${resolvedParams.id}` : null,
+    () => get(`/drop-cable/client/${resolvedParams.id}`),
+    { revalidateOnFocus: true, dedupingInterval: 60000 }
+  );
+  const dropCableJobs = jobsData?.data || [];
   const localStorageKey = `client-${resolvedParams.id}-activeTab`;
   const [activeTab, setActiveTabState] = useState(() => {
     if (typeof window !== "undefined") {
@@ -83,37 +98,12 @@ export default function ClientDetailPage({ params }) {
     }
   }, [localStorageKey, activeTab]);
 
-  const [dropCableJobs, setDropCableJobs] = useState([]);
-
+  // Update form data when client data changes
   useEffect(() => {
-    const fetchClient = async () => {
-      try {
-        setLoading(true);
-        const response = await get(`/client/${resolvedParams.id}`);
-        setClient(response.data);
-        setFormData(response.data);
-      } catch (error) {
-        console.error("Error fetching client:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchDropCableJobs = async () => {
-      try {
-        const response = await get(`/drop-cable/client/${resolvedParams.id}`);
-        setDropCableJobs(response.data || []);
-      } catch (error) {
-        console.error("Error fetching drop cable jobs:", error);
-        setDropCableJobs([]);
-      }
-    };
-
-    if (resolvedParams.id) {
-      fetchClient();
-      fetchDropCableJobs();
+    if (client) {
+      setFormData(client);
     }
-  }, [resolvedParams.id]);
+  }, [client]);
 
   const handleEdit = () => {
     setEditing(true);
@@ -149,8 +139,8 @@ export default function ClientDetailPage({ params }) {
       delete payload.created_at;
       delete payload.updated_at;
 
-      const response = await put(`/client/${resolvedParams.id}`, payload);
-      setClient(response.data);
+      await put(`/client/${resolvedParams.id}`, payload);
+      await mutate(`/client/${resolvedParams.id}`);
       setEditing(false);
       success("Success", "Client updated successfully!");
     } catch (err) {
@@ -260,6 +250,11 @@ export default function ClientDetailPage({ params }) {
 
   if (loading) {
     return <Loader variant="bars" text="Loading client data..." />;
+  }
+
+  if (clientError) {
+    error("Error", "Failed to load client data.");
+    return <div className="p-8 text-red-600">Failed to load client data.</div>;
   }
 
   if (!client) {

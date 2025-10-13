@@ -96,6 +96,7 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config, onBeforeS
           formDataLog[key] =
             value instanceof File ? `[File: ${value.name}]` : value;
         });
+        console.log("Submitting FormData payload:", formDataLog);
         await post(config.apiEndpoint, formDataToSend);
       } else {
         // Sanitize JSON payload: drop empty strings and nulls so optional/nullable fields pass schema
@@ -124,6 +125,9 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config, onBeforeS
         if (onBeforeSubmit) {
           finalData = onBeforeSubmit(sanitized);
         }
+
+        // Log JSON payload
+        console.log("Submitting JSON payload:", finalData);
 
         let response;
         if (config.mode === "edit" || config.apiMethod === "PUT") {

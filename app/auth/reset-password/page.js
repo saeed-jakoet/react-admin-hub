@@ -1,28 +1,65 @@
 "use client";
 
-import { useState } from "react";
-import { post } from "@/lib/api/fetcher";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Mail, ArrowRight, ArrowLeft } from "lucide-react";
+import { Lock, ArrowRight, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { post } from "@/lib/api/fetcher";
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+function ResetPasswordPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [token, setToken] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  useEffect(() => {
+    // Supabase may send access_token as hash fragment (#access_token=...) or as query (?access_token=...)
+    let t = searchParams.get("access_token") || searchParams.get("token");
+    if (!t && typeof window !== "undefined") {
+      const hash = window.location.hash?.startsWith("#")
+        ? window.location.hash.substring(1)
+        : "";
+      if (hash) {
+        const h = new URLSearchParams(hash);
+        t = h.get("access_token") || h.get("token") || t;
+      }
+    }
+    if (t) setToken(t);
+  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true);
+    setSuccess(false);
 
+    if (!password || password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (!token) {
+      setError("Missing token. Please use the link from your email.");
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      await post("/auth/forgot-password", { email });
-      setSubmitted(true);
+      await post("/auth/reset-password", { token, new_password: password });
+      setSuccess(true);
+      setTimeout(() => router.push("/auth/login"), 2000);
     } catch (err) {
       setError(err?.message || "Something went wrong. Please try again.");
     } finally {
-      setIsLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -401,10 +438,7 @@ export default function ForgotPasswordPage() {
                 <h1 className="text-5xl lg:text-6xl font-bold text-white mb-2 tracking-tight">
                   Fiber Africa
                 </h1>
-                <p
-                  className="font-semibold text-xl lg:text-2xl tracking-wider text-yellow-500"
-                  // style={{ color: "#264C92" }}
-                >
+                <p className="font-semibold text-xl lg:text-2xl tracking-wider text-yellow-500">
                   WE DELIVER
                 </p>
               </div>
@@ -412,9 +446,9 @@ export default function ForgotPasswordPage() {
 
             {/* Subtitle */}
             <div className="max-w-md mx-auto mb-8">
-              <p className="text-gray-300 text-lg mb-2">Password Recovery</p>
+              <p className="text-gray-300 text-lg mb-2">Set New Password</p>
               <p className="text-gray-400 text-sm">
-                Enter your email to reset your password
+                Enter your new password to secure your account
               </p>
             </div>
           </div>
@@ -431,42 +465,26 @@ export default function ForgotPasswordPage() {
             ></div>
 
             <div className="relative">
-              {submitted ? (
+              {success ? (
                 <div className="text-center space-y-6">
                   <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
-                    <Mail className="w-8 h-8 text-green-400" />
+                    <CheckCircle2 className="w-8 h-8 text-green-400" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-white mb-2">
-                      Check Your Email
+                      Password Updated
                     </h2>
                     <p className="text-slate-400 mb-6">
-                      We&apos;ve sent a password reset link to{" "}
-                      <span className="text-green-400">{email}</span>
+                      Your password has been successfully reset. Redirecting to
+                      sign in...
                     </p>
-                  </div>
-                  <div className="text-center">
-                    <a
-                      href="/auth/login"
-                      className="inline-flex items-center gap-2 text-slate-400 text-sm transition-colors font-medium"
-                      style={{ "--hover-color": "#264C92" }}
-                      onMouseEnter={(e) => {
-                        e.target.style.color = "#264C92";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.color = "rgb(148 163 184)";
-                      }}
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      Back to Sign In
-                    </a>
                   </div>
                 </div>
               ) : (
                 <>
                   <div className="text-center mb-8">
                     <h2 className="text-2xl font-bold text-white mb-2">
-                      Reset Password
+                      Create New Password
                     </h2>
                     <div
                       className="inline-flex items-center px-4 py-2 rounded-full border"
@@ -475,10 +493,8 @@ export default function ForgotPasswordPage() {
                         borderColor: "#264C92/20",
                       }}
                     >
-                      <span
-                        className="text-sm font-medium text-green-600"
-                      >
-                        🔒 Secure Recovery
+                      <span className="text-sm font-medium text-green-600">
+                        🔒 Secure Reset
                       </span>
                     </div>
                   </div>
@@ -495,7 +511,7 @@ export default function ForgotPasswordPage() {
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
                       <div className="relative group">
-                        <Mail
+                        <Lock
                           className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors"
                           style={{
                             "--tw-text-opacity": "1",
@@ -503,30 +519,87 @@ export default function ForgotPasswordPage() {
                           }}
                         />
                         <style jsx>{`
-                          .group:focus-within .lucide-mail {
+                          .group:focus-within .lucide-lock {
                             color: #264c92 !important;
                           }
                         `}</style>
                         <input
-                          type="email"
-                          className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-opacity-50 transition-all"
+                          type={showPassword ? "text" : "password"}
+                          className="w-full pl-12 pr-12 py-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-opacity-50 transition-all"
                           style={{
                             "--tw-ring-color": "#264C92",
                             "--tw-border-color": "#264C92",
                           }}
-                          placeholder="Enter your email address"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Enter new password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
                           required
-                          disabled={isLoading}
-                          autoComplete="email"
+                          autoComplete="new-password"
+                          minLength={8}
                         />
+                        <button
+                          type="button"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          onClick={() => setShowPassword((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="w-5 h-5" />
+                          ) : (
+                            <Eye className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1 ml-1">
+                        Minimum 8 characters
+                      </p>
+                    </div>
+
+                    <div>
+                      <div className="relative group">
+                        <Lock
+                          className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors"
+                          style={{
+                            "--tw-text-opacity": "1",
+                            color: "rgb(148 163 184 / var(--tw-text-opacity))",
+                          }}
+                        />
+                        <style jsx>{`
+                          .group:focus-within .lucide-lock {
+                            color: #264c92 !important;
+                          }
+                        `}</style>
+                        <input
+                          type={showConfirm ? "text" : "password"}
+                          className="w-full pl-12 pr-12 py-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-opacity-50 transition-all"
+                          style={{
+                            "--tw-ring-color": "#264C92",
+                            "--tw-border-color": "#264C92",
+                          }}
+                          placeholder="Confirm new password"
+                          value={confirm}
+                          onChange={(e) => setConfirm(e.target.value)}
+                          required
+                          autoComplete="new-password"
+                        />
+                        <button
+                          type="button"
+                          aria-label={showConfirm ? "Hide password" : "Show password"}
+                          onClick={() => setShowConfirm((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                        >
+                          {showConfirm ? (
+                            <EyeOff className="w-5 h-5" />
+                          ) : (
+                            <Eye className="w-5 h-5" />
+                          )}
+                        </button>
                       </div>
                     </div>
 
                     <button
                       type="submit"
-                      disabled={isLoading}
+                      disabled={submitting || !token}
                       className="w-full text-white font-semibold py-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
                       style={{
                         background:
@@ -534,47 +607,32 @@ export default function ForgotPasswordPage() {
                         boxShadow: "0 10px 25px rgba(38, 76, 146, 0.25)",
                       }}
                       onMouseEnter={(e) => {
-                        if (!isLoading) {
+                        if (!submitting && token) {
                           e.target.style.background =
                             "linear-gradient(to right, #1a3b73, #264C92)";
                         }
                       }}
                       onMouseLeave={(e) => {
-                        if (!isLoading) {
+                        if (!submitting && token) {
                           e.target.style.background =
                             "linear-gradient(to right, #264C92, #1a3b73)";
                         }
                       }}
                     >
-                      {isLoading ? (
+                      {submitting ? (
                         <>
                           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          Sending Reset Link...
+                          Updating Password...
                         </>
+                      ) : !token ? (
+                        "Link Expired"
                       ) : (
                         <>
-                          <span>Send Reset Link</span>
+                          <span>Update Password</span>
                           <ArrowRight className="w-5 h-5" />
                         </>
                       )}
                     </button>
-
-                    <div className="text-center">
-                      <a
-                        href="/auth/login"
-                        className="inline-flex items-center gap-2 text-slate-400 text-sm transition-colors font-medium"
-                        style={{ "--hover-color": "#264C92" }}
-                        onMouseEnter={(e) => {
-                          e.target.style.color = "#264C92";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.color = "rgb(148 163 184)";
-                        }}
-                      >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Sign In
-                      </a>
-                    </div>
                   </form>
                 </>
               )}
@@ -583,5 +641,19 @@ export default function ForgotPasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#0B1426] flex items-center justify-center">
+          <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <ResetPasswordPageInner />
+    </Suspense>
   );
 }

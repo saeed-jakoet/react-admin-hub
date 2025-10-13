@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import useSWR, { mutate } from "swr";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
@@ -31,16 +32,27 @@ import { EmailDropCableDialog } from "@/components/clients/EmailDropCableDialog"
 import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
 import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
 import Header from "@/components/shared/Header";
+import { useToast } from "@/components/shared/Toast";
 
 export default function DropCablePage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const clientId = params.id;
+  const toast = useToast();
 
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // SWR for jobs
+  const {
+    data: jobsData,
+    isLoading: loading,
+    error,
+  } = useSWR(
+    clientId ? [`/drop-cable/client/${clientId}`] : null,
+    () => get(`/drop-cable/client/${clientId}`),
+    { revalidateOnFocus: true, dedupingInterval: 60000 }
+  );
+  const jobs = jobsData?.data || [];
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [editingJob, setEditingJob] = useState(null);
@@ -80,27 +92,6 @@ export default function DropCablePage() {
   // Email Modal State
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [clientForEmail, setClientForEmail] = useState(null);
-
-  // Fetch drop cable jobs for this client
-  useEffect(() => {
-    async function fetchDropCableJobs() {
-      try {
-        setLoading(true);
-        const data = await get(`/drop-cable/client/${clientId}`);
-        console.log(data);
-        setJobs(data.data || []);
-      } catch (error) {
-        console.error("Error fetching drop cable jobs:", error);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (clientId) {
-      fetchDropCableJobs();
-    }
-  }, [clientId, router]);
 
   // Check URL parameters for new job creation
   useEffect(() => {
@@ -252,11 +243,23 @@ export default function DropCablePage() {
       const clientResponse = await get(`/client/${clientId}`);
       setClientForEmail(clientResponse.data);
       setEmailModalOpen(true);
+      toast.info("Email", "Email dialog opened.");
     } catch (error) {
       console.error("Error fetching client data:", error);
+      toast.error("Error", "Failed to fetch client data for email.");
       // Still open dialog with empty client data
       setClientForEmail(null);
       setEmailModalOpen(true);
+    }
+  };
+
+  // Handler for job create/edit success
+  const handleJobSuccess = (job, mode) => {
+    mutate([`/drop-cable/client/${clientId}`]);
+    if (mode === "edit") {
+      toast.success("Success", "Order updated successfully.");
+    } else {
+      toast.success("Success", "Order created successfully.");
     }
   };
 
@@ -318,8 +321,11 @@ export default function DropCablePage() {
       formData.append("clientId", String(clientId));
 
       const result = await post("/documents/upload", formData);
+      toast.success("Success", "Document uploaded successfully.");
+      mutate([`/drop-cable/client/${clientId}`]);
       console.log("Upload successful:", result);
     } catch (error) {
+      toast.error("Error", error.message || "Upload failed.");
       console.error("Upload error:", error);
       throw error;
     } finally {
@@ -366,11 +372,15 @@ export default function DropCablePage() {
         link.click();
         document.body.removeChild(link);
         setAsBuiltModalOpen(false);
+        toast.success("Success", "As-Built document generated and downloaded.");
+        mutate([`/drop-cable/client/${clientId}`]);
         console.log("As-Built document generated successfully:", result);
       } else {
+        toast.error("Error", "Failed to generate As-Built document.");
         throw new Error("Failed to generate As-Built document");
       }
     } catch (error) {
+      toast.error("Error", error.message || "As-Built generation failed.");
       console.error("As-Built generation error:", error);
       throw error;
     } finally {
@@ -518,16 +528,19 @@ export default function DropCablePage() {
   }
 
   if (error) {
+    toast.error("Error", "Failed to load drop cable jobs.");
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-red-800 dark:text-red-300 mb-2">
             Error Loading Jobs
           </h3>
-          <p className="text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-red-600 dark:text-red-400">
+            {error.message || error}
+          </p>
           <Button
             variant="outline"
-            onClick={() => window.location.reload()}
+            onClick={() => mutate([`/drop-cable/client/${clientId}`])}
             className="mt-4"
           >
             Try Again
@@ -613,11 +626,7 @@ export default function DropCablePage() {
         jobData={editFormData}
         jobConfig={jobTypeConfigs["drop-cable"]}
         onSuccess={(updatedJob) => {
-          setJobs((prev) =>
-            prev.map((job) =>
-              job.id === editingJob ? { ...job, ...updatedJob } : job
-            )
-          );
+          handleJobSuccess(updatedJob, "edit");
           setEditingJob(null);
           setEditFormData({});
         }}
@@ -633,7 +642,7 @@ export default function DropCablePage() {
         clientId={clientId}
         clientName={clientNameForModal}
         onSuccess={(newJob) => {
-          setJobs((prev) => [newJob, ...prev]);
+          handleJobSuccess(newJob, "create");
           setClientNameForModal("");
         }}
       />

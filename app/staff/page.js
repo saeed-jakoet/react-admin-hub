@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
@@ -28,17 +28,35 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { get } from "@/lib/api/fetcher";
+import useSWR, { mutate } from 'swr';
 import { AddStaffDialog } from "@/components/staff/AddStaffDialog";
+import { useToast } from "@/components/shared/Toast";
 import { StaffGridView } from "@/components/staff/StaffGridView";
 import { Loader } from "@/components/shared/Loader";
 import Header from "@/components/shared/Header";
 import { useAuth } from "@/components/providers/AuthProvider";
 
 export default function StaffPage() {
+  const { success, error: toastError } = useToast();
+
+  // Toast handler for Add/Edit
+  const handleDialogSuccess = (action = "add") => {
+    mutate(["/staff"]);
+    if (action === "edit") {
+      success("Staff Updated", "Staff member was updated successfully.");
+    } else {
+      success("Staff Added", "Staff member was added successfully.");
+    }
+  };
   const router = useRouter();
   const { user } = useAuth();
-  const [staff, setStaff] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // SWR for staff
+  const { data: staffData, isLoading: loading, error } = useSWR(
+    ['/staff'],
+    () => get('/staff'),
+    { revalidateOnFocus: true, dedupingInterval: 60000 }
+  );
+  const staff = staffData?.data || [];
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [viewMode, setViewModeState] = useState(() => {
     if (typeof window !== "undefined") {
@@ -56,21 +74,7 @@ export default function StaffPage() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchStaff();
-  }, []);
 
-  const fetchStaff = async () => {
-    try {
-      setLoading(true);
-      const response = await get("/staff");
-      setStaff(response.data || []);
-    } catch (error) {
-      console.error("Error fetching staff:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Staff stats calculations
   const staffStats = useMemo(() => {
@@ -384,7 +388,10 @@ export default function StaffPage() {
       <AddStaffDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        onSuccess={fetchStaff}
+        onSuccess={() => handleDialogSuccess("add")}
+        onError={() => {
+          toastError("Error", "Failed to add staff member.");
+        }}
         disabled={!canAddStaff}
       />
     </>

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { get } from "@/lib/api/fetcher";
+import useSWR from 'swr';
 import { Calendar as BigCalendar, momentLocalizer } from "react-big-calendar";
 import CalendarBigCalendar from "@/components/calendar/CalendarBigCalendar";
 import moment from "moment";
@@ -35,6 +36,17 @@ const localizer = momentLocalizer(moment);
 
 export default function OverviewPage() {
   const router = useRouter();
+
+  // --- Low Stock Alerts with SWR ---
+  const { data: inventoryData, error: inventoryError, isLoading: inventoryLoading } = useSWR(
+    ['/inventory'],
+    () => get('/inventory'),
+    { revalidateOnFocus: true, dedupingInterval: 60000 }
+  );
+  const lowStock =
+    inventoryData?.data?.filter(
+      (item) => typeof item.quantity === 'number' && typeof item.minimum_quantity === 'number' && item.quantity < item.minimum_quantity
+    ) || [];
 
   // Calendar and Orders State
   const [orders, setOrders] = useState([]);
@@ -474,59 +486,72 @@ export default function OverviewPage() {
                 <Truck className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
                 Track Delivery
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
-              >
-                <Package className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
-                Check Stock
-              </Button>
             </div>
           </div>
         </Card>
 
-        {/* Critical Alerts */}
+        {/* Low Stock Alerts */}
         <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-slate-900 dark:text-white">
-                Alerts
+                Low Stock Alerts
               </h3>
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              {lowStock.length > 0 && (
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              )}
             </div>
-            <div className="space-y-3">
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-l-4 border-red-500">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
-                      Low Stock Alert
-                    </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
-                      Fiber cable: 500m remaining
-                    </p>
-                  </div>
+            {inventoryLoading ? (
+              <div className="text-sm text-slate-500">Checking inventory...</div>
+            ) : inventoryError ? (
+              <div className="text-sm text-red-500">Failed to load inventory.</div>
+            ) : lowStock.length === 0 ? (
+              <div className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-900/10 rounded-xl border-l-4 border-green-500">
+                <div className="w-8 h-8 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Package className="w-4 h-4 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
+                    All Stock Healthy
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    All inventory levels are above minimum
+                  </p>
                 </div>
               </div>
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-l-4 border-amber-500">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            ) : (
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {lowStock.slice(0, 5).map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-l-4 border-red-500"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
+                          {item.item_name}
+                        </p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">
+                          Current: <span className="font-bold text-red-600">{item.quantity}</span> {item.unit} 
+                          {' '}• Min: {item.minimum_quantity} {item.unit}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                          {item.location}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
-                      Overdue Payments
-                    </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
-                      3 payments pending review
-                    </p>
-                  </div>
-                </div>
+                ))}
+                {lowStock.length > 5 && (
+                  <p className="text-xs text-center text-slate-500 dark:text-slate-400 pt-2">
+                    +{lowStock.length - 5} more items below minimum
+                  </p>
+                )}
               </div>
-            </div>
+            )}
           </div>
         </Card>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,35 +25,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { get } from "@/lib/api/fetcher";
+import useSWR, { mutate } from 'swr';
 import { AddInventoryDialog } from "@/components/inventory/AddInventoryDialog";
 import { InventoryGridView } from "@/components/inventory/InventoryGridView";
 import { Loader } from "@/components/shared/Loader";
 import Header from "@/components/shared/Header";
+import { useToast } from "@/components/shared/Toast";
 
 export default function InventoryPage() {
-  const [inventory, setInventory] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [dialogMode, setDialogMode] = useState("add"); // 'add' or 'edit'
   const [editInventory, setEditInventory] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState("table"); // table, grid
   const [searchTerm, setSearchTerm] = useState("");
+  const toast = useToast();
 
-  useEffect(() => {
-    fetchInventory();
-  }, []);
+  // SWR for inventory
+  const { data: inventoryData, isLoading: loading, error } = useSWR(
+    ['/inventory'],
+    () => get('/inventory'),
+    { revalidateOnFocus: true, dedupingInterval: 60000 }
+  );
+  const inventory = inventoryData?.data || [];
 
-  const fetchInventory = async () => {
-    try {
-      setLoading(true);
-      const response = await get("/inventory");
-      setInventory(response.data);
-    } catch (error) {
-      console.error("Error fetching inventory:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   // Stock status calculations
   const stockStats = useMemo(() => {
@@ -183,6 +178,20 @@ export default function InventoryPage() {
     setEditInventory(inventory);
     setDialogMode("edit");
     setIsDialogOpen(true);
+  };
+
+  // Toast handler for Add/Edit
+  const handleDialogSuccess = (action = "add") => {
+    mutate(["/inventory"]);
+    if (action === "edit") {
+      toast.success("Success", "Item updated successfully.");
+    } else {
+      toast.success("Success", "Item added successfully.");
+    }
+  };
+
+  const handleDialogError = () => {
+    toast.error("Error", "Failed to save item.");
   };
 
   const allColumns = [
@@ -342,6 +351,10 @@ export default function InventoryPage() {
 
   if (loading)
     return <Loader variant="bars" text="Loading inventory system..." />;
+  if (error) {
+    toast.error("Error", "Failed to load inventory data.");
+    return <div className="p-8 text-red-600">Failed to load inventory data.</div>;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -421,7 +434,8 @@ export default function InventoryPage() {
             setDialogMode("add");
           }
         }}
-        onSuccess={fetchInventory}
+        onSuccess={() => handleDialogSuccess(dialogMode)}
+        onError={handleDialogError}
         mode={dialogMode}
         initialData={editInventory}
       />

@@ -1,6 +1,7 @@
 "use client";
 
 import { AddItemDialog } from "@/components/shared/AddItemDialog";
+// import { useToast } from "@/components/shared/Toast";
 import {
   User,
   Briefcase,
@@ -16,6 +17,13 @@ import {
 } from "lucide-react";
 
 export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
+  // Toast logic moved to staff page. Just call onSuccess/onError.
+  const handleSuccess = () => {
+    onSuccess?.();
+  };
+
+  const handleError = () => {};
+
   const staffConfig = {
     title: "Add Staff Member",
     entityName: "Staff Member",
@@ -28,7 +36,7 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
       phone_number: "",
       position: "",
       department: "",
-      role: "field_worker",
+      role: "technician",
       date_of_birth: "",
       address: "",
       hire_date: "",
@@ -106,7 +114,7 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             type: "select-buttons",
             label: "System Role",
             options: [
-              { value: "field_worker", label: "Field Worker", icon: User },
+              { value: "technician", label: "technician", icon: User },
               { value: "manager", label: "Manager", icon: Shield },
               { value: "admin", label: "Admin", icon: Shield },
               { value: "super_admin", label: "Super Admin", icon: Shield },
@@ -215,7 +223,8 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
     <AddItemDialog
       open={open}
       onOpenChange={onOpenChange}
-      onSuccess={onSuccess}
+      onSuccess={handleSuccess}
+      onError={handleError}
       config={staffConfig}
       disabled={disabled}
     />

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import useSWR, { mutate } from "swr";
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -32,12 +33,14 @@ import { AddClientDialog } from "@/components/clients/AddClientDialog";
 import { ClientsGridView } from "@/components/clients/ClientsGridView";
 import { Loader } from "@/components/shared/Loader";
 import { TableControls } from "@/components/shared/TableControls";
+import { useToast } from "@/components/shared/Toast";
 
 export default function ClientsPage() {
   const router = useRouter();
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const toast = useToast();
+
   // Persist view mode in localStorage
   const [viewMode, setViewModeState] = useState(() => {
     if (typeof window !== "undefined") {
@@ -45,7 +48,6 @@ export default function ClientsPage() {
     }
     return "table";
   });
-  const [searchTerm, setSearchTerm] = useState("");
 
   // Wrap setViewMode to persist
   const setViewMode = useCallback((mode) => {
@@ -55,23 +57,13 @@ export default function ClientsPage() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
-  const fetchClients = async () => {
-    try {
-      setLoading(true);
-      const response = await get("/client");
-      console.log(response);
-
-      setClients(response.data);
-    } catch (error) {
-      console.error("Error fetching clients:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // SWR for clients
+  const { data: clientsData, isLoading: loading, error } = useSWR(
+    ["/client"],
+    () => get("/client"),
+    { revalidateOnFocus: true, dedupingInterval: 60000 }
+  );
+  const clients = clientsData?.data || [];
 
   // Client stats calculations
   const clientStats = useMemo(() => {
@@ -157,8 +149,26 @@ export default function ClientsPage() {
     router.push(`/clients/${client.id}`);
   };
 
+  // Toast handler for Add/Edit
+  const handleDialogSuccess = (action = "add") => {
+    mutate(["/client"]);
+    if (action === "edit") {
+      toast.success("Success", "Client updated successfully.");
+    } else {
+      toast.success("Success", "Client added successfully.");
+    }
+  };
+
+  const handleDialogError = () => {
+    toast.error("Error", "Failed to save client.");
+  };
+
   if (loading) {
-    return <Loader variant="bars" text="Loading client..." />;
+    return <Loader variant="bars" text="Loading clients..." />;
+  }
+  if (error) {
+    toast.error("Error", "Failed to load clients data.");
+    return <div className="p-8 text-red-600">Failed to load clients data.</div>;
   }
 
   const allColumns = [
@@ -414,7 +424,8 @@ export default function ClientsPage() {
       <AddClientDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        onSuccess={fetchClients}
+        onSuccess={() => handleDialogSuccess("add")}
+        onError={handleDialogError}
       />
     </>
   );
