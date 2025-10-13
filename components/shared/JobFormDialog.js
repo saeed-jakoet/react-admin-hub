@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Save, RefreshCw, Plus, AlertCircle } from "lucide-react";
 import { post, put } from "@/lib/api/fetcher";
 import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
+import { useToast } from "@/components/shared/Toast";
 
 /**
  * JobFormDialog
@@ -44,6 +45,7 @@ export default function JobFormDialog({
   onError,
   saving: externalSaving = false,
 }) {
+  const { success, error } = useToast();
   // Initialize form data based on mode
   const getInitialData = () => {
     if (mode === "edit") {
@@ -296,6 +298,14 @@ export default function JobFormDialog({
         result = await put(jobConfig.apiEndpoint, payload);
       }
 
+      // Show success toast
+      success(
+        "Success",
+        mode === "create"
+          ? `${jobConfig.apiEndpoint === "/drop-cable" ? "Order" : (jobConfig.shortName || "Order")} created successfully!`
+          : `${jobConfig.apiEndpoint === "/drop-cable" ? "Order" : (jobConfig.shortName || "Order")} updated successfully!`
+      );
+
       // Notify parent of success
       onSuccess?.(result.data || payload);
 
@@ -314,6 +324,13 @@ export default function JobFormDialog({
           mode === "create" ? "creating" : "updating"
         } the job.`;
       setErrorMsg(msg);
+      // Show error toast
+      error(
+        "Error",
+        mode === "create"
+          ? `Failed to create ${jobConfig.shortName || "Order"}. Please try again.`
+          : `Failed to update ${jobConfig.shortName || "Order"}. Please try again.`
+      );
       // Keep dialog open to allow user to fix and resubmit
       onError?.(msg);
     } finally {

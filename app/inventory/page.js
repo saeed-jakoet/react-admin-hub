@@ -10,7 +10,6 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Eye,
   Edit,
   MapPin,
   Truck,
@@ -34,7 +33,9 @@ import Header from "@/components/shared/Header";
 export default function InventoryPage() {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState("add"); // 'add' or 'edit'
+  const [editInventory, setEditInventory] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState("table"); // table, grid
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -178,8 +179,11 @@ export default function InventoryPage() {
     };
   };
 
-  if (loading)
-    return <Loader variant="bars" text="Loading inventory system..." />;
+  const handleInventoryEdit = (inventory) => {
+    setEditInventory(inventory);
+    setDialogMode("edit");
+    setIsDialogOpen(true);
+  };
 
   const allColumns = [
     {
@@ -274,7 +278,7 @@ export default function InventoryPage() {
     },
     {
       id: "actions",
-      cell: () => (
+      cell: ({ row }) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -282,17 +286,10 @@ export default function InventoryPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {[
-              { icon: Eye, label: "View Details" },
-              { icon: Edit, label: "Edit Item" },
-              { icon: Package, label: "Update Stock" },
-              { icon: Truck, label: "Reorder" },
-            ].map((item, i) => (
-              <DropdownMenuItem key={i}>
-                <item.icon className="h-4 w-4 mr-2" />
-                {item.label}
-              </DropdownMenuItem>
-            ))}
+            <DropdownMenuItem onClick={() => handleInventoryEdit(row.original)}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Item
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -343,6 +340,9 @@ export default function InventoryPage() {
     },
   ];
 
+  if (loading)
+    return <Loader variant="bars" text="Loading inventory system..." />;
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Page Header with Stats */}
@@ -365,7 +365,11 @@ export default function InventoryPage() {
         }
         actions={
           <Button
-            onClick={() => setIsAddDialogOpen(true)}
+            onClick={() => {
+              setDialogMode("add");
+              setEditInventory(null);
+              setIsDialogOpen(true);
+            }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 font-semibold"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -409,9 +413,17 @@ export default function InventoryPage() {
       </div>
 
       <AddInventoryDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setEditInventory(null);
+            setDialogMode("add");
+          }
+        }}
         onSuccess={fetchInventory}
+        mode={dialogMode}
+        initialData={editInventory}
       />
     </div>
   );

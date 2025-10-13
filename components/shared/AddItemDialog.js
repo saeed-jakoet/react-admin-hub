@@ -16,7 +16,7 @@ import { Card } from "@/components/ui/card";
 import { ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { post, put } from "@/lib/api/fetcher";
 
-export function AddItemDialog({ open, onOpenChange, onSuccess, config, onBeforeSubmit }) {
+export function AddItemDialog({ open, onOpenChange, onSuccess, config, onBeforeSubmit, onError }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState(config.initialFormData);
@@ -141,6 +141,7 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config, onBeforeS
         `Error creating ${config.entityName.toLowerCase()}:`,
         error
       );
+      onError?.(error);
     } finally {
       setIsSubmitting(false);
     }

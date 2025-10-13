@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, use } from "react";
+import { useState, useEffect, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/shared/Toast";
@@ -77,42 +77,44 @@ export default function StaffDetailPage({ params }) {
     [localStorageKey]
   );
 
-  const fetchStaffMember = useCallback(async () => {
-    try {
-      setLoading(true);
-      // 1) Fetch staff row by staff id
-      const s = await get(`/staff/${resolvedParams.id}`);
-      const staffData = s?.data || null;
-      setStaff(staffData);
-      setFormData(staffData || {});
-      setRoleForm({ role: staffData?.role || "" });
+  const fetchStaffMember = useCallback(
+    async (showLoader = false) => {
+      try {
+        if (showLoader) setLoading(true);
+        // 1) Fetch staff row by staff id
+        const s = await get(`/staff/${resolvedParams.id}`);
+        const staffData = s?.data || null;
+        setStaff(staffData);
+        setFormData(staffData || {});
+        setRoleForm({ role: staffData?.role || "" });
 
-      // 2) Try to fetch auth profile if linked
-      if (staffData?.auth_user_id) {
-        try {
-          const res = await get(`/auth/accounts/${staffData.auth_user_id}`);
-          const data = res?.data || null;
-          setProfile(data);
-          setRoleForm({ role: data?.role || staffData?.role || "" });
-        } catch {
+        // 2) Try to fetch auth profile if linked
+        if (staffData?.auth_user_id) {
+          try {
+            const res = await get(`/auth/accounts/${staffData.auth_user_id}`);
+            const data = res?.data || null;
+            setProfile(data);
+            setRoleForm({ role: data?.role || staffData?.role || "" });
+          } catch {
+            setProfile(null);
+            setRoleForm({ role: staffData?.role || "" });
+          }
+        } else {
           setProfile(null);
           setRoleForm({ role: staffData?.role || "" });
         }
-      } else {
-        setProfile(null);
-        setRoleForm({ role: staffData?.role || "" });
+      } catch (error) {
+        console.error("Error fetching staff member:", error);
+      } finally {
+        if (showLoader) setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching staff member:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [resolvedParams.id]);
+    },
+    [resolvedParams.id]
+  );
 
   useEffect(() => {
     if (resolvedParams.id) {
-      fetchStaffMember();
-      // Clear any revealed data when staff member changes
+      fetchStaffMember(true); // Only show loader on initial load
       setRevealedNationalId(null);
     }
   }, [resolvedParams.id, fetchStaffMember]);
@@ -239,7 +241,11 @@ export default function StaffDetailPage({ params }) {
       const res = await put(`/auth`, { id: staff.auth_user_id, ...payload });
       if (res?.data) {
         setRoleSuccess("Role updated");
-        await fetchStaffMember();
+        toast.success(
+          "Success",
+          `Role updated to ${newRole.replace("_", " ")}`
+        );
+        await fetchStaffMember(false);
       }
     } catch (e) {
       setRoleError(e?.message || "Failed to update role");
@@ -271,7 +277,7 @@ export default function StaffDetailPage({ params }) {
             ? `System access granted. Temporary password: ${temp}`
             : "System access granted"
         );
-        await fetchStaffMember();
+        await fetchStaffMember(false);
       }
     } catch (e) {
       setAccessMsg(`Failed to grant access: ${e?.message}`);
@@ -288,7 +294,7 @@ export default function StaffDetailPage({ params }) {
       const res = await del(`/staff/${resolvedParams.id}/access`);
       if (res?.data) {
         setAccessMsg("System access removed");
-        await fetchStaffMember();
+        await fetchStaffMember(false);
       }
     } catch (e) {
       setAccessMsg(`Failed to remove access: ${e?.message}`);
@@ -561,9 +567,9 @@ export default function StaffDetailPage({ params }) {
 
           {/* Tab Content */}
           {activeTab === "overview" && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column */}
-              <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-6">
+              {/* Personal and Employment Information */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Personal Information */}
                 <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
                   <div className="flex items-center gap-3 mb-6">
@@ -777,154 +783,6 @@ export default function StaffDetailPage({ params }) {
                     ))}
                   </div>
                 </Card>
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-6">
-                {/* System Access Management */}
-                <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                      System Access
-                    </h2>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          Account Status
-                        </span>
-                        <Badge
-                          variant={staff.auth_user_id ? "default" : "secondary"}
-                          className={
-                            staff.auth_user_id
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400"
-                              : ""
-                          }
-                        >
-                          {staff.auth_user_id ? "Active" : "No Access"}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {staff.auth_user_id
-                          ? "Staff member has system access"
-                          : "Staff member needs access to be granted"}
-                      </p>
-                    </div>
-
-                    {canEdit && (
-                      <div className="space-y-3">
-                        {staff.auth_user_id ? (
-                          <Button
-                            variant="destructive"
-                            onClick={handleRevokeAccess}
-                            disabled={accessBusy || isSelf}
-                            className={`w-full gap-2 ${isSelf ? "opacity-50 cursor-not-allowed" : ""}`}
-                            title={
-                              isSelf ? "You cannot remove your own access" : ""
-                            }
-                          >
-                            {accessBusy ? (
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <UserX className="w-4 h-4" />
-                            )}
-                            {accessBusy
-                              ? "Removing..."
-                              : isSelf
-                                ? "Remove Access (Not Allowed)"
-                                : "Remove Access"}
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={handleGrantAccess}
-                            disabled={accessBusy}
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-                          >
-                            {accessBusy ? (
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <Key className="w-4 h-4" />
-                            )}
-                            {accessBusy ? "Granting..." : "Grant Access"}
-                          </Button>
-                        )}
-                        {accessMsg && (
-                          <p
-                            className={`text-sm ${accessMsg.includes("Failed") || accessMsg.includes("required") ? "text-red-500" : "text-green-600"}`}
-                          >
-                            {accessMsg}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </Card>
-
-                {/* Role Management */}
-                {staff.auth_user_id && (
-                  <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/20 rounded-xl flex items-center justify-center">
-                        <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                        Role Management
-                      </h2>
-                    </div>
-
-                    <form onSubmit={handleRoleSubmit} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          System Role
-                        </Label>
-                        <select
-                          value={roleForm.role}
-                          onChange={(e) =>
-                            setRoleForm({ role: e.target.value })
-                          }
-                          disabled={!canEdit || !staff?.auth_user_id}
-                          className="w-full h-10 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-blue-500 dark:focus:border-blue-400 disabled:opacity-50"
-                        >
-                          <option value="super_admin">Super Admin</option>
-                          <option value="admin">Admin</option>
-                          <option value="manager">Manager</option>
-                          <option value="field_worker">Field Worker</option>
-                          <option value="client">Client</option>
-                        </select>
-                        {!canEdit && (
-                          <p className="text-xs text-slate-500">
-                            Only super_admin can edit roles.
-                          </p>
-                        )}
-                        {canEdit && !staff?.auth_user_id && (
-                          <p className="text-xs text-slate-500">
-                            Grant system access first to assign a role.
-                          </p>
-                        )}
-                      </div>
-                      {roleError && (
-                        <p className="text-sm text-red-500">{roleError}</p>
-                      )}
-                      {roleSuccess && (
-                        <p className="text-sm text-green-600">{roleSuccess}</p>
-                      )}
-                      <Button
-                        type="submit"
-                        disabled={
-                          !canEdit || savingRole || !staff?.auth_user_id
-                        }
-                        className="w-full"
-                      >
-                        {savingRole ? "Saving..." : "Update Role"}
-                      </Button>
-                    </form>
-                  </Card>
-                )}
 
                 {/* Employee Information */}
                 <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
@@ -988,40 +846,58 @@ export default function StaffDetailPage({ params }) {
 
           {/* System Access Tab */}
           {activeTab === "access" && (
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+            <div className="max-w-6xl mx-auto space-y-8">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
                   System Access Management
                 </h2>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">
+                <p className="text-slate-600 dark:text-slate-400">
                   Control system access and role permissions for this staff
                   member
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                    Access Status
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                      <div>
-                        <p className="font-medium text-slate-900 dark:text-white">
-                          System Account
-                        </p>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          {staff.auth_user_id
-                            ? "Active authentication account"
-                            : "No system account"}
-                        </p>
+              {/* Main Access Status Card */}
+              <Card className="p-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
+                      Access Status
+                    </h3>
+                    <p className="text-slate-600 dark:text-slate-400 text-sm">
+                      Current system access and account information
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Status Overview */}
+                  <div className="lg:col-span-2 space-y-4">
+                    <div className="flex items-center justify-between p-5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-3 h-3 rounded-full ${staff.auth_user_id ? "bg-green-500" : "bg-slate-400"}`}
+                        ></div>
+                        <div>
+                          <p className="font-semibold text-slate-900 dark:text-white">
+                            System Account
+                          </p>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">
+                            {staff.auth_user_id
+                              ? "Active authentication account"
+                              : "No system account"}
+                          </p>
+                        </div>
                       </div>
                       <Badge
                         variant={staff.auth_user_id ? "default" : "secondary"}
                         className={
                           staff.auth_user_id
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400"
-                            : ""
+                            ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
+                            : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400"
                         }
                       >
                         {staff.auth_user_id ? "Active" : "Inactive"}
@@ -1029,93 +905,199 @@ export default function StaffDetailPage({ params }) {
                     </div>
 
                     {staff.auth_user_id && profile && (
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                        <p className="font-medium text-slate-900 dark:text-white mb-2">
+                      <div className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <h4 className="font-semibold text-slate-900 dark:text-white mb-3">
                           Account Details
-                        </p>
-                        <div className="text-sm space-y-1">
-                          <p className="text-slate-600 dark:text-slate-400">
-                            Email: {profile.email}
-                          </p>
-                          <p className="text-slate-600 dark:text-slate-400">
-                            Role: {profile.role || "Not set"}
-                          </p>
-                          <p className="text-slate-600 dark:text-slate-400">
-                            Last Sign In:{" "}
-                            {profile.last_sign_in_at
-                              ? new Date(
-                                  profile.last_sign_in_at
-                                ).toLocaleDateString()
-                              : "Never"}
-                          </p>
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-slate-500" />
+                            <span className="text-slate-600 dark:text-slate-400">
+                              Email:
+                            </span>
+                            <span className="text-slate-900 dark:text-white font-medium">
+                              {profile.email}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-slate-500" />
+                            <span className="text-slate-600 dark:text-slate-400">
+                              Role:
+                            </span>
+                            <span className="text-slate-900 dark:text-white font-medium capitalize">
+                              {(profile.role || "Not set").replace("_", " ")}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 md:col-span-2">
+                            <Calendar className="w-4 h-4 text-slate-500" />
+                            <span className="text-slate-600 dark:text-slate-400">
+                              Last Sign In:
+                            </span>
+                            <span className="text-slate-900 dark:text-white font-medium">
+                              {profile.last_sign_in_at
+                                ? new Date(
+                                    profile.last_sign_in_at
+                                  ).toLocaleDateString()
+                                : "Never"}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     )}
                   </div>
-                </Card>
 
-                <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                    Access Actions
-                  </h3>
-                  <div className="space-y-3">
-                    {canEdit ? (
-                      <>
-                        {staff.auth_user_id ? (
-                          <Button
-                            variant="destructive"
-                            onClick={handleRevokeAccess}
-                            disabled={accessBusy || isSelf}
-                            className={`w-full gap-2 ${isSelf ? "opacity-50 cursor-not-allowed" : ""}`}
-                            title={
-                              isSelf ? "You cannot remove your own access" : ""
-                            }
-                          >
-                            {accessBusy ? (
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <UserX className="w-4 h-4" />
-                            )}
-                            {accessBusy
-                              ? "Removing Access..."
-                              : isSelf
-                                ? "Remove System Access (Not Allowed)"
+                  {/* Action Panel */}
+                  <div className="space-y-4">
+                    <div className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <h4 className="font-semibold text-slate-900 dark:text-white mb-4">
+                        Access Control
+                      </h4>
+                      {canEdit ? (
+                        <div className="space-y-3">
+                          {staff.auth_user_id ? (
+                            <Button
+                              variant="destructive"
+                              onClick={handleRevokeAccess}
+                              disabled={accessBusy || isSelf}
+                              className={`w-full gap-2 ${isSelf ? "opacity-50 cursor-not-allowed" : ""}`}
+                              title={
+                                isSelf
+                                  ? "You cannot remove your own access"
+                                  : ""
+                              }
+                            >
+                              {accessBusy ? (
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <UserX className="w-4 h-4" />
+                              )}
+                              {isSelf
+                                ? "Cannot Remove Own Access"
                                 : "Remove System Access"}
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={handleGrantAccess}
-                            disabled={accessBusy}
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-                          >
-                            {accessBusy ? (
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <Key className="w-4 h-4" />
-                            )}
-                            {accessBusy
-                              ? "Granting Access..."
-                              : "Grant System Access"}
-                          </Button>
-                        )}
-                        {accessMsg && (
-                          <div
-                            className={`p-3 rounded-lg text-sm ${accessMsg.includes("Failed") || accessMsg.includes("required") ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400" : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"}`}
-                          >
-                            {accessMsg}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
-                        <p className="text-amber-700 dark:text-amber-400 text-sm">
-                          Only super administrators can manage system access.
-                        </p>
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={handleGrantAccess}
+                              disabled={accessBusy}
+                              className="w-full bg-green-600 hover:bg-green-700 text-white gap-2"
+                            >
+                              {accessBusy ? (
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <Key className="w-4 h-4" />
+                              )}
+                              Grant System Access
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                          <p className="text-amber-700 dark:text-amber-400 text-sm">
+                            Only super administrators can manage system access.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {accessMsg && (
+                      <div
+                        className={`p-4 rounded-xl text-sm font-medium ${
+                          accessMsg.includes("Failed") ||
+                          accessMsg.includes("required")
+                            ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
+                            : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
+                        }`}
+                      >
+                        {accessMsg}
                       </div>
                     )}
                   </div>
+                </div>
+              </Card>
+
+              {/* Role Management Section */}
+              {staff.auth_user_id && (
+                <Card className="p-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
+                        Role Management
+                      </h3>
+                      <p className="text-slate-600 dark:text-slate-400 text-sm">
+                        Assign and manage user permissions
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="max-w-lg">
+                    <form onSubmit={handleRoleSubmit} className="space-y-6">
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                          System Role
+                        </Label>
+                        <select
+                          value={roleForm.role}
+                          onChange={(e) =>
+                            setRoleForm({ role: e.target.value })
+                          }
+                          disabled={!canEdit || !staff?.auth_user_id}
+                          className="w-full h-12 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 transition-colors"
+                        >
+                          <option value="super_admin">Super Admin</option>
+                          <option value="admin">Admin</option>
+                          <option value="manager">Manager</option>
+                          <option value="field_worker">Field Worker</option>
+                          <option value="client">Client</option>
+                        </select>
+
+                        <div className="space-y-2">
+                          {!canEdit && (
+                            <p className="text-xs text-slate-500 bg-slate-50 dark:bg-slate-800 p-2 rounded-lg">
+                              Only super_admin can edit roles.
+                            </p>
+                          )}
+                          {canEdit && !staff?.auth_user_id && (
+                            <p className="text-xs text-slate-500 bg-slate-50 dark:bg-slate-800 p-2 rounded-lg">
+                              Grant system access first to assign a role.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {(roleError || roleSuccess) && (
+                        <div className="space-y-2">
+                          {roleError && (
+                            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                              {roleError}
+                            </p>
+                          )}
+                          {roleSuccess && (
+                            <p className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                              {roleSuccess}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      <Button
+                        type="submit"
+                        disabled={
+                          !canEdit || savingRole || !staff?.auth_user_id
+                        }
+                        className="w-full h-12 text-base font-medium"
+                      >
+                        {savingRole ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        ) : null}
+                        {savingRole ? "Updating Role..." : "Update Role"}
+                      </Button>
+                    </form>
+                  </div>
                 </Card>
-              </div>
+              )}
             </div>
           )}
 

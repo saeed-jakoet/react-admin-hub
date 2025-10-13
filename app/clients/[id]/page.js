@@ -33,10 +33,12 @@ import { get, put } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
 import DocumentsTreeView from "@/components/shared/DocumentsTreeView";
 import Header from "@/components/shared/Header";
+import { useToast } from "@/components/shared/Toast";
 
 export default function ClientDetailPage({ params }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const { success, error } = useToast();
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -126,11 +128,34 @@ export default function ClientDetailPage({ params }) {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const response = await put(`/client/${resolvedParams.id}`, formData);
+      // Transform empty strings to null for optional fields
+      const payload = { ...formData };
+      Object.keys(payload).forEach(key => {
+        if (payload[key] === "") {
+          payload[key] = null;
+        }
+        // Ensure boolean fields are properly typed
+        if (key === 'is_active') {
+          payload[key] = Boolean(payload[key]);
+        }
+        // Trim string fields
+        if (typeof payload[key] === 'string') {
+          payload[key] = payload[key].trim();
+        }
+      });
+
+      // Remove id from payload as it's already in the URL
+      delete payload.id;
+      delete payload.created_at;
+      delete payload.updated_at;
+
+      const response = await put(`/client/${resolvedParams.id}`, payload);
       setClient(response.data);
       setEditing(false);
-    } catch (error) {
-      console.error("Error updating client:", error);
+      success("Success", "Client updated successfully!");
+    } catch (err) {
+      console.error("Error updating client:", err);
+      error("Error", "Failed to update client. Please try again.");
     } finally {
       setSaving(false);
     }

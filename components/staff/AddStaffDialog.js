@@ -1,8 +1,7 @@
 "use client";
 
-import * as React from "react";
 import { AddItemDialog } from "@/components/shared/AddItemDialog";
-import { 
+import {
   User,
   Briefcase,
   Mail,
@@ -13,7 +12,7 @@ import {
   Upload,
   UserPlus,
   Calendar,
-  DollarSign
+  DollarSign,
 } from "lucide-react";
 
 export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
@@ -22,16 +21,16 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
     entityName: "Staff Member",
     titleIcon: UserPlus,
     apiEndpoint: "/staff",
-    initialFormData: { 
-      first_name: "", 
-      surname: "", 
-      email: "", 
-      phone_number: "", 
+    initialFormData: {
+      first_name: "",
+      surname: "",
+      email: "",
+      phone_number: "",
       position: "",
       department: "",
       role: "field_worker",
       date_of_birth: "",
-      address: "", 
+      address: "",
       hire_date: "",
       salary: "",
       employment_type: "",
@@ -40,7 +39,7 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
       national_id: "",
       notes: "",
       document: null,
-      document_type: ""
+      document_type: "",
     },
     steps: [
       {
@@ -55,30 +54,30 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             type: "text",
             label: "First Name *",
             placeholder: "Enter first name",
-            grid: true
+            grid: true,
           },
           {
             id: "surname",
             type: "text",
             label: "Surname *",
             placeholder: "Enter surname",
-            grid: true
+            grid: true,
           },
           {
             id: "email",
             type: "email",
             label: "Email Address *",
             placeholder: "Enter email address",
-            icon: Mail
+            icon: Mail,
           },
           {
             id: "phone_number",
             type: "text",
             label: "Phone Number",
             placeholder: "Enter phone number",
-            icon: Phone
-          }
-        ]
+            icon: Phone,
+          },
+        ],
       },
       {
         id: 2,
@@ -92,7 +91,7 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             label: "Position",
             placeholder: "Enter job position",
             icon: Briefcase,
-            grid: true
+            grid: true,
           },
           {
             id: "department",
@@ -100,7 +99,7 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             label: "Department",
             placeholder: "Enter department",
             icon: Briefcase,
-            grid: true
+            grid: true,
           },
           {
             id: "role",
@@ -110,8 +109,8 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
               { value: "field_worker", label: "Field Worker", icon: User },
               { value: "manager", label: "Manager", icon: Shield },
               { value: "admin", label: "Admin", icon: Shield },
-              { value: "super_admin", label: "Super Admin", icon: Shield }
-            ]
+              { value: "super_admin", label: "Super Admin", icon: Shield },
+            ],
           },
           {
             id: "employment_type",
@@ -119,14 +118,14 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             label: "Employment Type",
             placeholder: "e.g., Full-time, Part-time, Contract",
             icon: FileText,
-            grid: true
+            grid: true,
           },
           {
             id: "hire_date",
             type: "date",
             label: "Hire Date",
             icon: Calendar,
-            grid: true
+            grid: true,
           },
           {
             id: "salary",
@@ -134,9 +133,9 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             label: "Salary",
             placeholder: "Enter salary amount",
             icon: DollarSign,
-            step: "0.01"
-          }
-        ]
+            step: "0.01",
+          },
+        ],
       },
       {
         id: 3,
@@ -149,7 +148,7 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             type: "date",
             label: "Date of Birth",
             icon: Calendar,
-            grid: true
+            grid: true,
           },
           {
             id: "national_id",
@@ -157,7 +156,7 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             label: "National ID",
             placeholder: "Enter national ID number",
             icon: FileText,
-            grid: true
+            grid: true,
           },
           {
             id: "address",
@@ -165,7 +164,7 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             label: "Address",
             placeholder: "Enter full address",
             icon: MapPin,
-            rows: 3
+            rows: 3,
           },
           {
             id: "emergency_contact_name",
@@ -173,7 +172,7 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             label: "Emergency Contact Name",
             placeholder: "Enter emergency contact name",
             icon: User,
-            grid: true
+            grid: true,
           },
           {
             id: "emergency_contact_phone",
@@ -181,9 +180,9 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             label: "Emergency Contact Phone",
             placeholder: "Enter emergency contact phone",
             icon: Phone,
-            grid: true
-          }
-        ]
+            grid: true,
+          },
+        ],
       },
       {
         id: 4,
@@ -197,7 +196,7 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             label: "Staff Document (Optional)",
             icon: Upload,
             accept: ".pdf,.doc,.docx,.jpg,.jpeg,.png",
-            documentType: true
+            documentType: true,
           },
           {
             id: "notes",
@@ -205,15 +204,15 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
             label: "Additional Notes",
             placeholder: "Enter any additional notes about this staff member",
             icon: FileText,
-            rows: 4
-          }
-        ]
-      }
-    ]
+            rows: 4,
+          },
+        ],
+      },
+    ],
   };
 
   return (
-    <AddItemDialog 
+    <AddItemDialog
       open={open}
       onOpenChange={onOpenChange}
       onSuccess={onSuccess}
