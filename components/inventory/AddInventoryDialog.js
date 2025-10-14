@@ -32,10 +32,7 @@ export function AddInventoryDialog({
   };
 
   const handleSuccess = () => {
-    success(
-      "Success",
-      mode === "edit" ? "Inventory item updated successfully!" : "Inventory item added successfully!"
-    );
+    // Parent page handles the toast notification
     onSuccess?.();
   };
 

@@ -13,6 +13,7 @@ import {
   MapPin,
   User,
   Mail,
+  BarChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
 import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
 import Header from "@/components/shared/Header";
 import { useToast } from "@/components/shared/Toast";
+import InventoryUsageDialog from "@/components/inventory/InventoryUsageDialog";
 
 export default function DropCablePage() {
   const params = useParams();
@@ -92,6 +94,10 @@ export default function DropCablePage() {
   // Email Modal State
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [clientForEmail, setClientForEmail] = useState(null);
+
+  // Inventory usage dialog state
+  const [usageOpen, setUsageOpen] = useState(false);
+  const [selectedJobForUsage, setSelectedJobForUsage] = useState(null);
 
   // Check URL parameters for new job creation
   useEffect(() => {
@@ -235,6 +241,11 @@ export default function DropCablePage() {
   const handleGenerateAsBuilt = (job) => {
     setSelectedJobForAsBuilt(job);
     setAsBuiltModalOpen(true);
+  };
+
+  const handleInventoryUsage = (job) => {
+    setSelectedJobForUsage(job);
+    setUsageOpen(true);
   };
 
   const handleSendEmail = async (job) => {
@@ -502,6 +513,13 @@ export default function DropCablePage() {
                   Upload Document
                 </DropdownMenuItem>
                 <DropdownMenuItem
+                  onClick={() => handleInventoryUsage(job)}
+                  className="flex items-center gap-2"
+                >
+                  <BarChart className="h-4 w-4" />
+                  Inventory Usage
+                </DropdownMenuItem>
+                {/* <DropdownMenuItem
                   onClick={() => handleGenerateAsBuilt(job)}
                   className="flex items-center gap-2"
                 >
@@ -514,7 +532,7 @@ export default function DropCablePage() {
                 >
                   <Mail className="h-4 w-4" />
                   Send Email
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -670,6 +688,19 @@ export default function DropCablePage() {
         open={emailModalOpen}
         onOpenChange={setEmailModalOpen}
         clientData={clientForEmail}
+      />
+
+      {/* Inventory Usage Dialog */}
+      <InventoryUsageDialog
+        open={usageOpen}
+        onOpenChange={setUsageOpen}
+        jobType="drop_cable"
+        jobId={selectedJobForUsage?.id}
+        onSuccess={() => {
+          mutate([`/drop-cable/client/${clientId}`]);
+          mutate([`/inventory`]);
+          toast.success("Success", "Inventory usage applied.");
+        }}
       />
     </div>
   );
