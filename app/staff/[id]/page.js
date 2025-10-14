@@ -63,6 +63,7 @@ export default function StaffDetailPage({ params }) {
     { revalidateOnFocus: true, dedupingInterval: 60000 }
   );
   const staff = staffData?.data || null;
+console.log(staffData);
 
   // SWR for profile data (only fetch if auth_user_id exists)
   const { data: profileData } = useSWR(
@@ -145,6 +146,7 @@ export default function StaffDetailPage({ params }) {
         "emergency_contact_phone",
         "national_id",
         "notes",
+        "role",
       ];
       const payload = allowedFields.reduce((acc, key) => {
         if (Object.prototype.hasOwnProperty.call(formData, key)) {
@@ -1053,8 +1055,7 @@ export default function StaffDetailPage({ params }) {
                           <option value="super_admin">Super Admin</option>
                           <option value="admin">Admin</option>
                           <option value="manager">Manager</option>
-                          <option value="field_worker">Field Worker</option>
-                          <option value="client">Client</option>
+                          <option value="technician">Technician</option>
                         </select>
 
                         <div className="space-y-2">

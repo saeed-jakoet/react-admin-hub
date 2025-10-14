@@ -1,41 +1,59 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/shared/DataTable";
+import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/shared/Loader";
 import { get } from "@/lib/api/fetcher";
 import {
-  User,
   Clock,
   RefreshCw,
   AlertCircle,
-  ArrowRight,
-  ExternalLink,
-  Info,
+  Search,
+  ChevronRight,
+  FileText,
+  Users,
+  Briefcase,
+  Package,
+  UserCircle,
+  Settings,
+  Download,
+  Filter,
+  X,
 } from "lucide-react";
 
-export default function LogsPage() {
+// Redesigned Audit / Activity Log page
+// Features:
+// - Two-column layout: timeline/list on left, selected log detail on right
+// - Search + filters (action, table, date range)
+// - Change-diff view (field: old -> new) with visual highlights
+// - Export visible logs to CSV
+
+export default function LogsAuditPage() {
   const router = useRouter();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
 
-  // Fetch logs
+  const [searchTerm, setSearchTerm] = useState("");
+  const [actionFilter, setActionFilter] = useState("");
+  const [tableFilter, setTableFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const [selectedLogId, setSelectedLogId] = useState(null);
+
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const response = await get("/log");
-      if (response.status === "success") {
-        setLogs(response.data || []);
-      } else {
-        setError(response.message || "Failed to fetch logs");
-      }
-    } catch (err) {
-      setError("Error fetching logs: " + err.message);
+      setError(null);
+      const res = await get("/log");
+      if (res?.status === "success") setLogs(res.data || []);
+      else setError(res?.message || "Failed to load logs");
+    } catch (e) {
+      setError(e?.message || String(e) || "Error fetching logs");
     } finally {
       setLoading(false);
     }
@@ -45,742 +63,338 @@ export default function LogsPage() {
     fetchLogs();
   }, []);
 
-  // Get simple description of what happened
-  const getSimpleDescription = useCallback((log) => {
-    const { action, table_name, old_data, new_data } = log;
-
-    if (table_name === "drop_cable") {
-      const clientName =
-        new_data?.client || old_data?.client || "Unknown Client";
-      const circuitNumber =
-        new_data?.circuit_number ||
-        old_data?.circuit_number ||
-        "Unknown Circuit";
-
-      if (action === "CREATE" || action === "INSERT") {
-        const technician = new_data?.technician_name
-          ? ` assigned to ${new_data.technician_name}`
-          : "";
-        const siteName = new_data?.site_b_name
-          ? ` at ${new_data.site_b_name}`
-          : "";
-        return `Created new job ${circuitNumber} for ${clientName}${technician}${siteName}`;
-      } else if (action === "UPDATE") {
-        // Find what changed
-        if (old_data?.status !== new_data?.status) {
-          return `Changed ${circuitNumber} status from "${formatStatus(old_data?.status)}" to "${formatStatus(new_data?.status)}"`;
-        }
-        return `Updated job ${circuitNumber} for ${clientName}`;
-      } else if (action === "DELETE") {
-        return `Deleted job ${circuitNumber} for ${clientName}`;
-      }
-    }
-
-    if (table_name === "clients") {
-      const clientName = new_data?.name || old_data?.name || "Unknown Client";
-
-      if (action === "CREATE" || action === "INSERT") {
-        const contactInfo = new_data?.email ? ` (${new_data.email})` : "";
-        const location = new_data?.city ? ` in ${new_data.city}` : "";
-        return `Added new client: ${clientName}${contactInfo}${location}`;
-      } else if (action === "UPDATE") {
-        return `Updated client: ${clientName}`;
-      } else if (action === "DELETE") {
-        return `Deleted client: ${clientName}`;
-      }
-    }
-
-    if (table_name === "projects") {
-      const projectName = new_data?.name || old_data?.name || "Unknown Project";
-
-      if (action === "CREATE" || action === "INSERT") {
-        const client = new_data?.client_name
-          ? ` for ${new_data.client_name}`
-          : "";
-        const budget = new_data?.budget ? ` (Budget: $${new_data.budget})` : "";
-        return `Created new project: ${projectName}${client}${budget}`;
-      } else if (action === "UPDATE") {
-        return `Updated project: ${projectName}`;
-      } else if (action === "DELETE") {
-        return `Deleted project: ${projectName}`;
-      }
-    }
-
-    if (table_name === "users") {
-      const userName = new_data?.name || old_data?.name || "Unknown User";
-      const userEmail = new_data?.email || old_data?.email || "";
-
-      if (action === "CREATE" || action === "INSERT") {
-        const role = new_data?.role ? ` as ${new_data.role}` : "";
-        return `Added new user: ${userName} (${userEmail})${role}`;
-      } else if (action === "UPDATE") {
-        return `Updated user: ${userName}`;
-      } else if (action === "DELETE") {
-        return `Deleted user: ${userName}`;
-      }
-    }
-
-    if (table_name === "staff") {
-      const staffName = new_data?.name || old_data?.name || "Unknown Staff";
-
-      if (action === "CREATE" || action === "INSERT") {
-        const position = new_data?.position ? ` (${new_data.position})` : "";
-        const department = new_data?.department
-          ? ` in ${new_data.department}`
-          : "";
-        return `Added new staff member: ${staffName}${position}${department}`;
-      } else if (action === "UPDATE") {
-        return `Updated staff: ${staffName}`;
-      } else if (action === "DELETE") {
-        return `Deleted staff: ${staffName}`;
-      }
-    }
-
-    if (table_name === "inventory") {
-      const itemName =
-        new_data?.item_name || old_data?.item_name || "Unknown Item";
-      const itemCode = new_data?.item_code || old_data?.item_code || "";
-
-      if (action === "CREATE" || action === "INSERT") {
-        const category = new_data?.category
-          ? ` (${new_data.category.charAt(0).toUpperCase() + new_data.category.slice(1)})`
-          : "";
-        const quantity = new_data?.quantity
-          ? ` - Qty: ${new_data.quantity}`
-          : "";
-        const supplier = new_data?.supplier_name
-          ? ` from ${new_data.supplier_name}`
-          : "";
-        const code = itemCode ? ` [${itemCode}]` : "";
-        const location = new_data?.location ? ` at ${new_data.location}` : "";
-        return `Added new inventory item: ${itemName}${code}${category}${quantity}${supplier}${location}`;
-      } else if (action === "UPDATE") {
-        return `Updated inventory: ${itemName}${itemCode ? ` [${itemCode}]` : ""}`;
-      } else if (action === "DELETE") {
-        return `Deleted inventory: ${itemName}${itemCode ? ` [${itemCode}]` : ""}`;
-      }
-    }
-
-    // Generic fallback
-    if (action === "CREATE" || action === "INSERT")
-      return `Added new ${table_name.replace("_", " ")} record`;
-    if (action === "UPDATE")
-      return `Updated ${table_name.replace("_", " ")} record`;
-    if (action === "DELETE")
-      return `Deleted ${table_name.replace("_", " ")} record`;
-
-    return `${action} on ${table_name}`;
-  }, []);
-
-  // Format status for display
-  const formatStatus = (status) => {
-    if (!status) return "Unknown";
-    return status
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+  // helpers (slightly simplified from your existing logic)
+  const formatTimeAgo = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleString();
   };
 
-  // Filter logs based on search term
-  const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        log.user_name?.toLowerCase().includes(searchLower) ||
-        getSimpleDescription(log).toLowerCase().includes(searchLower)
-      );
-    });
-  }, [logs, searchTerm, getSimpleDescription]);
+  const getTableIcon = (tableName) => {
+    const iconClass = "w-4 h-4 text-current";
+    switch (tableName) {
+      case "drop_cable":
+        return <Settings className={iconClass} />;
+      case "clients":
+        return <Users className={iconClass} />;
+      case "projects":
+        return <Briefcase className={iconClass} />;
+      case "inventory":
+        return <Package className={iconClass} />;
+      case "users":
+      case "staff":
+        return <UserCircle className={iconClass} />;
+      default:
+        return <FileText className={iconClass} />;
+    }
+  };
 
-  // Get the navigation URL for a log entry
+  const getActionLabel = (action) => {
+    switch ((action || "").toUpperCase()) {
+      case "CREATE":
+      case "INSERT":
+        return { text: "Created", style: "bg-green-100 text-green-800" };
+      case "UPDATE":
+        return { text: "Updated", style: "bg-blue-100 text-blue-800" };
+      case "DELETE":
+        return { text: "Deleted", style: "bg-red-100 text-red-800" };
+      default:
+        return { text: action || "Action", style: "bg-gray-100 text-gray-800" };
+    }
+  };
+
+  const computeChanges = (log) => {
+    const oldData = log.old_data || {};
+    const newData = log.new_data || {};
+    const keys = Array.from(new Set([...Object.keys(oldData), ...Object.keys(newData)])).filter(
+      (k) => !["created_at", "updated_at", "deleted_at"].includes(k),
+    );
+    const changes = keys
+      .map((k) => ({
+        key: k,
+        before: typeof oldData[k] === "object" ? JSON.stringify(oldData[k]) : oldData[k],
+        after: typeof newData[k] === "object" ? JSON.stringify(newData[k]) : newData[k],
+      }))
+      .filter((c) => String(c.before) !== String(c.after));
+    return changes;
+  };
+
+  const filtered = useMemo(() => {
+    const s = (searchTerm || "").trim().toLowerCase();
+    return logs
+      .filter((l) => {
+        if (actionFilter && l.action !== actionFilter) return false;
+        if (tableFilter && l.table_name !== tableFilter) return false;
+        if (dateFrom && new Date(l.created_at) < new Date(dateFrom)) return false;
+        if (dateTo && new Date(l.created_at) > new Date(dateTo)) return false;
+        if (!s) return true;
+        return (
+          (l.user_name || "").toLowerCase().includes(s) ||
+          (l.table_name || "").toLowerCase().includes(s) ||
+          (l.action || "").toLowerCase().includes(s) ||
+          (l.new_data && JSON.stringify(l.new_data).toLowerCase().includes(s)) ||
+          (l.old_data && JSON.stringify(l.old_data).toLowerCase().includes(s))
+        );
+      })
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }, [logs, searchTerm, actionFilter, tableFilter, dateFrom, dateTo]);
+
+  useEffect(() => {
+    if (!selectedLogId && filtered.length) setSelectedLogId(filtered[0].id);
+    if (filtered.length === 0) setSelectedLogId(null);
+  }, [filtered]);
+
+  const selectedLog = useMemo(() => logs.find((l) => l.id === selectedLogId) || null, [logs, selectedLogId]);
+
+  const downloadCsv = useCallback(() => {
+    const rows = filtered.map((l) => ({
+      id: l.id,
+      action: l.action,
+      table: l.table_name,
+      user: l.user_name,
+      time: l.created_at,
+      summary: l.summary || "",
+      changed_fields: computeChanges(l).map((c) => c.key).join("; "),
+    }));
+    const csv = [Object.keys(rows[0] || {}).join(","), ...rows.map((r) => Object.values(r).map((v) => `"${String(v || "").replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `activity-export-${new Date().toISOString()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [filtered]);
+
   const getNavigationUrl = (log) => {
-    const { table_name, old_data, new_data, record_id } = log;
-
+    const { table_name, record_id, old_data, new_data } = log;
+    if (table_name === "clients") return `/clients/${record_id}`;
     if (table_name === "drop_cable") {
-      // For drop cable jobs, navigate to the client's drop cable page
       const clientId = new_data?.client_id || old_data?.client_id;
-      if (clientId) {
-        return `/clients/${clientId}/drop_cable`;
-      }
+      if (clientId) return `/clients/${clientId}/drop_cable`;
     }
-
-    // Add more table mappings as needed
-    if (table_name === "clients") {
-      return `/clients/${record_id}`;
-    }
-
-    if (table_name === "projects") {
-      return `/projects/${record_id}`;
-    }
-
-    if (table_name === "users") {
-      return `/users`;
-    }
-
-    if (table_name === "staff") {
-      return `/staff`;
-    }
-
-    if (table_name === "inventory") {
-      return `/inventory`;
-    }
-
-    // Default fallback - could be expanded based on your table structure
+    if (table_name === "inventory") return `/inventory/${record_id}`;
+    if (table_name === "staff") return `/staff/${record_id}`;
     return null;
   };
 
-  // Handle clicking on a log entry
-  const handleLogClick = (log) => {
-    const url = getNavigationUrl(log);
-    if (url) {
-      router.push(url);
-    }
-  };
+  if (loading) return <Loader variant="bars" text="Loading activity..." />;
 
-  // Check if a log entry is clickable
-  const isLogClickable = (log) => {
-    return getNavigationUrl(log) !== null;
-  };
+  return (
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto">
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Activity & Audit</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Who changed what, and when — an immutable trail for accountability.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={fetchLogs}>
+            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+          </Button>
+          <Button variant="outline" size="sm" onClick={downloadCsv}>
+            <Download className="w-4 h-4 mr-2" /> Export CSV
+          </Button>
+        </div>
+      </div>
 
-  // Get comprehensive change details for any action
-  const getDetailedChanges = (log) => {
-    const { action, old_data, new_data, table_name } = log;
+      {/* Filters bar */}
+      <Card className="p-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+            <Input
+              placeholder="Search by user, table, field or text..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
 
-    if (action === "CREATE" || action === "INSERT") {
-      if (!new_data) return [];
-
-      // Show key fields that were set during creation
-      const changes = [];
-      const keyFields = {
-        drop_cable: [
-          "status",
-          "client",
-          "circuit_number",
-          "technician_name",
-          "site_b_name",
-          "priority",
-        ],
-        clients: [
-          "company_name",
-          "email",
-          "phone_number",
-          "is_active",
-          "address",
-        ],
-        projects: ["name", "client_name", "budget", "status", "start_date"],
-        users: ["email", "role", "first_name", "last_name"],
-        staff: ["name", "position", "department", "email"],
-        inventory: [
-          "item_name",
-          "item_code",
-          "category",
-          "quantity",
-          "supplier_name",
-          "location",
-        ],
-      };
-
-      const fields = keyFields[table_name] || Object.keys(new_data).slice(0, 6);
-
-      fields.forEach((field) => {
-        if (
-          new_data[field] !== null &&
-          new_data[field] !== undefined &&
-          new_data[field] !== ""
-        ) {
-          changes.push({
-            field: field
-              .replace(/_/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase()),
-            from: "",
-            to: String(new_data[field]),
-            type: "created",
-          });
-        }
-      });
-
-      return changes;
-    }
-
-    if (action === "UPDATE") {
-      if (!old_data || !new_data) return [];
-
-      const changes = [];
-      const allFields = new Set([
-        ...Object.keys(old_data),
-        ...Object.keys(new_data),
-      ]);
-
-      // Skip these fields as they're not user-relevant
-      const skipFields = ["id", "created_at", "updated_at", "deleted_at"];
-
-      allFields.forEach((field) => {
-        if (skipFields.includes(field)) return;
-
-        const oldVal = old_data[field];
-        const newVal = new_data[field];
-
-        // Format values for display
-        const formatVal = (val) => {
-          if (val === null || val === undefined) return "";
-          if (typeof val === "object") {
-            // Special handling for notes array or object
-            if (Array.isArray(val)) {
-              // If notes is an array of objects with text, join their text
-              return val
-                .map((n) => (n && n.text ? n.text : JSON.stringify(n)))
-                .join(" | ");
-            } else if (val.text) {
-              return val.text;
-            } else {
-              return JSON.stringify(val);
-            }
-          }
-          return String(val);
-        };
-
-        const oldStr = formatVal(oldVal);
-        const newStr = formatVal(newVal);
-
-        if (oldStr !== newStr) {
-          changes.push({
-            field: field
-              .replace(/_/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase()),
-            from: oldStr || "(empty)",
-            to: newStr || "(empty)",
-            type: "updated",
-          });
-        }
-      });
-
-      return changes;
-    }
-
-    if (action === "DELETE") {
-      if (!old_data) return [];
-
-      // Show key fields that existed before deletion
-      const changes = [];
-      const keyFields = {
-        drop_cable: ["status", "client", "circuit_number", "technician_name"],
-        clients: ["company_name", "email", "is_active"],
-        projects: ["name", "client_name", "status"],
-        users: ["email", "role"],
-        staff: ["name", "position"],
-        inventory: ["item_name", "item_code", "category"],
-      };
-
-      const fields = keyFields[table_name] || Object.keys(old_data).slice(0, 4);
-
-      fields.forEach((field) => {
-        if (
-          old_data[field] !== null &&
-          old_data[field] !== undefined &&
-          old_data[field] !== ""
-        ) {
-          changes.push({
-            field: field
-              .replace(/_/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase()),
-            from: String(old_data[field]),
-            to: "",
-            type: "deleted",
-          });
-        }
-      });
-
-      return changes;
-    }
-
-    return [];
-  };
-
-  // Get change details for status changes
-  const getChangeDetails = (log) => {
-    const { action, old_data, new_data } = log;
-
-    // For CREATE/INSERT actions, show key details that were added
-    if ((action === "CREATE" || action === "INSERT") && new_data) {
-      if (log.table_name === "drop_cable") {
-        const status = new_data.status ? formatStatus(new_data.status) : null;
-        if (status) {
-          return {
-            type: "Initial Status",
-            from: "",
-            to: status,
-            color:
-              "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700",
-          };
-        }
-      }
-
-      // For other table types, could show initial status/state
-      return {
-        type: "New Record",
-        from: "",
-        to: "Created",
-        color:
-          "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700",
-      };
-    }
-
-    if (!old_data || !new_data) return null;
-
-    // Check for status change
-    if (old_data.status !== new_data.status) {
-      return {
-        type: "Status Change",
-        from: formatStatus(old_data.status),
-        to: formatStatus(new_data.status),
-        color:
-          "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700",
-      };
-    }
-
-    // Check for other important changes
-    const importantFields = [
-      "client",
-      "circuit_number",
-      "site_b_name",
-      "technician_name",
-    ];
-    for (const field of importantFields) {
-      if (old_data[field] !== new_data[field]) {
-        return {
-          type: field
-            .replace("_", " ")
-            .replace(/\b\w/g, (l) => l.toUpperCase()),
-          from: old_data[field] || "Not set",
-          to: new_data[field] || "Not set",
-          color:
-            "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700",
-        };
-      }
-    }
-
-    return {
-      type: "Details Updated",
-      from: "",
-      to: "",
-      color:
-        "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700",
-    };
-  };
-
-  // Define table columns
-  const columns = [
-    {
-      accessorKey: "created_at",
-      header: "When",
-      cell: ({ row }) => {
-        const log = row.original;
-        const date = new Date(log.created_at);
-        const now = new Date();
-        const diffMs = now - date;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        let timeAgo;
-        if (diffMins < 1) timeAgo = "Just now";
-        else if (diffMins < 60) timeAgo = `${diffMins}m ago`;
-        else if (diffHours < 24) timeAgo = `${diffHours}h ago`;
-        else if (diffDays < 7) timeAgo = `${diffDays}d ago`;
-        else timeAgo = date.toLocaleDateString();
-
-        return (
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-gray-400" />
-            <div>
-              <div className="font-medium text-sm">{timeAgo}</div>
-              <div className="text-xs text-gray-500">
-                {date.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </div>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "description",
-      header: "What Happened",
-      cell: ({ row }) => {
-        const log = row.original;
-        const description = getSimpleDescription(log);
-        const changeDetails = getChangeDetails(log);
-        const allChanges = getDetailedChanges(log);
-        const isClickable = isLogClickable(log);
-
-        const content = (
-          <div className="space-y-2">
-            <div className="font-medium text-sm flex items-center gap-2">
-              {description}
-              {isClickable && (
-                <ExternalLink className="w-3 h-3 text-blue-500" />
-              )}
-              {allChanges.length > 0 && (
-                <div className="relative group">
-                  <Info className="w-3 h-3 text-gray-400 cursor-help" />
-
-                  {/* Hover Tooltip */}
-                  <div className="absolute left-0 top-6 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
-                    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg shadow-lg p-4 w-80 max-h-64 overflow-y-auto">
-                      <div className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                        Changes Made ({allChanges.length})
-                      </div>
-                      <div className="space-y-2">
-                        {allChanges.map((change, idx) => (
-                          <div key={idx} className="flex flex-col space-y-1">
-                            <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                              {change.field}
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              {change.type === "created" ? (
-                                <span className="text-green-600 dark:text-green-400 font-mono bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
-                                  + {change.to}
-                                </span>
-                              ) : change.type === "deleted" ? (
-                                <span className="text-red-600 dark:text-red-400 font-mono bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
-                                  - {change.from}
-                                </span>
-                              ) : (
-                                <>
-                                  <span className="text-red-600 dark:text-red-400 font-mono bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
-                                    {change.from}
-                                  </span>
-                                  <ArrowRight className="w-3 h-3 text-gray-400" />
-                                  <span className="text-green-600 dark:text-green-400 font-mono bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
-                                    {change.to}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Show summary of changes inline */}
-            {allChanges.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {allChanges.slice(0, 3).map((change, idx) => (
-                  <div
-                    key={idx}
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-xs ${
-                      change.type === "created"
-                        ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700"
-                        : change.type === "deleted"
-                          ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700"
-                          : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700"
-                    }`}
-                  >
-                    <span className="font-medium">{change.field}</span>
-                    {change.type === "updated" && (
-                      <>
-                        <span className="font-mono text-xs opacity-75">
-                          {change.from}
-                        </span>
-                        <ArrowRight className="w-2 h-2" />
-                        <span className="font-mono text-xs">{change.to}</span>
-                      </>
-                    )}
-                    {change.type === "created" && (
-                      <span className="font-mono text-xs">+{change.to}</span>
-                    )}
-                    {change.type === "deleted" && (
-                      <span className="font-mono text-xs">-{change.from}</span>
-                    )}
-                  </div>
-                ))}
-                {allChanges.length > 3 && (
-                  <div className="inline-flex items-center px-2 py-1 rounded-md border text-xs bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700">
-                    +{allChanges.length - 3} more
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Keep the old simple change display as fallback */}
-            {changeDetails && changeDetails.to && allChanges.length === 0 && (
-              <div
-                className={`inline-flex items-center gap-2 px-2 py-1 rounded-md border text-xs ${changeDetails.color}`}
-              >
-                {changeDetails.from && (
-                  <>
-                    <span className="font-mono">{changeDetails.from}</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </>
-                )}
-                <span className="font-mono">{changeDetails.to}</span>
-              </div>
-            )}
-          </div>
-        );
-
-        if (isClickable) {
-          return (
-            <button
-              onClick={() => handleLogClick(log)}
-              className="text-left w-full p-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer"
+            <select
+              value={actionFilter}
+              onChange={(e) => setActionFilter(e.target.value)}
+              className="px-3 py-2 rounded-md border bg-white dark:bg-gray-800"
             >
-              {content}
-            </button>
-          );
-        }
+              <option value="">All actions</option>
+              <option value="CREATE">Create</option>
+              <option value="UPDATE">Update</option>
+              <option value="DELETE">Delete</option>
+            </select>
 
-        return <div className="p-2">{content}</div>;
-      },
-    },
-    {
-      accessorKey: "user_name",
-      header: "Who",
-      cell: ({ row }) => {
-        const log = row.original;
-        return (
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-gray-400" />
-            <div>
-              <div className="font-medium text-sm">{log.user_name}</div>
-              <div className="text-xs text-gray-500">{log.user_role}</div>
-            </div>
-          </div>
-        );
-      },
-    },
-  ];
+            <select
+              value={tableFilter}
+              onChange={(e) => setTableFilter(e.target.value)}
+              className="px-3 py-2 rounded-md border bg-white dark:bg-gray-800"
+            >
+              <option value="">All tables</option>
+              {Array.from(new Set(logs.map((l) => l.table_name))).map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
 
-  if (loading) {
-    return <Loader variant="bars" text="Loading activity..." />;
-  }
-
-  if (error) {
-    return (
-      <div className="flex-1 p-6">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-6">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
-            <div>
-              <h3 className="text-lg font-semibold text-red-800 dark:text-red-300 mb-2">
-                Error Loading Activity
-              </h3>
-              <p className="text-red-600 dark:text-red-400">{error}</p>
-              <Button variant="outline" onClick={fetchLogs} className="mt-4">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Try Again
+            <div className="flex items-center gap-2">
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-2 py-2" />
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-2 py-2" />
+              <Button variant="ghost" size="sm" onClick={() => { setDateFrom(""); setDateTo(""); setActionFilter(""); setTableFilter(""); setSearchTerm(""); }}>
+                <X className="w-4 h-4" /> Clear
               </Button>
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex-1 p-6">
-      {/* Header */}
-      {/* <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-            <Activity className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              Recent Activity
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              See what's been happening in your system
-            </p>
-          </div>
-        </div>
-      </div> */}
-
-      {/* Stats */}
-      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Total Activities
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {logs.length}
-              </p>
-            </div>
-            <Activity className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Today
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {logs.filter(log => 
-                  new Date(log.created_at).toDateString() === new Date().toDateString()
-                ).length}
-              </p>
-            </div>
-            <Clock className="w-8 h-8 text-green-600 dark:text-green-400" />
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Active Users
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {[...new Set(logs.map(log => log.user_id))].length}
-              </p>
-            </div>
-            <User className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-          </div>
-        </Card>
-      </div> */}
-
-      {/* Search */}
-      {/* <Card className="p-6 mb-6">
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search activity..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <Button variant="outline" onClick={fetchLogs}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
-        </div>
-      </Card> */}
-
-      {/* Activity Table */}
-      <Card className="p-6 overflow-visible">
-        <div className="w-full overflow-visible">
-          <DataTable
-            columns={columns}
-            data={filteredLogs}
-            className="overflow-visible w-full"
-            tableClassName="overflow-visible w-full"
-          />
-        </div>
       </Card>
+
+      {/* Main layout: left list / right detail */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* LEFT: Timeline / list */}
+        <div className="lg:col-span-1">
+          <Card className="p-0 overflow-hidden">
+            <div className="divide-y">
+              {filtered.length === 0 ? (
+                <div className="p-6 text-center">
+                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium">No activity found</h3>
+                  <p className="text-sm text-gray-500 mt-2">Try adjusting the filters or refresh to see recent events.</p>
+                </div>
+              ) : (
+                filtered.map((log) => {
+                  const changes = computeChanges(log);
+                  const primary = changes[0]?.key || log.new_data?.status || log.action;
+                  return (
+                    <button
+                      key={log.id}
+                      onClick={() => setSelectedLogId(log.id)}
+                      className={`w-full text-left p-4 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors ${selectedLogId === log.id ? "bg-gray-50 dark:bg-gray-900" : ""}`}
+                    >
+                      <div className="flex-shrink-0 mt-1">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
+                          <UserCircle className="w-5 h-5 text-gray-600" />
+                        </div>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
+                          <div className="truncate">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{log.user_name || "Unknown"}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{log.table_name} • {primary}</div>
+                          </div>
+                          <div className="text-right text-xs text-gray-400">
+                            <div>{formatTimeAgo(log.created_at)}</div>
+                            <div className="mt-1 text-xs text-gray-500">{log.action}</div>
+                          </div>
+                        </div>
+                        <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 truncate">{log.summary || log.message || "—"}</div>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* RIGHT: Detail pane */}
+        <div className="lg:col-span-2">
+          <Card className="p-6">
+            {!selectedLog ? (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium">Select an activity to view details</h3>
+                <p className="text-sm text-gray-500 mt-2">Click an item on the left to inspect what changed and who made it.</p>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
+                      <UserCircle className="w-6 h-6 text-gray-700" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold">{selectedLog.user_name || "Unknown user"}</div>
+                      <div className="text-sm text-gray-500 mt-1">{selectedLog.table_name} • {selectedLog.action}</div>
+                      <div className="text-xs text-gray-400 mt-1">{new Date(selectedLog.created_at).toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => { const url = getNavigationUrl(selectedLog); if (url) router.push(url); }}>
+                      <ChevronRight className="w-4 h-4 mr-2" /> Go to record
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(JSON.stringify(selectedLog, null, 2))}>
+                      Copy JSON
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium">Summary</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{selectedLog.summary || selectedLog.message || "No summary available."}</p>
+
+                    <div className="pt-3">
+                      <h5 className="text-sm font-medium">Metadata</h5>
+                      <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        <div><strong>Table:</strong> {selectedLog.table_name}</div>
+                        <div><strong>Action:</strong> {selectedLog.action}</div>
+                        <div><strong>Record ID:</strong> {selectedLog.record_id || "—"}</div>
+                        <div><strong>When:</strong> {new Date(selectedLog.created_at).toLocaleString()}</div>
+                        <div><strong>IP / Agent:</strong> {selectedLog.ip || selectedLog.user_agent || "—"}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium">Changes</h4>
+                    <div className="mt-2 divide-y rounded-md border">
+                      {computeChanges(selectedLog).length === 0 ? (
+                        <div className="p-4 text-sm text-gray-500">No field-level changes detected.</div>
+                      ) : (
+                        computeChanges(selectedLog).map((c) => (
+                          <div key={c.key} className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
+                            <div>
+                              <div className="text-xs text-gray-500">{c.key.replace(/_/g, " ")}</div>
+                              <div className="mt-1 text-sm truncate text-red-700">{String(c.before ?? "(empty)")}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500">New</div>
+                              <div className="mt-1 text-sm truncate text-green-700">{String(c.after ?? "(empty)")}</div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <h5 className="text-sm font-medium">Notes / Raw</h5>
+                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-3 rounded border bg-gray-50 dark:bg-gray-900 text-sm text-gray-700 dark:text-gray-200">
+                      <div className="text-xs text-gray-500">Old data</div>
+                      <pre className="whitespace-pre-wrap text-xs mt-2 max-h-40 overflow-auto">{JSON.stringify(selectedLog.old_data || {}, null, 2)}</pre>
+                    </div>
+                    <div className="p-3 rounded border bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200">
+                      <div className="text-xs text-gray-500">New data</div>
+                      <pre className="whitespace-pre-wrap text-xs mt-2 max-h-40 overflow-auto">{JSON.stringify(selectedLog.new_data || {}, null, 2)}</pre>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

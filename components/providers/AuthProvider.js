@@ -46,7 +46,17 @@ export function AuthProvider({ children }) {
       await fetchCurrentUser(); // cookies are set; fetch profile
 
       setIsLoading(false);
-      router.push("/"); // redirect after login
+      
+      // Redirect based on role after fetching user
+      const userData = await axiosInstance.get("/auth/me");
+      const userRole = userData?.data?.data?.role;
+      
+      if (userRole === "technician") {
+        router.push("/technician");
+      } else {
+        router.push("/");
+      }
+      
       return true;
     } catch (err) {
       setIsLoading(false);

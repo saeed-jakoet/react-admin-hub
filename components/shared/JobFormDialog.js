@@ -13,8 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Save, RefreshCw, Plus, AlertCircle } from "lucide-react";
-import { post, put } from "@/lib/api/fetcher";
+import { X, Save, RefreshCw, Plus, AlertCircle, UserCircle } from "lucide-react";
+import { post, put, get } from "@/lib/api/fetcher";
 import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
 import { useToast } from "@/components/shared/Toast";
 
@@ -75,14 +75,49 @@ export default function JobFormDialog({
   const [errorMsg, setErrorMsg] = React.useState("");
   // New note input (used in edit mode to append without overwriting)
   const [newNote, setNewNote] = React.useState("");
+  // Add week state
+  const [week, setWeek] = React.useState(jobData?.week || "");
+  
+  // Technician state
+  const [technicians, setTechnicians] = React.useState([]);
+  const [loadingTechnicians, setLoadingTechnicians] = React.useState(false);
+  const [selectedTechnicianId, setSelectedTechnicianId] = React.useState(jobData?.technician_id || "");
 
   const saving = externalSaving || internalSaving;
+
+  // Fetch technicians from /staff
+  React.useEffect(() => {
+    const fetchTechnicians = async () => {
+      try {
+        setLoadingTechnicians(true);
+        const response = await get("/staff");
+        if (response?.status === "success" && Array.isArray(response.data)) {
+          // Filter for technicians only
+          const technicianList = response.data.filter(
+            (staff) => staff.role?.toLowerCase() === "technician"
+          );
+          setTechnicians(technicianList);
+        }
+      } catch (error) {
+        console.error("Error fetching technicians:", error);
+        toastError("Error", "Failed to load technicians");
+      } finally {
+        setLoadingTechnicians(false);
+      }
+    };
+
+    if (open) {
+      fetchTechnicians();
+    }
+  }, [open, toastError]);
 
   // Update form data when jobData changes (edit mode)
   React.useEffect(() => {
     if (mode === "edit" && jobData) {
       setFormData({ ...jobData });
       setNewNote("");
+      setSelectedTechnicianId(jobData?.technician_id || "");
+      setWeek(jobData?.week || "");
     }
   }, [jobData, mode]);
 
@@ -102,6 +137,22 @@ export default function JobFormDialog({
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleTechnicianChange = (technicianId) => {
+    setSelectedTechnicianId(technicianId);
+    
+    // Find the selected technician and update the technician field (name)
+    const selectedTech = technicians.find((t) => t.id === technicianId);
+    if (selectedTech) {
+      const technicianName = `${selectedTech.first_name || ""} ${selectedTech.surname || ""}`.trim();
+      // Update both possible field names
+      handleInputChange("technician", technicianName);
+      handleInputChange("technician_name", technicianName);
+    } else {
+      handleInputChange("technician", "");
+      handleInputChange("technician_name", "");
+    }
   };
 
   const validateForm = () => {
@@ -249,6 +300,14 @@ export default function JobFormDialog({
       payload[name] = value;
     }
 
+    // When submitting, include week in the payload
+    if (week) payload.week = week;
+
+    // Include technician_id if selected
+    if (selectedTechnicianId) {
+      payload.technician_id = selectedTechnicianId;
+    }
+
     return payload;
   };
 
@@ -349,6 +408,39 @@ export default function JobFormDialog({
       const baseClasses = "w-full mt-2 transition-colors duration-200";
       const focusClasses =
         "focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
+
+      // Special handling for technician field
+      if (field.name === "technician_name" || field.name === "technician") {
+        return (
+          <div className="space-y-2">
+            {loadingTechnicians ? (
+              <div className="flex items-center gap-2 p-3 text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Loading technicians...
+              </div>
+            ) : (
+              <select
+                id={fieldId}
+                value={selectedTechnicianId}
+                onChange={(e) => handleTechnicianChange(e.target.value)}
+                className={`${baseClasses} p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 ${focusClasses}`}
+              >
+                <option value="">Select a technician</option>
+                {technicians.map((tech) => (
+                  <option key={tech.id} value={tech.id}>
+                    {tech.first_name} {tech.surname}
+                  </option>
+                ))}
+              </select>
+            )}
+            {selectedTechnicianId && (formData.technician || formData.technician_name) && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Assigned: {formData.technician || formData.technician_name}
+              </p>
+            )}
+          </div>
+        );
+      }
 
       switch (field.type) {
         case "select":
@@ -530,10 +622,42 @@ export default function JobFormDialog({
             </div>
           </div>
           {/* Status dropdown on the right */}
-          {statusFieldConfig && mode !== "create" && (
-            <div className="relative min-w-[240px]">
-              <div className="relative">
-                {/* Status indicator */}
+          {statusFieldConfig && (
+            <div className="flex gap-2 min-w-[400px]">
+              {/* Week Number Dropdown (left) */}
+              <div className="relative w-1/2">
+                <select
+                  id="week"
+                  value={week}
+                  onChange={(e) => setWeek(e.target.value)}
+                  aria-label="Week Number"
+                  className="block w-full appearance-none pl-4 pr-12 py-3 rounded-lg text-sm font-medium border-0 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">Select week</option>
+                  {Array.from({ length: 52 }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      Week {i + 1}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                  <svg
+                    className="h-4 w-4 text-current opacity-60"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+              {/* Status Dropdown (right) */}
+              <div className="relative w-[340px] min-w-[240px]">
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                   <div
                     className={`w-2.5 h-2.5 rounded-full ${
@@ -546,7 +670,6 @@ export default function JobFormDialog({
                     }`}
                   ></div>
                 </div>
-
                 <select
                   id="status"
                   value={
@@ -568,8 +691,6 @@ export default function JobFormDialog({
                     </option>
                   ))}
                 </select>
-
-                {/* Simple dropdown arrow */}
                 <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
                   <svg
                     className="h-4 w-4 text-current opacity-60"
