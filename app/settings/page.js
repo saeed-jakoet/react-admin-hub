@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { get, put } from "@/lib/api/fetcher";
+import { post } from "@/lib/api/fetcher";
 import { useToast } from "@/components/shared/Toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  Settings,
 } from "lucide-react";
 import { Loader } from "@/components/shared/Loader";
 import Header from "@/components/shared/Header";
@@ -44,6 +46,13 @@ function UserSettingsPage() {
   const [revealedNationalId, setRevealedNationalId] = useState(null);
   const [revealingNationalId, setRevealingNationalId] = useState(false);
   const [revealNationalIdError, setRevealNationalIdError] = useState("");
+  const [activeTab, setActiveTab] = useState("profile");
+  const [showChangePw, setShowChangePw] = useState(false);
+  const [pwForm, setPwForm] = useState({ current_password: "", new_password: "", confirm: "" });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
 
   const { user } = useAuth();
   const [userData, setUserData] = useState(null);
@@ -218,7 +227,7 @@ function UserSettingsPage() {
         title="Account Settings"
         subtitle="Manage your profile and account preferences"
         actions={
-          editing ? (
+          activeTab === "profile" && editing ? (
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
@@ -242,7 +251,7 @@ function UserSettingsPage() {
                 Save Changes
               </Button>
             </div>
-          ) : (
+          ) : activeTab === "profile" ? (
             <Button
               onClick={handleEdit}
               className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
@@ -250,11 +259,18 @@ function UserSettingsPage() {
               <Edit3 className="w-4 h-4" />
               Edit Profile
             </Button>
-          )
+          ) : null
         }
+        tabs={[
+          { id: "profile", label: "Profile", icon: User },
+          { id: "settings", label: "Settings", icon: Settings },
+        ]}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
 
       <div className="p-8">
+        {activeTab === "profile" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Sidebar - Profile Card */}
           <div className="lg:col-span-1 space-y-6">
@@ -652,6 +668,39 @@ function UserSettingsPage() {
               </div>
             </Card>
 
+            {/* Notes */}
+            <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                </div>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  Additional Notes
+                </h2>
+              </div>
+
+              {editing ? (
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => handleInputChange("notes", e.target.value)}
+                  placeholder="Add any additional notes or information..."
+                  className="w-full min-h-[120px] px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 dark:text-white resize-none"
+                  rows={4}
+                />
+              ) : (
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 min-h-[120px]">
+                  <p className="text-slate-900 dark:text-white whitespace-pre-wrap">
+                    {userData.notes || "No additional notes"}
+                  </p>
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+        )}
+
+        {activeTab === "settings" && (
+        <div className="max-w-4xl mx-auto space-y-6">
             {/* Security Settings */}
             <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
@@ -680,11 +729,202 @@ function UserSettingsPage() {
                         </p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => setShowChangePw(true)}>
                       Change Password
                     </Button>
                   </div>
                 </div>
+                {activeTab === "settings" && (
+                <div className="max-w-4xl mx-auto space-y-6">
+                  {/* Change Password Modal */}
+                  {showChangePw && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl">
+                        {/* Header */}
+                        <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center">
+                                <Lock className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Change Password</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Update your account password</p>
+                              </div>
+                            </div>
+                            <button 
+                              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" 
+                              onClick={() => {
+                                setShowChangePw(false);
+                                setPwForm({ current_password: "", new_password: "", confirm: "" });
+                                setShowCurrentPw(false);
+                                setShowNewPw(false);
+                                setShowConfirmPw(false);
+                              }}
+                            >
+                              <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 space-y-5">
+                          {/* Current Password */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                              Current Password
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                type={showCurrentPw ? "text" : "password"}
+                                value={pwForm.current_password}
+                                onChange={(e) => setPwForm({ ...pwForm, current_password: e.target.value })}
+                                placeholder="Enter your current password"
+                                className="pr-10"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowCurrentPw(!showCurrentPw)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                              >
+                                {showCurrentPw ? (
+                                  <EyeOff className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                ) : (
+                                  <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* New Password */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                              New Password
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                type={showNewPw ? "text" : "password"}
+                                value={pwForm.new_password}
+                                onChange={(e) => setPwForm({ ...pwForm, new_password: e.target.value })}
+                                placeholder="Enter your new password"
+                                className="pr-10"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowNewPw(!showNewPw)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                              >
+                                {showNewPw ? (
+                                  <EyeOff className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                ) : (
+                                  <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                )}
+                              </button>
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              Must be at least 8 characters long
+                            </p>
+                          </div>
+
+                          {/* Confirm Password */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                              Confirm New Password
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                type={showConfirmPw ? "text" : "password"}
+                                value={pwForm.confirm}
+                                onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
+                                placeholder="Confirm your new password"
+                                className="pr-10"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirmPw(!showConfirmPw)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                              >
+                                {showConfirmPw ? (
+                                  <EyeOff className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                ) : (
+                                  <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                )}
+                              </button>
+                            </div>
+                            {pwForm.confirm && pwForm.new_password !== pwForm.confirm && (
+                              <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" />
+                                Passwords do not match
+                              </p>
+                            )}
+                          </div>
+
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800">
+                          <Button 
+                            variant="outline" 
+                            onClick={() => {
+                              setShowChangePw(false);
+                              setPwForm({ current_password: "", new_password: "", confirm: "" });
+                              setShowCurrentPw(false);
+                              setShowNewPw(false);
+                              setShowConfirmPw(false);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={async () => {
+                              if (!pwForm.current_password || !pwForm.new_password) {
+                                toastError("Missing Fields", "Please fill in all password fields");
+                                return;
+                              }
+                              if (pwForm.new_password.length < 8) {
+                                toastError("Weak Password", "Password must be at least 8 characters long");
+                                return;
+                              }
+                              if (pwForm.new_password !== pwForm.confirm) {
+                                toastError("Mismatch", "New passwords do not match");
+                                return;
+                              }
+                              try {
+                                setPwSaving(true);
+                                await post("/auth/change-password", {
+                                  current_password: pwForm.current_password,
+                                  new_password: pwForm.new_password,
+                                });
+                                toastSuccess("Password Updated", "Your password has been changed successfully.");
+                                setShowChangePw(false);
+                                setPwForm({ current_password: "", new_password: "", confirm: "" });
+                                setShowCurrentPw(false);
+                                setShowNewPw(false);
+                                setShowConfirmPw(false);
+                              } catch (e) {
+                                toastError("Update Failed", e?.message || "Could not change password");
+                              } finally {
+                                setPwSaving(false);
+                              }
+                            }}
+                            disabled={pwSaving || !pwForm.current_password || !pwForm.new_password || pwForm.new_password !== pwForm.confirm}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            {pwSaving ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                Updating...
+                              </>
+                            ) : (
+                              "Update Password"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                )}
 
                 {/* Multi-Factor Authentication */}
                 <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
@@ -876,36 +1116,8 @@ function UserSettingsPage() {
                 ))}
               </div>
             </Card>
-
-            {/* Notes */}
-            <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-                </div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                  Additional Notes
-                </h2>
-              </div>
-
-              {editing ? (
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange("notes", e.target.value)}
-                  placeholder="Add any additional notes or information..."
-                  className="w-full min-h-[120px] px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 dark:text-white resize-none"
-                  rows={4}
-                />
-              ) : (
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 min-h-[120px]">
-                  <p className="text-slate-900 dark:text-white whitespace-pre-wrap">
-                    {userData.notes || "No additional notes"}
-                  </p>
-                </div>
-              )}
-            </Card>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -248,29 +248,6 @@ export default function StaffPage() {
         </div>
       ),
     },
-    {
-      id: "actions",
-      cell: () => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {[
-              { icon: Mail, label: "Send Email" },
-              { icon: Phone, label: "Call Staff" },
-            ].map((item, i) => (
-              <DropdownMenuItem key={i}>
-                <item.icon className="h-4 w-4 mr-2" />
-                {item.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
-    },
   ];
 
   const canAddStaff =

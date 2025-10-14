@@ -285,24 +285,7 @@ export default function InventoryPage() {
           <span className="text-gray-400 dark:text-slate-400">—</span>
         ),
     },
-    {
-      id: "actions",
-      cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleInventoryEdit(row.original)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Item
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
-    },
+    // Removed actions column
   ];
 
   // Stats cards data for Header component
@@ -421,6 +404,7 @@ export default function InventoryPage() {
             viewModeEnabled={true}
             viewMode={viewMode}
             setViewMode={setViewMode}
+            onRowClick={handleInventoryEdit}
           />
         )}
       </div>

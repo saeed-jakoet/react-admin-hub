@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { get } from "@/lib/api/fetcher";
-import useSWR from 'swr';
+import useSWR from "swr";
 import { Calendar as BigCalendar, momentLocalizer } from "react-big-calendar";
 import CalendarBigCalendar from "@/components/calendar/CalendarBigCalendar";
 import moment from "moment";
@@ -38,14 +38,20 @@ export default function OverviewPage() {
   const router = useRouter();
 
   // --- Low Stock Alerts with SWR ---
-  const { data: inventoryData, error: inventoryError, isLoading: inventoryLoading } = useSWR(
-    ['/inventory'],
-    () => get('/inventory'),
-    { revalidateOnFocus: true, dedupingInterval: 60000 }
-  );
+  const {
+    data: inventoryData,
+    error: inventoryError,
+    isLoading: inventoryLoading,
+  } = useSWR(["/inventory"], () => get("/inventory"), {
+    revalidateOnFocus: true,
+    dedupingInterval: 60000,
+  });
   const lowStock =
     inventoryData?.data?.filter(
-      (item) => typeof item.quantity === 'number' && typeof item.minimum_quantity === 'number' && item.quantity < item.minimum_quantity
+      (item) =>
+        typeof item.quantity === "number" &&
+        typeof item.minimum_quantity === "number" &&
+        item.quantity < item.minimum_quantity
     ) || [];
 
   // Calendar and Orders State
@@ -179,8 +185,6 @@ export default function OverviewPage() {
 
     setFilteredOrders(filtered);
   }, [orders, statusFilter]);
-
-  
 
   const fetchClients = async () => {
     try {
@@ -468,24 +472,25 @@ export default function OverviewPage() {
                 className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
               >
                 <FileText className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
-                Create Quote
+                Generate Quote
               </Button>
               <Button
                 size="sm"
                 onClick={handleNewJobClick}
-                className="w-full justify-start h-11 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white"
+                variant="outline"
+                className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
               >
-                <Calendar className="w-4 h-4 mr-3" />
+                <Calendar className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
                 New Order
               </Button>
-              <Button
+              {/* <Button
                 size="sm"
                 variant="outline"
                 className="w-full justify-start h-11 text-sm font-medium text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
               >
                 <Truck className="w-4 h-4 mr-3 text-slate-600 dark:text-slate-400" />
                 Track Delivery
-              </Button>
+              </Button> */}
             </div>
           </div>
         </Card>
@@ -502,9 +507,13 @@ export default function OverviewPage() {
               )}
             </div>
             {inventoryLoading ? (
-              <div className="text-sm text-slate-500">Checking inventory...</div>
+              <div className="text-sm text-slate-500">
+                Checking inventory...
+              </div>
             ) : inventoryError ? (
-              <div className="text-sm text-red-500">Failed to load inventory.</div>
+              <div className="text-sm text-red-500">
+                Failed to load inventory.
+              </div>
             ) : lowStock.length === 0 ? (
               <div className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-900/10 rounded-xl border-l-4 border-green-500">
                 <div className="w-8 h-8 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -535,8 +544,11 @@ export default function OverviewPage() {
                           {item.item_name}
                         </p>
                         <p className="text-xs text-slate-600 dark:text-slate-400">
-                          Current: <span className="font-bold text-red-600">{item.quantity}</span> {item.unit} 
-                          {' '}• Min: {item.minimum_quantity} {item.unit}
+                          Current:{" "}
+                          <span className="font-bold text-red-600">
+                            {item.quantity}
+                          </span>{" "}
+                          {item.unit} • Min: {item.minimum_quantity} {item.unit}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                           {item.location}

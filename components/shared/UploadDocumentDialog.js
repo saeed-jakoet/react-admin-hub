@@ -239,10 +239,10 @@ export default function UploadDocumentDialog({
                   <DropdownMenuItem
                     key={cat.value}
                     onClick={() => setCategory(cat.value)}
-                    className="flex flex-col items-start p-3"
+                    className="group flex flex-col items-start p-3 cursor-pointer hover:bg-gray-700 focus:bg-gray-700 hover:text-white focus:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 dark:hover:text-white dark:focus:text-white"
                   >
-                    <div className="font-medium">{cat.label}</div>
-                    <div className="text-sm text-gray-500">{cat.description}</div>
+                    <div className="font-medium group-hover:text-white group-focus:text-white dark:group-hover:text-white dark:group-focus:text-white">{cat.label}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-300 group-hover:text-white group-focus:text-white dark:group-hover:text-white dark:group-focus:text-white">{cat.description}</div>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>

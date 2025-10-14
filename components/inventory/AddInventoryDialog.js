@@ -16,6 +16,11 @@ import {
   Layers,
 } from "lucide-react";
 
+// Custom Rand icon as Lucide does not have one
+const RandIcon = (props) => (
+  <span {...props} style={{ fontWeight: 700, fontSize: '1.1em', fontFamily: 'monospace' }}>R</span>
+);
+
 export function AddInventoryDialog({
   open,
   onOpenChange,
@@ -207,7 +212,7 @@ export function AddInventoryDialog({
             placeholder: "150.00",
             step: "0.01",
             min: "0",
-            icon: DollarSign,
+            icon: RandIcon,
             grid: true,
           },
           {
@@ -217,7 +222,7 @@ export function AddInventoryDialog({
             placeholder: "250.00",
             step: "0.01",
             min: "0",
-            icon: DollarSign,
+            icon: RandIcon,
             grid: true,
           },
         ],

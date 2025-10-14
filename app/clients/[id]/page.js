@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, use } from "react";
+import { getDropCableStatusColor, formatStatusText } from "@/lib/utils/dropCableColors";
 import { useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { Button } from "@/components/ui/button";
@@ -824,8 +825,10 @@ export default function ClientDetailPage({ params }) {
                               key={status}
                               className="flex items-center justify-between text-sm"
                             >
-                              <span className="text-slate-600 dark:text-slate-400 text-xs">
-                                {formatDropCableStatus(status)}
+                              <span
+                                className={`text-xs px-2 py-1 rounded ${getDropCableStatusColor(status, "class")}`}
+                              >
+                                {formatStatusText(status)}
                               </span>
                               <Badge variant="outline" className="text-xs">
                                 {count}

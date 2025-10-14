@@ -195,82 +195,85 @@ export default function FleetPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      {/* Page Header with Stats */}
-      <Header
-        title={
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Truck className="w-8 h-8 text-white" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white dark:border-slate-900"></div>
-            </div>
-            <span>Fleet Management</span>
-          </div>
-        }
-        stats={
-          <p className="text-gray-600 dark:text-slate-400">
-            Track and manage your fleet vehicles
-          </p>
-        }
-        actions={
-          <Button
-            onClick={() => {
-              setDialogMode("add");
-              setEditVehicle(null);
-              setIsDialogOpen(true);
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 font-semibold"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Vehicle
-          </Button>
-        }
-        statsCards={statsCards}
-      />
+    // <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    //   {/* Page Header with Stats */}
+    //   <Header
+    //     title={
+    //       <div className="flex items-center gap-4">
+    //         <div className="relative">
+    //           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+    //             <Truck className="w-8 h-8 text-white" />
+    //           </div>
+    //           <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white dark:border-slate-900"></div>
+    //         </div>
+    //         <span>Fleet Management</span>
+    //       </div>
+    //     }
+    //     stats={
+    //       <p className="text-gray-600 dark:text-slate-400">
+    //         Track and manage your fleet vehicles
+    //       </p>
+    //     }
+    //     actions={
+    //       <Button
+    //         onClick={() => {
+    //           setDialogMode("add");
+    //           setEditVehicle(null);
+    //           setIsDialogOpen(true);
+    //         }}
+    //         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 font-semibold"
+    //       >
+    //         <Plus className="w-4 h-4 mr-2" />
+    //         Add Vehicle
+    //       </Button>
+    //     }
+    //     statsCards={statsCards}
+    //   />
 
-      {/* Content */}
-      <div className="space-y-6">
-        {viewMode === "grid" ? (
-          <FleetGridView
-            items={filteredFleet}
-            getStatusIcon={getStatusIcon}
-            onViewModeChange={setViewMode}
-          />
-        ) : (
-          <DataTable
-            columns={allColumns}
-            data={filteredFleet}
-            searchEnabled={true}
-            searchTerm={searchTerm}
-            onSearch={(e) => setSearchTerm(e.target.value)}
-            searchPlaceholder="Search fleet..."
-            exportEnabled={true}
-            exportData={filteredFleet}
-            exportColumns={exportColumns}
-            exportFilename="fleet-export"
-            exportTitle="Fleet Report"
-            viewModeEnabled={true}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-          />
-        )}
-      </div>
+    //   {/* Content */}
+    //   <div className="space-y-6">
+    //     {viewMode === "grid" ? (
+    //       <FleetGridView
+    //         items={filteredFleet}
+    //         getStatusIcon={getStatusIcon}
+    //         onViewModeChange={setViewMode}
+    //       />
+    //     ) : (
+    //       <DataTable
+    //         columns={allColumns}
+    //         data={filteredFleet}
+    //         searchEnabled={true}
+    //         searchTerm={searchTerm}
+    //         onSearch={(e) => setSearchTerm(e.target.value)}
+    //         searchPlaceholder="Search fleet..."
+    //         exportEnabled={true}
+    //         exportData={filteredFleet}
+    //         exportColumns={exportColumns}
+    //         exportFilename="fleet-export"
+    //         exportTitle="Fleet Report"
+    //         viewModeEnabled={true}
+    //         viewMode={viewMode}
+    //         setViewMode={setViewMode}
+    //       />
+    //     )}
+    //   </div>
 
-      <AddFleetDialog
-        open={isDialogOpen}
-        onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) {
-            setEditVehicle(null);
-            setDialogMode("add");
-          }
-        }}
-        onSuccess={() => handleDialogSuccess(dialogMode)}
-        mode={dialogMode}
-        initialData={editVehicle}
-      />
+    //   <AddFleetDialog
+    //     open={isDialogOpen}
+    //     onOpenChange={(open) => {
+    //       setIsDialogOpen(open);
+    //       if (!open) {
+    //         setEditVehicle(null);
+    //         setDialogMode("add");
+    //       }
+    //     }}
+    //     onSuccess={() => handleDialogSuccess(dialogMode)}
+    //     mode={dialogMode}
+    //     initialData={editVehicle}
+    //   />
+    // </div>
+    <div className="flex items-center justify-center mt-10">
+      <h1 className="text-center mt-50 text-xl">Coming soon...</h1>
     </div>
   );
 }

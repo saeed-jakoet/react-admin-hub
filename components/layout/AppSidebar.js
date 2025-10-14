@@ -239,39 +239,41 @@ export function AppSidebar() {
                         onMouseEnter={() => setShowTree(true)}
                         onMouseLeave={() => setShowTree(false)}
                       >
-                        <div
-                          className={cn(
-                            "group/item relative flex items-center rounded-xl transition-all duration-200",
-                            "px-2 py-2.5 justify-center group-hover:justify-start group-hover:px-3 w-full cursor-pointer",
-                            isActive
-                              ? "bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-300 border-l-4 border-blue-500 shadow-none"
-                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900/50 border-l-4 border-transparent"
-                          )}
-                          title="Clients"
-                        >
+                        <Link href="/clients">
                           <div
                             className={cn(
-                              "w-9 h-9 rounded-lg flex items-center justify-center group-hover:mr-3 flex-shrink-0 transition-all duration-200",
+                              "group/item relative flex items-center rounded-xl transition-all duration-200",
+                              "px-2 py-2.5 justify-center group-hover:justify-start group-hover:px-3 w-full cursor-pointer",
                               isActive
-                                ? "bg-blue-50 dark:bg-blue-900/30"
-                                : "bg-slate-100 dark:bg-slate-900 group-hover/item:bg-slate-200 dark:group-hover/item:bg-slate-800"
+                                ? "bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-300 border-l-4 border-blue-500 shadow-none"
+                                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900/50 border-l-4 border-transparent"
                             )}
+                            title="Clients"
                           >
-                            <Icon
+                            <div
                               className={cn(
-                                "w-[18px] h-[18px]",
+                                "w-9 h-9 rounded-lg flex items-center justify-center group-hover:mr-3 flex-shrink-0 transition-all duration-200",
                                 isActive
-                                  ? "text-slate-500"
-                                  : "text-slate-500 dark:text-slate-400"
+                                  ? "bg-blue-50 dark:bg-blue-900/30"
+                                  : "bg-slate-100 dark:bg-slate-900 group-hover/item:bg-slate-200 dark:group-hover/item:bg-slate-800"
                               )}
-                            />
+                            >
+                              <Icon
+                                className={cn(
+                                  "w-[18px] h-[18px]",
+                                  isActive
+                                    ? "text-slate-500"
+                                    : "text-slate-500 dark:text-slate-400"
+                                )}
+                              />
+                            </div>
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex-1 flex items-center whitespace-nowrap overflow-hidden">
+                              <span className={cn("text-sm font-medium")}>
+                                Clients
+                              </span>
+                            </div>
                           </div>
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex-1 flex items-center whitespace-nowrap overflow-hidden">
-                            <span className={cn("text-sm font-medium")}>
-                              Clients
-                            </span>
-                          </div>
-                        </div>
+                        </Link>
 
                         {/* Client Tree */}
                         <div
