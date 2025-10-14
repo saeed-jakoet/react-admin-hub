@@ -391,48 +391,45 @@ export default function LoginPage() {
       </div>
 
       {/* Centered Content Container */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-8">
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 sm:px-8 py-8">
         <div className="w-full max-w-md text-center">
           {/* Logo and Branding - Centered Above Form */}
-          <div className="mb-12">
-            <div className="flex items-center justify-center space-x-6 mb-8">
-              <div className="relative w-20 h-20 bg-gradient-to-br from-[#264C92] to-[#1a3b73] rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300">
+          <div className="mb-8 sm:mb-12">
+            <div className="flex flex-col sm:flex-row items-center justify-center sm:space-x-6 space-y-4 sm:space-y-0 mb-6 sm:mb-8">
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#264C92] to-[#1a3b73] rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300">
                 <Image
                   src="/logo.svg"
                   alt="Fiber Africa"
                   width={80}
                   height={80}
-                  className="w-20 h-20 object-contain filter brightness-110"
+                  className="w-16 h-16 sm:w-20 sm:h-20 object-contain filter brightness-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-br from-[#264C92]/20 to-[#1a3b73]/20 rounded-3xl animate-pulse"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-[#264C92]/20 to-[#1a3b73]/20 rounded-2xl sm:rounded-3xl animate-pulse"></div>
               </div>
-              <div className="text-left">
-                <h1 className="text-5xl lg:text-6xl font-bold text-white mb-2 tracking-tight">
+              <div className="text-center sm:text-left">
+                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-white mb-1 sm:mb-2 tracking-tight">
                   Fiber Africa
                 </h1>
-                <p
-                  className="font-semibold text-xl lg:text-2xl tracking-wider text-yellow-500"
-                  // style={{ color: "#264C92" }}
-                >
+                <p className="font-semibold text-lg sm:text-xl lg:text-2xl tracking-wider text-yellow-500">
                   WE DELIVER
                 </p>
               </div>
             </div>
 
             {/* Subtitle */}
-            <div className="max-w-md mx-auto mb-8">
-              <p className="text-gray-300 text-lg mb-2">Admin Portal</p>
-              <p className="text-gray-400 text-sm">
+            <div className="max-w-md mx-auto mb-6 sm:mb-8">
+              <p className="text-gray-300 text-base sm:text-lg mb-1 sm:mb-2">Admin Portal</p>
+              <p className="text-gray-400 text-xs sm:text-sm">
                 Secure access to network management systems
               </p>
             </div>
           </div>
 
           {/* Login Form Container */}
-          <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl p-8 border border-slate-700/50 shadow-2xl relative">
+          <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-slate-700/50 shadow-2xl relative">
             {/* Subtle glow effect */}
             <div
-              className="absolute -inset-1 rounded-3xl blur-lg opacity-50"
+              className="absolute -inset-1 rounded-2xl sm:rounded-3xl blur-lg opacity-50"
               style={{
                 background:
                   "linear-gradient(to right, rgba(38, 76, 146, 0.2), rgba(148, 163, 184, 0.2))",
@@ -440,8 +437,8 @@ export default function LoginPage() {
             ></div>
 
             <div className="relative">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-white mb-2">Sign In</h2>
+              <div className="text-center mb-6 sm:mb-8">
+                <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Sign In</h2>
                 <div
                   className="inline-flex items-center px-4 py-2 rounded-full border"
                   style={{
@@ -459,15 +456,15 @@ export default function LoginPage() {
 
               {/* Error Message */}
               {error && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
-                  <p className="text-red-400 text-sm font-medium">{error}</p>
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+                  <p className="text-red-400 text-xs sm:text-sm font-medium">{error}</p>
                 </div>
               )}
 
-              <form onSubmit={handleLogin} className="space-y-6">
+              <form onSubmit={handleLogin} className="space-y-4 sm:space-y-6">
                 <div>
                   <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
+                    <Mail className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400 transition-colors" />
                     <style jsx>{`
                       .group:focus-within .lucide-mail {
                         color: #264c92 !important;
@@ -475,7 +472,7 @@ export default function LoginPage() {
                     `}</style>
                     <input
                       type="email"
-                      className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-opacity-50 transition-all"
+                      className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white text-sm sm:text-base placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-opacity-50 transition-all"
                       style={{
                         "--tw-ring-color": "#264C92",
                         "--tw-border-color": "#264C92",
@@ -492,7 +489,7 @@ export default function LoginPage() {
 
                 <div>
                   <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
+                    <Lock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400 transition-colors" />
                     <style jsx>{`
                       .group:focus-within .lucide-lock {
                         color: #264c92 !important;
@@ -500,7 +497,7 @@ export default function LoginPage() {
                     `}</style>
                     <input
                       type={showPassword ? "text" : "password"}
-                      className="w-full pl-12 pr-12 py-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-opacity-50 transition-all"
+                      className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white text-sm sm:text-base placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-opacity-50 transition-all"
                       style={{
                         "--tw-ring-color": "#264C92",
                         "--tw-border-color": "#264C92",
@@ -514,13 +511,13 @@ export default function LoginPage() {
                     />
                     <button
                       type="button"
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
+                      className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
-                        <EyeOff className="w-5 h-5" />
+                        <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />
                       ) : (
-                        <Eye className="w-5 h-5" />
+                        <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                       )}
                     </button>
                   </div>
@@ -529,7 +526,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full text-white font-semibold py-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
+                  className="w-full text-white font-semibold py-3 sm:py-4 text-sm sm:text-base rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
                   style={{
                     background: "linear-gradient(to right, #264C92, #1a3b73)",
                     boxShadow: "0 10px 25px rgba(38, 76, 146, 0.25)",
