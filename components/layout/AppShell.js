@@ -11,9 +11,9 @@ export function AppShell({ children }) {
   const router = useRouter();
   const { user } = useAuth();
 
-  // Redirect technicians to their dedicated mobile view
+  // Redirect technicians to their dedicated mobile view (but allow technician sub-routes)
   React.useEffect(() => {
-    if (user && user.role === "technician" && pathname !== "/technician") {
+    if (user && user.role === "technician" && !pathname.startsWith("/technician")) {
       router.push("/technician");
     }
   }, [user, pathname, router]);
@@ -23,7 +23,7 @@ export function AppShell({ children }) {
     pathname === "/auth/login" ||
     pathname === "/auth/forgot-password" ||
     pathname === "/auth/reset-password" ||
-    pathname === "/technician"
+    pathname.startsWith("/technician")
   ) {
     return <>{children}</>;
   }
