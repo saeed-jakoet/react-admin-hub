@@ -506,6 +506,7 @@ export default function ForgotPasswordPage() {
                         `}</style>
                         <input
                           type="email"
+                          name="email"
                           className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-opacity-50 transition-all"
                           style={{
                             "--tw-ring-color": "#264C92",

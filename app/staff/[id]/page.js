@@ -36,6 +36,7 @@ import { get, put, post, del } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { StaffDocumentViewer } from "@/components/staff/StaffDocumentViewer";
+import Header from "@/components/shared/Header";
 
 export default function StaffDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -364,143 +365,89 @@ console.log(staffData);
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="h-full">
-        {/* Modern Header with Glassmorphism Effect */}
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
-          <div className="px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
+        {/* Modern Header with Glassmorphism Effect (using shared Header component) */}
+        <Header
+          title={`${(profile?.first_name ?? staff?.first_name) || ""} ${(profile?.surname ?? staff?.surname) || ""}`.trim() || "Staff Member"}
+          subtitle={
+            <span className="flex items-center gap-2">
+              <Mail className="w-3.5 h-3.5" />
+              {(profile?.email ?? staff?.email) || "No email"}
+            </span>
+          }
+          logo={{
+            src: null,
+            alt: "Staff Member",
+            fallbackIcon: User,
+          }}
+          statusIndicator={staff.auth_user_id}
+          badge={{
+            label: staff.auth_user_id ? "Has Access" : "No Access",
+            active: staff.auth_user_id,
+          }}
+          actions={
+            isSelf ? (
+              <Button
+                onClick={() => router.push("/settings")}
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+              >
+                <Edit3 className="w-4 h-4" />
+                Go to Your Profile
+              </Button>
+            ) : editing ? (
+              <>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => router.push("/staff")}
-                  className="h-10 w-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={saving}
+                  className="gap-2"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <X className="w-4 h-4" />
+                  Cancel
                 </Button>
-
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                      <User className="w-8 h-8 text-white" />
-                    </div>
-                    <div
-                      className={`absolute -bottom-1 -right-1 w-5 h-5 ${
-                        staff.auth_user_id ? "bg-emerald-500" : "bg-slate-400"
-                      } rounded-full border-4 border-white dark:border-slate-900`}
-                    ></div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <h1 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">
-                      {`${(profile?.first_name ?? staff?.first_name) || ""} ${(profile?.surname ?? staff?.surname) || ""}`.trim() ||
-                        "Staff Member"}
-                    </h1>
-                    <div className="flex items-center gap-3 text-sm">
-                      <span className="text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                        <Mail className="w-3.5 h-3.5" />
-                        {(profile?.email ?? staff?.email) || "No email"}
-                      </span>
-                      <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></div>
-                      <Badge
-                        variant={staff.auth_user_id ? "default" : "secondary"}
-                        className={`${
-                          staff.auth_user_id
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800"
-                            : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400"
-                        } font-medium`}
-                      >
-                        {staff.auth_user_id ? "Has Access" : "No Access"}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {isSelf ? (
+                <Button
+                  onClick={handleSave}
+                  type="button"
+                  disabled={saving}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
+                >
+                  {saving ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  Save Changes
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-xl"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+                {canEdit && (
                   <Button
-                    onClick={() => router.push("/settings")}
-                    className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                    onClick={handleEdit}
+                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
                   >
                     <Edit3 className="w-4 h-4" />
-                    Go to Your Profile
+                    Edit Staff
                   </Button>
-                ) : editing ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={handleCancel}
-                      disabled={saving}
-                      className="gap-2"
-                    >
-                      <X className="w-4 h-4" />
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleSave}
-                      type="button"
-                      disabled={saving}
-                      className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
-                    >
-                      {saving ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Save className="w-4 h-4" />
-                      )}
-                      Save Changes
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-10 w-10 rounded-xl"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                    {canEdit && (
-                      <Button
-                        onClick={handleEdit}
-                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                        Edit Staff
-                      </Button>
-                    )}
-                  </>
                 )}
-              </div>
-            </div>
-          </div>
-
-          {/* Tab Navigation */}
-          <div className="px-8">
-            <div className="flex gap-1 border-b border-slate-200 dark:border-slate-800">
-              {[
-                { id: "overview", label: "Overview", icon: User },
-                { id: "access", label: "System Access", icon: Shield },
-                { id: "documents", label: "Documents", icon: FileText },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all ${
-                      activeTab === tab.id
-                        ? "border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10"
-                        : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                    } rounded-t-lg`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+              </>
+            )
+          }
+          onBack={() => router.push("/staff")}
+          tabs={[
+            { id: "overview", label: "Overview", icon: User },
+            { id: "access", label: "System Access", icon: Shield },
+            { id: "documents", label: "Documents", icon: FileText },
+          ]}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
 
         <div className="p-8">
           {/* Statistics Cards */}

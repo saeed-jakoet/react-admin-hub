@@ -52,9 +52,9 @@ export default function Header({
                   variant="ghost"
                   size="icon"
                   onClick={onBack}
-                  className="h-10 w-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="h-10 w-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 group"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white transition-colors" />
                 </Button>
               )}
 

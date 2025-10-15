@@ -181,7 +181,7 @@ export default function TechnicianOrderDetail() {
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleEnd);
     };
-  }, [dragging, pdfDimensions]);
+  }, [dragging, pdfDimensions, pageWidth]);
 
   // Handle resizing
   useEffect(() => {
@@ -230,7 +230,7 @@ export default function TechnicianOrderDetail() {
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleEnd);
     };
-  }, [resizing, pdfDimensions]);
+  }, [resizing, pdfDimensions, pageWidth]);
 
   const addTextField = () => {
     const newField = {

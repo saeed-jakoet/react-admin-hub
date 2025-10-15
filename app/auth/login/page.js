@@ -472,6 +472,7 @@ export default function LoginPage() {
                     `}</style>
                     <input
                       type="email"
+                      name="email"
                       className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white text-sm sm:text-base placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-opacity-50 transition-all"
                       style={{
                         "--tw-ring-color": "#264C92",

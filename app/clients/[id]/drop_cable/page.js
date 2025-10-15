@@ -57,25 +57,9 @@ export default function DropCablePage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [editingJob, setEditingJob] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const [saving, setSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  // Persist view mode in localStorage
-  const [viewMode, setViewModeState] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("dropCableViewMode") || "table";
-    }
-    return "table";
-  });
-
-  const setViewMode = (mode) => {
-    setViewModeState(mode);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("dropCableViewMode", mode);
-    }
-  };
 
   // New Job Modal State
   const [newJobModalOpen, setNewJobModalOpen] = useState(false);
@@ -121,7 +105,6 @@ export default function DropCablePage() {
     if (isEdit && jobId && jobs.length > 0) {
       const job = jobs.find((j) => String(j.id) === String(jobId));
       if (job) {
-        setEditingJob(job.id);
         setEditFormData({ ...job });
         setDialogOpen(true);
         // Clean up the URL so dialog can be closed without params
@@ -228,7 +211,6 @@ export default function DropCablePage() {
   ];
 
   const handleRowClick = (job) => {
-    setEditingJob(job.id);
     setEditFormData({ ...job });
     setDialogOpen(true);
   };
@@ -254,7 +236,6 @@ export default function DropCablePage() {
       const clientResponse = await get(`/client/${clientId}`);
       setClientForEmail(clientResponse.data);
       setEmailModalOpen(true);
-      toast.info("Email", "Email dialog opened.");
     } catch (error) {
       console.error("Error fetching client data:", error);
       toast.error("Error", "Failed to fetch client data for email.");
@@ -453,6 +434,51 @@ export default function DropCablePage() {
       },
     },
     {
+      accessorKey: "pm",
+      header: "Project Manager",
+      cell: ({ row }) => {
+        const job = row.original;
+        return (
+          <div className="flex items-center space-x-2">
+            <User className="w-4 h-4 text-slate-400" />
+            <span className="text-slate-900 dark:text-white capitalize">
+              {job.pm || "-"}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "end_client_contact_name",
+      header: "End Client",
+      cell: ({ row }) => {
+        const job = row.original;
+        return (
+          <div className="flex items-center space-x-2">
+            <User className="w-4 h-4 text-slate-400" />
+            <span className="text-slate-600 dark:text-slate-400">
+              {job.end_client_contact_name || "-"}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "end_client_contact_email",
+      header: "End Client Email",
+      cell: ({ row }) => {
+        const job = row.original;
+        return (
+          <div className="flex items-center space-x-2">
+            <Mail className="w-4 h-4 text-slate-400" />
+            <span className="text-slate-600 dark:text-slate-400">
+              {job.end_client_contact_email || "-"}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "technician_name",
       header: "Technician",
       cell: ({ row }) => {
@@ -525,14 +551,14 @@ export default function DropCablePage() {
                 >
                   <FileText className="h-4 w-4" />
                   Generate As-Built
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem
                   onClick={() => handleSendEmail(job)}
                   className="flex items-center gap-2"
                 >
                   <Mail className="h-4 w-4" />
                   Send Email
-                </DropdownMenuItem> */}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -645,7 +671,6 @@ export default function DropCablePage() {
         jobConfig={jobTypeConfigs["drop-cable"]}
         onSuccess={(updatedJob) => {
           handleJobSuccess(updatedJob, "edit");
-          setEditingJob(null);
           setEditFormData({});
         }}
         saving={saving}

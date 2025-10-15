@@ -10,32 +10,31 @@ import { get } from "@/lib/api/fetcher";
 import {
   Clock,
   RefreshCw,
-  AlertCircle,
   Search,
   ChevronRight,
   FileText,
-  Users,
-  Briefcase,
-  Package,
   UserCircle,
-  Settings,
   Download,
-  Filter,
   X,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
+  Activity,
+  Database,
+  Edit3,
+  Trash2,
+  PlusCircle,
+  ArrowRight,
 } from "lucide-react";
 
-// Redesigned Audit / Activity Log page
-// Features:
-// - Two-column layout: timeline/list on left, selected log detail on right
-// - Search + filters (action, table, date range)
-// - Change-diff view (field: old -> new) with visual highlights
-// - Export visible logs to CSV
+const ITEMS_PER_PAGE = 15;
 
 export default function LogsAuditPage() {
   const router = useRouter();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState("");
@@ -63,7 +62,6 @@ export default function LogsAuditPage() {
     fetchLogs();
   }, []);
 
-  // helpers (slightly simplified from your existing logic)
   const formatTimeAgo = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
@@ -76,39 +74,35 @@ export default function LogsAuditPage() {
     if (hours < 24) return `${hours}h ago`;
     const days = Math.floor(hours / 24);
     if (days < 7) return `${days}d ago`;
-    return date.toLocaleString();
+    return date.toLocaleDateString();
   };
 
-  const getTableIcon = (tableName) => {
-    const iconClass = "w-4 h-4 text-current";
-    switch (tableName) {
-      case "drop_cable":
-        return <Settings className={iconClass} />;
-      case "clients":
-        return <Users className={iconClass} />;
-      case "projects":
-        return <Briefcase className={iconClass} />;
-      case "inventory":
-        return <Package className={iconClass} />;
-      case "users":
-      case "staff":
-        return <UserCircle className={iconClass} />;
-      default:
-        return <FileText className={iconClass} />;
-    }
-  };
-
-  const getActionLabel = (action) => {
+  const getActionIcon = (action) => {
+    const iconClass = "w-4 h-4";
     switch ((action || "").toUpperCase()) {
       case "CREATE":
       case "INSERT":
-        return { text: "Created", style: "bg-green-100 text-green-800" };
+        return <PlusCircle className={iconClass} />;
       case "UPDATE":
-        return { text: "Updated", style: "bg-blue-100 text-blue-800" };
+        return <Edit3 className={iconClass} />;
       case "DELETE":
-        return { text: "Deleted", style: "bg-red-100 text-red-800" };
+        return <Trash2 className={iconClass} />;
       default:
-        return { text: action || "Action", style: "bg-gray-100 text-gray-800" };
+        return <Activity className={iconClass} />;
+    }
+  };
+
+  const getActionStyle = (action) => {
+    switch ((action || "").toUpperCase()) {
+      case "CREATE":
+      case "INSERT":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900";
+      case "UPDATE":
+        return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900";
+      case "DELETE":
+        return "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900";
+      default:
+        return "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900/30 dark:text-slate-400 dark:border-slate-800";
     }
   };
 
@@ -148,10 +142,17 @@ export default function LogsAuditPage() {
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [logs, searchTerm, actionFilter, tableFilter, dateFrom, dateTo]);
 
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedLogs = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
   useEffect(() => {
-    if (!selectedLogId && filtered.length) setSelectedLogId(filtered[0].id);
-    if (filtered.length === 0) setSelectedLogId(null);
-  }, [filtered]);
+    setCurrentPage(1);
+  }, [searchTerm, actionFilter, tableFilter, dateFrom, dateTo]);
+
+  useEffect(() => {
+    if (!selectedLogId && paginatedLogs.length) setSelectedLogId(paginatedLogs[0].id);
+    if (paginatedLogs.length === 0) setSelectedLogId(null);
+  }, [paginatedLogs, selectedLogId]);
 
   const selectedLog = useMemo(() => logs.find((l) => l.id === selectedLogId) || null, [logs, selectedLogId]);
 
@@ -165,7 +166,14 @@ export default function LogsAuditPage() {
       summary: l.summary || "",
       changed_fields: computeChanges(l).map((c) => c.key).join("; "),
     }));
-    const csv = [Object.keys(rows[0] || {}).join(","), ...rows.map((r) => Object.values(r).map((v) => `"${String(v || "").replace(/"/g, '""')}"`).join(","))].join("\n");
+    const csv = [
+      Object.keys(rows[0] || {}).join(","),
+      ...rows.map((r) =>
+        Object.values(r)
+          .map((v) => `"${String(v || "").replace(/"/g, '""')}"`)
+          .join(",")
+      ),
+    ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -192,207 +200,388 @@ export default function LogsAuditPage() {
   if (loading) return <Loader variant="bars" text="Loading activity..." />;
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto">
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Activity & Audit</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Who changed what, and when — an immutable trail for accountability.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={fetchLogs}>
-            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-          </Button>
-          <Button variant="outline" size="sm" onClick={downloadCsv}>
-            <Download className="w-4 h-4 mr-2" /> Export CSV
-          </Button>
-        </div>
-      </div>
-
-      {/* Filters bar */}
-      <Card className="p-4 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
-            <Input
-              placeholder="Search by user, table, field or text..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="p-4 sm:p-8 max-w-[1600px] mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 flex items-center justify-center shadow-lg">
+              <Activity className="w-5 h-5 text-white dark:text-slate-900" />
+            </div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Activity Log</h1>
           </div>
+          <p className="text-slate-600 dark:text-slate-400 ml-[52px]">
+            Complete audit trail of system changes and user actions
+          </p>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <select
-              value={actionFilter}
-              onChange={(e) => setActionFilter(e.target.value)}
-              className="px-3 py-2 rounded-md border bg-white dark:bg-gray-800"
-            >
-              <option value="">All actions</option>
-              <option value="CREATE">Create</option>
-              <option value="UPDATE">Update</option>
-              <option value="DELETE">Delete</option>
-            </select>
+        {/* Filters */}
+        <Card className="mb-6 border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+                <Input
+                  placeholder="Search users, tables, or changes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-10 border-slate-200 dark:border-slate-800 focus:border-slate-400 dark:focus:border-slate-600"
+                />
+              </div>
 
-            <select
-              value={tableFilter}
-              onChange={(e) => setTableFilter(e.target.value)}
-              className="px-3 py-2 rounded-md border bg-white dark:bg-gray-800"
-            >
-              <option value="">All tables</option>
-              {Array.from(new Set(logs.map((l) => l.table_name))).map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  value={actionFilter}
+                  onChange={(e) => setActionFilter(e.target.value)}
+                  className="h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600"
+                >
+                  <option value="">All actions</option>
+                  <option value="CREATE">Created</option>
+                  <option value="UPDATE">Updated</option>
+                  <option value="DELETE">Deleted</option>
+                </select>
 
-            <div className="flex items-center gap-2">
-              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-2 py-2" />
-              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-2 py-2" />
-              <Button variant="ghost" size="sm" onClick={() => { setDateFrom(""); setDateTo(""); setActionFilter(""); setTableFilter(""); setSearchTerm(""); }}>
-                <X className="w-4 h-4" /> Clear
-              </Button>
+                <select
+                  value={tableFilter}
+                  onChange={(e) => setTableFilter(e.target.value)}
+                  className="h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600"
+                >
+                  <option value="">All tables</option>
+                  {Array.from(new Set(logs.map((l) => l.table_name))).map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="h-10 w-40 border-slate-200 dark:border-slate-800"
+                />
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="h-10 w-40 border-slate-200 dark:border-slate-800"
+                />
+
+                {(searchTerm || actionFilter || tableFilter || dateFrom || dateTo) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                      setActionFilter("");
+                      setTableFilter("");
+                      setSearchTerm("");
+                    }}
+                    className="h-10"
+                  >
+                    <X className="w-4 h-4 mr-2" /> Clear
+                  </Button>
+                )}
+
+                <Button variant="outline" size="sm" onClick={fetchLogs} className="h-10">
+                  <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+                </Button>
+
+                <Button variant="outline" size="sm" onClick={downloadCsv} className="h-10" disabled={filtered.length === 0}>
+                  <Download className="w-4 h-4 mr-2" /> Export
+                </Button>
+              </div>
+            </div>
+
+            {/* Results count */}
+            <div className="mt-4 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
+              <div>
+                Showing <span className="font-medium text-slate-900 dark:text-slate-100">{paginatedLogs.length}</span> of{" "}
+                <span className="font-medium text-slate-900 dark:text-slate-100">{filtered.length}</span> activities
+              </div>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      {/* Main layout: left list / right detail */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* LEFT: Timeline / list */}
-        <div className="lg:col-span-1">
-          <Card className="p-0 overflow-hidden">
-            <div className="divide-y">
-              {filtered.length === 0 ? (
-                <div className="p-6 text-center">
-                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium">No activity found</h3>
-                  <p className="text-sm text-gray-500 mt-2">Try adjusting the filters or refresh to see recent events.</p>
+        {/* Main layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* LEFT: Activity list */}
+          <div className="lg:col-span-2">
+            <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {paginatedLogs.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                      <FileText className="w-8 h-8 text-slate-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">No activities found</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                      Try adjusting your filters or search term
+                    </p>
+                  </div>
+                ) : (
+                  paginatedLogs.map((log) => {
+                    const changes = computeChanges(log);
+                    const isSelected = selectedLogId === log.id;
+                    return (
+                      <button
+                        key={log.id}
+                        onClick={() => setSelectedLogId(log.id)}
+                        className={`w-full text-left p-4 flex items-start gap-4 transition-all ${
+                          isSelected
+                            ? "bg-slate-50 dark:bg-slate-900/50 border-l-2 border-slate-900 dark:border-slate-100"
+                            : "hover:bg-slate-50/50 dark:hover:bg-slate-900/30 border-l-2 border-transparent"
+                        }`}
+                      >
+                        <div className="flex-shrink-0 mt-1">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${getActionStyle(log.action)} border`}>
+                            {getActionIcon(log.action)}
+                          </div>
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium text-slate-900 dark:text-slate-100 truncate">
+                                {log.user_name || "Unknown User"}
+                              </div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2">
+                                <Database className="w-3 h-3" />
+                                <span className="truncate">{log.table_name}</span>
+                              </div>
+                            </div>
+                            <div className="text-xs text-slate-400 whitespace-nowrap">{formatTimeAgo(log.created_at)}</div>
+                          </div>
+
+                          <div
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${getActionStyle(log.action)} border`}
+                          >
+                            {getActionIcon(log.action)}
+                            <span>{log.action}</span>
+                          </div>
+
+                          {changes.length > 0 && (
+                            <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                              {changes.length} field{changes.length !== 1 ? "s" : ""} changed
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="border-t border-slate-200 dark:border-slate-800 p-4 bg-slate-50/50 dark:bg-slate-900/20">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-slate-600 dark:text-slate-400">
+                      Page {currentPage} of {totalPages}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1}
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronsLeft className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronsRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* RIGHT: Detail pane */}
+          <div className="lg:col-span-3">
+            <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
+              {!selectedLog ? (
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                    <Activity className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Select an activity</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                    Choose an item from the list to view detailed change information
+                  </p>
                 </div>
               ) : (
-                filtered.map((log) => {
-                  const changes = computeChanges(log);
-                  const primary = changes[0]?.key || log.new_data?.status || log.action;
-                  return (
-                    <button
-                      key={log.id}
-                      onClick={() => setSelectedLogId(log.id)}
-                      className={`w-full text-left p-4 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors ${selectedLogId === log.id ? "bg-gray-50 dark:bg-gray-900" : ""}`}
-                    >
-                      <div className="flex-shrink-0 mt-1">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
-                          <UserCircle className="w-5 h-5 text-gray-600" />
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`w-14 h-14 rounded-xl flex items-center justify-center ${getActionStyle(selectedLog.action)} border-2`}
+                      >
+                        {getActionIcon(selectedLog.action)}
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                          {selectedLog.user_name || "Unknown User"}
+                        </h2>
+                        <div className="flex items-center gap-3 mt-2 text-sm text-slate-600 dark:text-slate-400">
+                          <span className="flex items-center gap-1.5">
+                            <Database className="w-4 h-4" />
+                            {selectedLog.table_name}
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="w-4 h-4" />
+                            {new Date(selectedLog.created_at).toLocaleString()}
+                          </span>
                         </div>
                       </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between">
-                          <div className="truncate">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{log.user_name || "Unknown"}</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{log.table_name} • {primary}</div>
-                          </div>
-                          <div className="text-right text-xs text-gray-400">
-                            <div>{formatTimeAgo(log.created_at)}</div>
-                            <div className="mt-1 text-xs text-gray-500">{log.action}</div>
-                          </div>
-                        </div>
-                        <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 truncate">{log.summary || log.message || "—"}</div>
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </Card>
-        </div>
-
-        {/* RIGHT: Detail pane */}
-        <div className="lg:col-span-2">
-          <Card className="p-6">
-            {!selectedLog ? (
-              <div className="text-center py-12">
-                <h3 className="text-lg font-medium">Select an activity to view details</h3>
-                <p className="text-sm text-gray-500 mt-2">Click an item on the left to inspect what changed and who made it.</p>
-              </div>
-            ) : (
-              <div>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
-                      <UserCircle className="w-6 h-6 text-gray-700" />
                     </div>
-                    <div>
-                      <div className="text-lg font-semibold">{selectedLog.user_name || "Unknown user"}</div>
-                      <div className="text-sm text-gray-500 mt-1">{selectedLog.table_name} • {selectedLog.action}</div>
-                      <div className="text-xs text-gray-400 mt-1">{new Date(selectedLog.created_at).toLocaleString()}</div>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => { const url = getNavigationUrl(selectedLog); if (url) router.push(url); }}>
-                      <ChevronRight className="w-4 h-4 mr-2" /> Go to record
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(JSON.stringify(selectedLog, null, 2))}>
-                      Copy JSON
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Summary</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{selectedLog.summary || selectedLog.message || "No summary available."}</p>
-
-                    <div className="pt-3">
-                      <h5 className="text-sm font-medium">Metadata</h5>
-                      <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                        <div><strong>Table:</strong> {selectedLog.table_name}</div>
-                        <div><strong>Action:</strong> {selectedLog.action}</div>
-                        <div><strong>Record ID:</strong> {selectedLog.record_id || "—"}</div>
-                        <div><strong>When:</strong> {new Date(selectedLog.created_at).toLocaleString()}</div>
-                        <div><strong>IP / Agent:</strong> {selectedLog.ip || selectedLog.user_agent || "—"}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Changes</h4>
-                    <div className="mt-2 divide-y rounded-md border">
-                      {computeChanges(selectedLog).length === 0 ? (
-                        <div className="p-4 text-sm text-gray-500">No field-level changes detected.</div>
-                      ) : (
-                        computeChanges(selectedLog).map((c) => (
-                          <div key={c.key} className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
-                            <div>
-                              <div className="text-xs text-gray-500">{c.key.replace(/_/g, " ")}</div>
-                              <div className="mt-1 text-sm truncate text-red-700">{String(c.before ?? "(empty)")}</div>
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-500">New</div>
-                              <div className="mt-1 text-sm truncate text-green-700">{String(c.after ?? "(empty)")}</div>
-                            </div>
-                          </div>
-                        ))
+                    <div className="flex items-center gap-2">
+                      {getNavigationUrl(selectedLog) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(getNavigationUrl(selectedLog))}
+                          className="h-9"
+                        >
+                          <ChevronRight className="w-4 h-4 mr-2" /> View Record
+                        </Button>
                       )}
                     </div>
                   </div>
-                </div>
 
-                <div className="mt-6">
-                  <h5 className="text-sm font-medium">Notes / Raw</h5>
-                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-3 rounded border bg-gray-50 dark:bg-gray-900 text-sm text-gray-700 dark:text-gray-200">
-                      <div className="text-xs text-gray-500">Old data</div>
-                      <pre className="whitespace-pre-wrap text-xs mt-2 max-h-40 overflow-auto">{JSON.stringify(selectedLog.old_data || {}, null, 2)}</pre>
+                  {/* Content */}
+                  <div className="mt-6 space-y-6">
+                    {/* Summary */}
+                    {selectedLog.summary && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Summary</h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{selectedLog.summary}</p>
+                      </div>
+                    )}
+
+                    {/* Changes */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">
+                        Field Changes ({computeChanges(selectedLog).length})
+                      </h3>
+
+                      {computeChanges(selectedLog).length === 0 ? (
+                        <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/20 text-center">
+                          <p className="text-sm text-slate-500 dark:text-slate-400">No field-level changes detected</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {computeChanges(selectedLog).map((change) => (
+                            <div
+                              key={change.key}
+                              className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/20"
+                            >
+                              <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+                                {change.key.replace(/_/g, " ")}
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                    Previous
+                                  </div>
+                                  <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900">
+                                    <p className="text-sm text-rose-900 dark:text-rose-300 break-all">
+                                      {String(change.before ?? "(empty)")}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                    <ArrowRight className="w-3 h-3" />
+                                    Current
+                                  </div>
+                                  <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
+                                    <p className="text-sm text-emerald-900 dark:text-emerald-300 break-all">
+                                      {String(change.after ?? "(empty)")}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="p-3 rounded border bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200">
-                      <div className="text-xs text-gray-500">New data</div>
-                      <pre className="whitespace-pre-wrap text-xs mt-2 max-h-40 overflow-auto">{JSON.stringify(selectedLog.new_data || {}, null, 2)}</pre>
+
+                    {/* Metadata */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Metadata</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/20">
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Record ID</div>
+                          <div className="text-sm font-mono text-slate-900 dark:text-slate-100">
+                            {selectedLog.record_id || "—"}
+                          </div>
+                        </div>
+                        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/20">
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">IP Address</div>
+                          <div className="text-sm font-mono text-slate-900 dark:text-slate-100">{selectedLog.ip || "—"}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Raw Data */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Raw Data</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                          <div className="px-4 py-2 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Before</span>
+                          </div>
+                          <pre className="p-4 text-xs text-slate-700 dark:text-slate-300 overflow-auto max-h-64 bg-slate-50 dark:bg-slate-900/20">
+                            {JSON.stringify(selectedLog.old_data || {}, null, 2)}
+                          </pre>
+                        </div>
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                          <div className="px-4 py-2 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">After</span>
+                          </div>
+                          <pre className="p-4 text-xs text-slate-700 dark:text-slate-300 overflow-auto max-h-64 bg-slate-50 dark:bg-slate-900/20">
+                            {JSON.stringify(selectedLog.new_data || {}, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-              </div>
-            )}
-          </Card>
+              )}
+            </Card>
+          </div>
         </div>
       </div>
     </div>

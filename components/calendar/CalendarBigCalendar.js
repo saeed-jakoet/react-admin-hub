@@ -41,7 +41,7 @@ export default function CalendarBigCalendar({
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Business Overview
+                Schedule
               </h2>
               <p className="text-gray-600 dark:text-slate-400 text-sm">
                 {selectedClient && selectedOrderType

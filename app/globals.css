@@ -4,6 +4,8 @@
 
 @layer base {
   :root {
+    --autofill-bg: #fff;
+    --autofill-color: #1e293b;
     /* Light Mode - Modern & Professional */
     --background: 220 15% 97%;
     --foreground: 222 47% 11%;
@@ -74,6 +76,8 @@
   }
 
   .dark {
+    --autofill-bg: #1e293b;
+    --autofill-color: #fff;
     /* Dark Mode - Sleek & Contemporary */
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
@@ -395,4 +399,15 @@
       display: none !important;
     }
   }
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--autofill-bg, #fff) inset !important;
+  box-shadow: 0 0 0 1000px var(--autofill-bg, #fff) inset !important;
+  -webkit-text-fill-color: var(--autofill-color, #1e293b) !important;
+  color: var(--autofill-color, #1e293b) !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
