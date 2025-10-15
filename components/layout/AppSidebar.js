@@ -193,22 +193,20 @@ export function AppSidebar() {
           <div className="flex items-center h-full px-5">
             <div className="flex items-center gap-3">
               <div className="relative flex-shrink-0">
-                <div className="w-10 h-10 bg-slate-50 dark:bg-slate-900 rounded-xl flex items-center justify-center ring-1 ring-slate-200 dark:ring-slate-800 overflow-hidden">
                   <Image
                     src="/logo.svg"
                     alt="Logo"
-                    width={32}
-                    height={32}
+                    width={55}
+                    height={55}
                     className="object-contain"
                   />
-                </div>
               </div>
               <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap overflow-hidden">
                 <h1 className="text-base font-semibold text-slate-900 dark:text-slate-50 tracking-tight">
                   Fiber Africa
                 </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  Control Center
+                  Operations Center
                 </p>
               </div>
             </div>
