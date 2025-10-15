@@ -826,7 +826,7 @@ export default function ClientDetailPage({ params }) {
                               className="flex items-center justify-between text-sm"
                             >
                               <span
-                                className={`text-xs px-2 py-1 rounded ${getDropCableStatusColor(status, "class")}`}
+                                className="text-xs px-2 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                               >
                                 {formatStatusText(status)}
                               </span>

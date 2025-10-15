@@ -36,6 +36,7 @@ import { get, put, post, del } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { StaffDocumentViewer } from "@/components/staff/StaffDocumentViewer";
+import { normalizePhoneNumber } from "@/lib/utils/normalizePhoneNumber";
 import Header from "@/components/shared/Header";
 
 export default function StaffDetailPage({ params }) {
@@ -116,19 +117,6 @@ console.log(staffData);
     setEditing(false);
     setFormData({ ...staff });
   };
-
-  // Helper to normalize phone numbers to +27 format
-  function normalizePhoneNumber(num) {
-    if (!num) return "";
-    let n = num.trim();
-    if (n.startsWith("+27") && n.length === 12) return n;
-    if (n.startsWith("0") && n.length === 10) return "+27" + n.slice(1);
-    n = n.replace(/\D/g, "");
-    if (n.length === 9) return "+27" + n;
-    if (n.length === 10 && n.startsWith("0")) return "+27" + n.slice(1);
-    if (n.length === 11 && n.startsWith("27")) return "+" + n;
-    return num;
-  }
 
   const handleSave = async () => {
     try {

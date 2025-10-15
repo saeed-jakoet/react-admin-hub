@@ -14,8 +14,10 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Configure PDF.js worker - use explicit https and fallback
+if (typeof window !== 'undefined') {
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+}
 
 export default function TechnicianOrderDetail() {
   // Prevent zoom on mount
@@ -37,6 +39,7 @@ export default function TechnicianOrderDetail() {
   const [clientName, setClientName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [numPages, setNumPages] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [pageWidth, setPageWidth] = useState(0);
 
   const [pdfDimensions, setPdfDimensions] = useState({ width: 612, height: 792 });
@@ -135,31 +138,56 @@ export default function TechnicianOrderDetail() {
     };
   }, [pdfFile]);
 
-  // Handle drag/touch
+  // Deselect field when changing pages (if selected field is not on current page)
+  useEffect(() => {
+    if (selectedField) {
+      const field = fields.find(f => f.id === selectedField);
+      if (field && field.page !== currentPage) {
+        setSelectedField(null);
+      }
+    }
+  }, [currentPage, selectedField, fields]);
+
+  // Handle drag/touch with optimized performance
   useEffect(() => {
     if (!dragging || !pageWidth) return;
 
+    let animationFrameId = null;
+    let lastClientX = dragging.startX;
+    let lastClientY = dragging.startY;
+
     const handleMove = (clientX, clientY) => {
-      // Calculate the scale factor: rendered width / actual PDF width
-      const scale = pageWidth / pdfDimensions.width;
-      
-      // Calculate movement delta in screen pixels
-      const dx = (clientX - dragging.startX);
-      const dy = (clientY - dragging.startY);
-      
-      // Convert screen pixels to PDF points
-      const pdfDx = dx / scale;
-      const pdfDy = dy / scale;
-      
-      // Calculate new position in PDF coordinates
-      const newX = Math.max(0, Math.min(pdfDimensions.width - dragging.fieldWidth, dragging.originalX + pdfDx));
-      const newY = Math.max(0, Math.min(pdfDimensions.height - dragging.fieldHeight, dragging.originalY + pdfDy));
-      
-      setFields((prev) =>
-        prev.map((f) =>
-          f.id === dragging.fieldId ? { ...f, x: Math.round(newX), y: Math.round(newY) } : f
-        )
-      );
+      lastClientX = clientX;
+      lastClientY = clientY;
+
+      // Cancel any pending animation frame
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+
+      // Schedule update on next animation frame for smooth 60fps
+      animationFrameId = requestAnimationFrame(() => {
+        // Calculate the scale factor: rendered width / actual PDF width
+        const scale = pageWidth / pdfDimensions.width;
+        
+        // Calculate movement delta in screen pixels
+        const dx = (lastClientX - dragging.startX);
+        const dy = (lastClientY - dragging.startY);
+        
+        // Convert screen pixels to PDF points
+        const pdfDx = dx / scale;
+        const pdfDy = dy / scale;
+        
+        // Calculate new position in PDF coordinates
+        const newX = Math.max(0, Math.min(pdfDimensions.width - dragging.fieldWidth, dragging.originalX + pdfDx));
+        const newY = Math.max(0, Math.min(pdfDimensions.height - dragging.fieldHeight, dragging.originalY + pdfDy));
+        
+        setFields((prev) =>
+          prev.map((f) =>
+            f.id === dragging.fieldId ? { ...f, x: Math.round(newX), y: Math.round(newY) } : f
+          )
+        );
+      });
     };
 
     const handleMouseMove = (e) => handleMove(e.clientX, e.clientY);
@@ -168,7 +196,12 @@ export default function TechnicianOrderDetail() {
       const touch = e.touches[0];
       handleMove(touch.clientX, touch.clientY);
     };
-    const handleEnd = () => setDragging(null);
+    const handleEnd = () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      setDragging(null);
+    };
 
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleEnd);
@@ -176,6 +209,9 @@ export default function TechnicianOrderDetail() {
     document.addEventListener("touchend", handleEnd);
     
     return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleEnd);
       document.removeEventListener("touchmove", handleTouchMove);
@@ -183,32 +219,47 @@ export default function TechnicianOrderDetail() {
     };
   }, [dragging, pdfDimensions, pageWidth]);
 
-  // Handle resizing
+  // Handle resizing with optimized performance
   useEffect(() => {
     if (!resizing || !pageWidth) return;
 
+    let animationFrameId = null;
+    let lastClientX = resizing.startX;
+    let lastClientY = resizing.startY;
+
     const handleMove = (clientX, clientY) => {
-      // Calculate the scale factor
-      const scale = pageWidth / pdfDimensions.width;
+      lastClientX = clientX;
+      lastClientY = clientY;
 
-      // Calculate movement delta in screen pixels
-      const deltaX = (clientX - resizing.startX);
-      const deltaY = (clientY - resizing.startY);
-      
-      // Convert to PDF points
-      const pdfDeltaX = deltaX / scale;
-      const pdfDeltaY = deltaY / scale;
+      // Cancel any pending animation frame
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
 
-      const newWidth = Math.max(80, resizing.originalWidth + pdfDeltaX);
-      const newHeight = Math.max(30, resizing.originalHeight + pdfDeltaY);
+      // Schedule update on next animation frame for smooth 60fps
+      animationFrameId = requestAnimationFrame(() => {
+        // Calculate the scale factor
+        const scale = pageWidth / pdfDimensions.width;
 
-      setFields((prev) =>
-        prev.map((f) =>
-          f.id === resizing.fieldId
-            ? { ...f, width: Math.round(newWidth), height: Math.round(newHeight) }
-            : f
-        )
-      );
+        // Calculate movement delta in screen pixels
+        const deltaX = (lastClientX - resizing.startX);
+        const deltaY = (lastClientY - resizing.startY);
+        
+        // Convert to PDF points
+        const pdfDeltaX = deltaX / scale;
+        const pdfDeltaY = deltaY / scale;
+
+        const newWidth = Math.max(80, resizing.originalWidth + pdfDeltaX);
+        const newHeight = Math.max(30, resizing.originalHeight + pdfDeltaY);
+
+        setFields((prev) =>
+          prev.map((f) =>
+            f.id === resizing.fieldId
+              ? { ...f, width: Math.round(newWidth), height: Math.round(newHeight) }
+              : f
+          )
+        );
+      });
     };
 
     const handleMouseMove = (e) => handleMove(e.clientX, e.clientY);
@@ -217,7 +268,12 @@ export default function TechnicianOrderDetail() {
       const touch = e.touches[0];
       handleMove(touch.clientX, touch.clientY);
     };
-    const handleEnd = () => setResizing(null);
+    const handleEnd = () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      setResizing(null);
+    };
 
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleEnd);
@@ -225,6 +281,9 @@ export default function TechnicianOrderDetail() {
     document.addEventListener("touchend", handleEnd);
 
     return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleEnd);
       document.removeEventListener("touchmove", handleTouchMove);
@@ -241,6 +300,7 @@ export default function TechnicianOrderDetail() {
       width: 250,
       height: 40,
       value: "",
+      page: currentPage, // Track which page this field belongs to
     };
     setFields([...fields, newField]);
     setSelectedField(newField.id);
@@ -255,6 +315,7 @@ export default function TechnicianOrderDetail() {
       width: 250,
       height: 80,
       value: null,
+      page: currentPage, // Track which page this field belongs to
     };
     setFields([...fields, newField]);
     setSelectedField(newField.id);
@@ -346,12 +407,20 @@ export default function TechnicianOrderDetail() {
       const pdfBytes = await fetch(templateUrl).then((r) => r.arrayBuffer());
       const pdfDoc = await PDFDocument.load(pdfBytes);
       const pages = pdfDoc.getPages();
-      const lastPage = pages[pages.length - 1];
-      const { height: pageHeight } = lastPage.getSize();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
       // Draw fields - convert from screen coordinates to PDF coordinates
       for (const field of fields) {
+        // Get the correct page for this field (pages are 0-indexed, field.page is 1-indexed)
+        const pageIndex = (field.page || 1) - 1;
+        const page = pages[pageIndex];
+        if (!page) {
+          console.warn(`Field ${field.id} references non-existent page ${field.page}`);
+          continue;
+        }
+        
+        const { height: pageHeight } = page.getSize();
+        
         // PDF coordinates: (0,0) is bottom-left
         // Screen coordinates: (0,0) is top-left
         // field.x and field.y are already in PDF points
@@ -359,19 +428,16 @@ export default function TechnicianOrderDetail() {
         const pdfY = pageHeight - field.y - field.height;
         
         if (field.type === "text" && field.value) {
-          // Match the screen display exactly: text is shown with px-2 py-1 (8px left, 4px top)
-          // In PDF, text is drawn from baseline, not top-left
-          // We need to calculate where the baseline should be
-          const textPaddingX = 8; // matches px-2 in Tailwind
-          const textPaddingY = 4; // matches py-1 in Tailwind
+          // Draw text exactly where positioned - no padding offset
+          // PDF text is drawn from baseline, not top-left
           const fontSize = 12;
           
           // PDF text baseline positioning: 
-          // Start from bottom of field box, move up by height, then down by padding and font size
-          const textBaselineY = pdfY + field.height - fontSize - textPaddingY;
+          // Start from bottom of field box, move up by height, then down by font size
+          const textBaselineY = pdfY + field.height - fontSize;
           
-          lastPage.drawText(field.value, {
-            x: pdfX + textPaddingX,
+          page.drawText(field.value, {
+            x: pdfX,
             y: textBaselineY,
             size: fontSize,
             font,
@@ -381,31 +447,27 @@ export default function TechnicianOrderDetail() {
           const pngBytes = await fetch(field.value).then((r) => r.arrayBuffer());
           const pngImage = await pdfDoc.embedPng(pngBytes);
           
-          // Match screen display: signature has 2px padding, object-contain
-          const padding = 2;
-          const availableWidth = field.width - (padding * 2);
-          const availableHeight = field.height - (padding * 2);
-          
+          // Draw signature exactly where positioned - fit to field size with aspect ratio preserved
           const imgAspect = pngImage.width / pngImage.height;
-          const availableAspect = availableWidth / availableHeight;
+          const fieldAspect = field.width / field.height;
           
           let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
           
-          if (imgAspect > availableAspect) {
+          if (imgAspect > fieldAspect) {
             // Image is wider - fit to width
-            drawWidth = availableWidth;
-            drawHeight = availableWidth / imgAspect;
-            offsetY = (availableHeight - drawHeight) / 2;
+            drawWidth = field.width;
+            drawHeight = field.width / imgAspect;
+            offsetY = (field.height - drawHeight) / 2;
           } else {
             // Image is taller - fit to height
-            drawHeight = availableHeight;
-            drawWidth = availableHeight * imgAspect;
-            offsetX = (availableWidth - drawWidth) / 2;
+            drawHeight = field.height;
+            drawWidth = field.height * imgAspect;
+            offsetX = (field.width - drawWidth) / 2;
           }
           
-          lastPage.drawImage(pngImage, {
-            x: pdfX + padding + offsetX,
-            y: pdfY + padding + offsetY,
+          page.drawImage(pngImage, {
+            x: pdfX + offsetX,
+            y: pdfY + offsetY,
             width: drawWidth,
             height: drawHeight,
           });
@@ -474,7 +536,7 @@ export default function TechnicianOrderDetail() {
             >
               <div className="relative" ref={pageRef}>
                 <Page
-                  pageNumber={numPages || 1}
+                  pageNumber={currentPage}
                   width={pageWidth > 0 ? pageWidth : undefined}
                   renderTextLayer={false}
                   renderAnnotationLayer={false}
@@ -487,7 +549,9 @@ export default function TechnicianOrderDetail() {
                     height: '100%'
                   }}
                 >
-                  {fields.map((field) => {
+                  {fields
+                    .filter(field => field.page === currentPage) // Only show fields for current page
+                    .map((field) => {
                     const pageRect = pageRef.current?.getBoundingClientRect();
                     if (!pageRect || !pageWidth) return null;
                     
@@ -495,15 +559,30 @@ export default function TechnicianOrderDetail() {
                     const scale = pageWidth / pdfDimensions.width;
                     const isEditing = editingField === field.id;
                     
+                    // Show border only when selected, locked, editing, or field is empty
+                    const showBorder = !fieldsLocked && (
+                      selectedField === field.id || 
+                      isEditing || 
+                      dragging?.fieldId === field.id || 
+                      !field.value
+                    );
+                    
+                    const isDraggingThis = dragging?.fieldId === field.id;
+                    const isResizingThis = resizing?.fieldId === field.id;
+                    
                     return (
                       <div
                         key={field.id}
-                        className={`absolute border-2 rounded pointer-events-auto ${
+                        className={`absolute pointer-events-auto ${
+                          showBorder ? 'border-2 rounded' : 'border-none'
+                        } ${
                           selectedField === field.id
-                            ? "border-blue-600 bg-blue-500/30"
-                            : "border-blue-400 bg-blue-500/20"
-                        } ${dragging?.fieldId === field.id ? "shadow-lg" : ""} ${
-                          isEditing ? "ring-2 ring-blue-500" : ""
+                            ? "border-blue-600 bg-blue-500/10"
+                            : showBorder 
+                              ? "border-blue-400 bg-blue-500/5" 
+                              : ""
+                        } ${isDraggingThis ? "shadow-lg" : ""} ${
+                          isEditing ? "ring-2 ring-blue-500 bg-white" : ""
                         }`}
                         style={{
                           left: `${field.x * scale}px`,
@@ -512,6 +591,8 @@ export default function TechnicianOrderDetail() {
                           height: `${field.height * scale}px`,
                           userSelect: isEditing ? "text" : "none",
                           touchAction: isEditing ? "auto" : "none",
+                          willChange: isDraggingThis || isResizingThis ? 'transform, width, height' : 'auto',
+                          transition: isDraggingThis || isResizingThis ? 'none' : 'border-color 0.15s ease',
                         }}
                     onMouseDown={(e) => {
                       if (!isEditing && !fieldsLocked) {
@@ -556,13 +637,13 @@ export default function TechnicianOrderDetail() {
                             setEditingField(null);
                           }
                         }}
-                        className="w-full h-full px-2 bg-white border-none outline-none text-sm text-black"
-                        style={{ fontSize: "16px" }}
+                        className="w-full h-full bg-white border-none outline-none text-sm text-black"
+                        style={{ fontSize: "12px" }}
                         autoFocus
                       />
                     ) : field.type === "text" ? (
                       <div 
-                        className="text-black px-2 py-1 pointer-events-none flex items-start h-full overflow-hidden"
+                        className="text-black pointer-events-none flex items-start h-full overflow-hidden"
                         style={{ 
                           fontSize: '12px',
                           lineHeight: '12px',
@@ -576,7 +657,6 @@ export default function TechnicianOrderDetail() {
                         src={field.value} 
                         alt="Signature" 
                         className="w-full h-full object-contain pointer-events-none"
-                        style={{ padding: '2px' }}
                       />
                     ) : (
                       <div className="text-[10px] font-semibold text-blue-900 px-1 truncate pointer-events-none flex items-center justify-center h-full">
@@ -658,8 +738,31 @@ export default function TechnicianOrderDetail() {
         </button>
       </div>
 
-      {/* Bottom Submit Button */}
+      {/* Bottom Section - Page Navigation + Submit Button */}
       <div className="bg-white border-t border-gray-200 p-4 safe-bottom">
+        {/* Page Navigation - Centered above submit button */}
+        {numPages && numPages > 1 && (
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all text-sm font-medium"
+            >
+              ← Prev
+            </button>
+            <span className="text-sm font-medium text-gray-600 min-w-[100px] text-center">
+              Page {currentPage} of {numPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(numPages, prev + 1))}
+              disabled={currentPage === numPages}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all text-sm font-medium"
+            >
+              Next →
+            </button>
+          </div>
+        )}
+        
         <button
           onClick={submitForm}
           disabled={submitting || fields.length === 0}

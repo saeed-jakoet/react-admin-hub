@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { post, put } from "@/lib/api/fetcher";
+import { normalizePhoneNumber } from "@/lib/utils/normalizePhoneNumber";
 
 export function AddItemDialog({ open, onOpenChange, onSuccess, config, onBeforeSubmit, onError }) {
   const [currentStep, setCurrentStep] = useState(1);
@@ -44,19 +45,6 @@ export function AddItemDialog({ open, onOpenChange, onSuccess, config, onBeforeS
   const handlePrev = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
-
-  // Helper to normalize phone numbers to +27 format
-  function normalizePhoneNumber(num) {
-    if (!num) return "";
-    let n = num.trim();
-    if (n.startsWith("+27") && n.length === 12) return n;
-    if (n.startsWith("0") && n.length === 10) return "+27" + n.slice(1);
-    n = n.replace(/\D/g, "");
-    if (n.length === 9) return "+27" + n;
-    if (n.length === 10 && n.startsWith("0")) return "+27" + n.slice(1);
-    if (n.length === 11 && n.startsWith("27")) return "+" + n;
-    return num; // fallback, do not modify
-  }
 
   const handleSubmit = async () => {
     if (!validateStep(currentStep)) return;
