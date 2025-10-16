@@ -35,7 +35,7 @@ export default function FleetPage() {
     revalidateOnFocus: true,
     dedupingInterval: 60000,
   });
-  const fleet = fleetData?.data || [];
+  const fleet = useMemo(() => fleetData?.data || [], [fleetData]);
 
   // Example fleet stats (replace with real logic)
   // Example fleet stats (replace with real logic)

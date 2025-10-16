@@ -3,20 +3,43 @@
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { get, post } from "@/lib/api/fetcher";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/shared/Toast";
-import { Package, Plus, Minus, Search, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  Package,
+  Plus,
+  Minus,
+  Search,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 
-export default function InventoryUsageDialog({ open, onOpenChange, jobType, jobId, onSuccess }) {
+export default function InventoryUsageDialog({
+  open,
+  onOpenChange,
+  jobType,
+  jobId,
+  onSuccess,
+}) {
   const toast = useToast();
-  const { data, isLoading } = useSWR(open ? ["/inventory"] : null, () => get("/inventory"), {
-    revalidateOnFocus: false,
-  });
-  const inventory = data?.data || [];
+  const { data, isLoading } = useSWR(
+    open ? ["/inventory"] : null,
+    () => get("/inventory"),
+    {
+      revalidateOnFocus: false,
+    }
+  );
+  const inventory = useMemo(() => data?.data || [], [data]);
 
   const [search, setSearch] = useState("");
   const [selection, setSelection] = useState({}); // id -> { quantity, item_name, unit }
@@ -35,7 +58,9 @@ export default function InventoryUsageDialog({ open, onOpenChange, jobType, jobI
     const s = search.toLowerCase();
     return inventory.filter((i) =>
       [i.item_name, i.item_code, i.category, i.description].some((v) =>
-        String(v || "").toLowerCase().includes(s)
+        String(v || "")
+          .toLowerCase()
+          .includes(s)
       )
     );
   }, [inventory, search]);
@@ -56,16 +81,23 @@ export default function InventoryUsageDialog({ open, onOpenChange, jobType, jobI
   const handleQuantityChange = (itemId, delta) => {
     const item = inventory.find((i) => i.id === itemId);
     if (!item) return;
-    
+
     setSelection((prev) => {
-      const current = prev[itemId] || { quantity: 0, item_name: item.item_name, unit: item.unit };
-      const newQty = Math.max(0, Math.min(item.quantity, Number(current.quantity || 0) + delta));
-      
+      const current = prev[itemId] || {
+        quantity: 0,
+        item_name: item.item_name,
+        unit: item.unit,
+      };
+      const newQty = Math.max(
+        0,
+        Math.min(item.quantity, Number(current.quantity || 0) + delta)
+      );
+
       if (newQty === 0) {
         const { [itemId]: _, ...rest } = prev;
         return rest;
       }
-      
+
       return {
         ...prev,
         [itemId]: {
@@ -79,9 +111,12 @@ export default function InventoryUsageDialog({ open, onOpenChange, jobType, jobI
   const handleQuantityInput = (itemId, value) => {
     const item = inventory.find((i) => i.id === itemId);
     if (!item) return;
-    
-    const numValue = value === "" ? "" : Math.max(0, Math.min(item.quantity, Number(value) || 0));
-    
+
+    const numValue =
+      value === ""
+        ? ""
+        : Math.max(0, Math.min(item.quantity, Number(value) || 0));
+
     setSelection((prev) => ({
       ...prev,
       [itemId]: {
@@ -103,32 +138,35 @@ export default function InventoryUsageDialog({ open, onOpenChange, jobType, jobI
           unit: v && v.unit,
         }))
         .filter((x) => x.quantity > 0);
-      
+
       if (items.length === 0) {
-        toast.warning("No items selected", "Please enter at least one usage quantity.");
+        toast.warning(
+          "No items selected",
+          "Please enter at least one usage quantity."
+        );
         setSaving(false);
         return;
       }
-      
+
       if (!jobId) {
         toast.error("Missing job", "Job ID is required to apply usage.");
         setSaving(false);
         return;
       }
-      
+
       const payload = { jobType: jobType, jobId, items };
       console.log("Applying inventory usage:", payload);
-      
+
       const res = await post("/inventory/usage", payload);
       console.log("Response:", res);
-      
+
       // Check for success in response
       if (res && res.success !== false) {
         // Call onSuccess callback (parent will show toast)
         if (onSuccess) {
           onSuccess(res.data || res);
         }
-        
+
         // Close dialog
         onOpenChange(false);
       } else {
@@ -176,7 +214,8 @@ export default function InventoryUsageDialog({ open, onOpenChange, jobType, jobI
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   <span className="font-medium text-slate-900 dark:text-white">
-                    {selectedItems.length} item{selectedItems.length !== 1 ? "s" : ""} selected
+                    {selectedItems.length} item
+                    {selectedItems.length !== 1 ? "s" : ""} selected
                   </span>
                 </div>
                 <div className="flex gap-2 flex-wrap">
@@ -211,8 +250,9 @@ export default function InventoryUsageDialog({ open, onOpenChange, jobType, jobI
                   const selected = selection[item.id];
                   const qty = Number(selected?.quantity || 0);
                   const isSelected = qty > 0;
-                  const lowStock = item.quantity <= (item.minimum_quantity || 0);
-                  
+                  const lowStock =
+                    item.quantity <= (item.minimum_quantity || 0);
+
                   return (
                     <div
                       key={item.id}
@@ -232,17 +272,24 @@ export default function InventoryUsageDialog({ open, onOpenChange, jobType, jobI
                                 {item.item_name}
                               </h4>
                               {lowStock && (
-                                <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/20">
+                                <Badge
+                                  variant="outline"
+                                  className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/20"
+                                >
                                   Low Stock
                                 </Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
-                              {item.item_code && <span>Code: {item.item_code}</span>}
+                              {item.item_code && (
+                                <span>Code: {item.item_code}</span>
+                              )}
                               {item.category && (
                                 <>
                                   <span>•</span>
-                                  <span className="capitalize">{item.category}</span>
+                                  <span className="capitalize">
+                                    {item.category}
+                                  </span>
                                 </>
                               )}
                             </div>
@@ -251,10 +298,16 @@ export default function InventoryUsageDialog({ open, onOpenChange, jobType, jobI
 
                         {/* Stock info */}
                         <div className="text-center flex-shrink-0">
-                          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">In Stock</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                            In Stock
+                          </div>
                           <Badge
                             variant="outline"
-                            className={lowStock ? "border-amber-300 text-amber-700 dark:text-amber-400" : ""}
+                            className={
+                              lowStock
+                                ? "border-amber-300 text-amber-700 dark:text-amber-400"
+                                : ""
+                            }
                           >
                             {item.quantity ?? 0} {item.unit || "units"}
                           </Badge>
@@ -278,7 +331,9 @@ export default function InventoryUsageDialog({ open, onOpenChange, jobType, jobI
                             placeholder="0"
                             className="w-20 text-center"
                             value={selected?.quantity || ""}
-                            onChange={(e) => handleQuantityInput(item.id, e.target.value)}
+                            onChange={(e) =>
+                              handleQuantityInput(item.id, e.target.value)
+                            }
                           />
                           <Button
                             variant="outline"
@@ -313,13 +368,18 @@ export default function InventoryUsageDialog({ open, onOpenChange, jobType, jobI
               <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>
-                  {selectedItems.length} item{selectedItems.length !== 1 ? "s" : ""} ready to apply
+                  {selectedItems.length} item
+                  {selectedItems.length !== 1 ? "s" : ""} ready to apply
                 </span>
               </div>
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={saving}
+            >
               Cancel
             </Button>
             <Button

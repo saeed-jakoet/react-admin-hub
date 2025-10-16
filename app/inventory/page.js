@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { get } from "@/lib/api/fetcher";
-import useSWR, { mutate } from 'swr';
+import useSWR, { mutate } from "swr";
 import { AddInventoryDialog } from "@/components/inventory/AddInventoryDialog";
 import { InventoryGridView } from "@/components/inventory/InventoryGridView";
 import { Loader } from "@/components/shared/Loader";
@@ -41,14 +41,15 @@ export default function InventoryPage() {
   const toast = useToast();
 
   // SWR for inventory
-  const { data: inventoryData, isLoading: loading, error } = useSWR(
-    ['/inventory'],
-    () => get('/inventory'),
-    { revalidateOnFocus: true, dedupingInterval: 60000 }
-  );
-  const inventory = inventoryData?.data || [];
-
-
+  const {
+    data: inventoryData,
+    isLoading: loading,
+    error,
+  } = useSWR(["/inventory"], () => get("/inventory"), {
+    revalidateOnFocus: true,
+    dedupingInterval: 60000,
+  });
+  const inventory = useMemo(() => inventoryData?.data || [], [inventoryData]);
 
   // Stock status calculations
   const stockStats = useMemo(() => {
@@ -336,7 +337,9 @@ export default function InventoryPage() {
     return <Loader variant="bars" text="Loading inventory system..." />;
   if (error) {
     toast.error("Error", "Failed to load inventory data.");
-    return <div className="p-8 text-red-600">Failed to load inventory data.</div>;
+    return (
+      <div className="p-8 text-red-600">Failed to load inventory data.</div>
+    );
   }
 
   return (

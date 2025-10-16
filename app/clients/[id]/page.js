@@ -59,7 +59,7 @@ export default function ClientDetailPage({ params }) {
     () => get(`/drop-cable/client/${resolvedParams.id}`),
     { revalidateOnFocus: true, dedupingInterval: 60000 }
   );
-  const dropCableJobs = jobsData?.data || [];
+  const dropCableJobs = useMemo(() => jobsData?.data || [], [jobsData]);
   const localStorageKey = `client-${resolvedParams.id}-activeTab`;
   const [activeTab, setActiveTabState] = useState(() => {
     if (typeof window !== "undefined") {

@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, Plus, MapPin, UserCheck, Activity, Zap } from "lucide-react";
-import { mockTeams, mockStaff, mockRegions } from "@/lib/mock-data";
+// import { mockTeams, mockStaff, mockRegions } from "@/lib/mock-data";
 
 export default function TeamsPage() {
-  const [teams] = React.useState(mockTeams);
+  // const [teams] = React.useState(mockTeams);
 
   return (
     <div className="flex items-center justify-center mt-10">

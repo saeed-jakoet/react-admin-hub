@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Calendar,
   FileText,
-  Truck,
   X,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";

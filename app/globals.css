@@ -411,3 +411,26 @@ input:-webkit-autofill:active {
   color: var(--autofill-color, #1e293b) !important;
   transition: background-color 5000s ease-in-out 0s;
 }
+
+/* Custom styles for react-big-calendar off-range days using Tailwind palette */
+.rbc-off-range-bg {
+  background: #f1f5f9 !important; /* Tailwind slate-100 */
+}
+.rbc-off-range {
+  color: #9ca3af !important; /* Tailwind slate-400 */
+}
+html.dark .rbc-off-range-bg {
+  background: #1e293b !important; /* Tailwind slate-800 */
+}
+html.dark .rbc-off-range {
+  color: #64748b !important; /* Tailwind slate-500 */
+}
+
+/* Highlight current day in react-big-calendar for dark mode */
+html.dark .rbc-today {
+  background: #334155 !important; /* Tailwind slate-700 */
+}
+html.dark .rbc-today .rbc-date-cell {
+  color: #f1f5f9 !important; /* Tailwind slate-100 */
+  font-weight: bold;
+}

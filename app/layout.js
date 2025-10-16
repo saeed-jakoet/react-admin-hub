@@ -10,12 +10,13 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title: "Fibre Command Center",
   description: "Mission-critical command center for fibre infrastructure operations",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({ children }) {

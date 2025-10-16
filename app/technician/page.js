@@ -81,8 +81,7 @@ export default function TechnicianDashboard() {
     if (user?.id && !profileData) {
       fetchProfile();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, profileData]);
 
   // Fetch orders once when profile is loaded
   useEffect(() => {
@@ -107,8 +106,7 @@ export default function TechnicianDashboard() {
     if (profileData?.id) {
       fetchOrders();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileData?.id]);
+  }, [profileData, profileData?.id]);
 
   const handleLogout = async () => {
     await logout();

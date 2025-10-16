@@ -49,8 +49,8 @@ export default function ClientsPage() {
     revalidateOnFocus: true,
     dedupingInterval: 60000,
   });
-  const clients = clientsData?.data || [];
 
+  const clients = useMemo(() => clientsData?.data || [], [clientsData]);
   // Client stats calculations
   const clientStats = useMemo(() => {
     if (!clients.length)

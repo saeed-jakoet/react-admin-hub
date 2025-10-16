@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Type, PenTool, Trash2, Check, X } from "lucide-react";
@@ -653,10 +654,14 @@ export default function TechnicianOrderDetail() {
                         {field.value || "Tap to type"}
                       </div>
                     ) : field.type === "signature" && field.value ? (
-                      <img 
-                        src={field.value} 
-                        alt="Signature" 
+                      <Image
+                        src={field.value}
+                        alt="Signature"
+                        width={250}
+                        height={80}
                         className="w-full h-full object-contain pointer-events-none"
+                        unoptimized
+                        priority={false}
                       />
                     ) : (
                       <div className="text-[10px] font-semibold text-blue-900 px-1 truncate pointer-events-none flex items-center justify-center h-full">

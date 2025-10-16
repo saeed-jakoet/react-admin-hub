@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { get } from "@/lib/api/fetcher";
-import useSWR, { mutate } from 'swr';
+import useSWR, { mutate } from "swr";
 import { AddStaffDialog } from "@/components/staff/AddStaffDialog";
 import { useToast } from "@/components/shared/Toast";
 import { StaffGridView } from "@/components/staff/StaffGridView";
@@ -51,12 +51,15 @@ export default function StaffPage() {
   const router = useRouter();
   const { user } = useAuth();
   // SWR for staff
-  const { data: staffData, isLoading: loading, error } = useSWR(
-    ['/staff'],
-    () => get('/staff'),
-    { revalidateOnFocus: true, dedupingInterval: 60000 }
-  );
-  const staff = staffData?.data || [];
+  const {
+    data: staffData,
+    isLoading: loading,
+    error,
+  } = useSWR(["/staff"], () => get("/staff"), {
+    revalidateOnFocus: true,
+    dedupingInterval: 60000,
+  });
+  const staff = useMemo(() => staffData?.data || [], [staffData]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [viewMode, setViewModeState] = useState(() => {
     if (typeof window !== "undefined") {
@@ -73,8 +76,6 @@ export default function StaffPage() {
       localStorage.setItem("staffViewMode", mode);
     }
   }, []);
-
-
 
   // Staff stats calculations
   const staffStats = useMemo(() => {

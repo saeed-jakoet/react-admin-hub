@@ -53,7 +53,7 @@ export default function DropCablePage() {
     () => get(`/drop-cable/client/${clientId}`),
     { revalidateOnFocus: true, dedupingInterval: 60000 }
   );
-  const jobs = jobsData?.data || [];
+  const jobs = useMemo(() => jobsData?.data || [], [jobsData]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
