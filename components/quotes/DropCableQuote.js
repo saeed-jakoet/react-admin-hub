@@ -5,7 +5,9 @@ import { Card } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, Eye, Loader2 } from "lucide-react";
 import html2canvas from "html2canvas";
+
 import jsPDF from "jspdf";
+import { getDueDateForWeek } from "@/lib/utils/dueDateForWeek";
 
 export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
   const quoteRef = useRef(null);
@@ -86,16 +88,12 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
 
   const total = quoteData.items.reduce((sum, item) => sum + (item.total || 0), 0);
 
-  const currentDate = new Date().toLocaleDateString("en-US", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).toUpperCase();
 
-  // Calculate expiration date (30 days from now)
-  const expirationDate = new Date();
-  expirationDate.setDate(expirationDate.getDate() + 30);
-  const expirationFormatted = expirationDate.toLocaleDateString("en-US", {
+  // Calculate due date: last day of the month for the selected week
+  const weekNumber = quoteData.week;
+  const year = new Date().getFullYear();
+  const dueDateObj = getDueDateForWeek(weekNumber, year);
+  const dueDateFormatted = dueDateObj.toLocaleDateString("en-US", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -154,7 +152,7 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
 
         {/* Quote Content */}
         <div className="p-8 overflow-y-auto max-h-[calc(100vh-200px)] flex justify-center bg-gray-100">
-          <div ref={quoteRef} className="bg-white shadow-lg" style={{ width: "210mm", padding: "12mm" }}>
+          <div ref={quoteRef} className="bg-white shadow-lg" style={{ width: "220mm", padding: "12mm" }}>
             {/* Company Header */}
             <div className="flex items-start justify-between mb-4 pb-3 border-b-2 border-blue-600">
               <div className="flex-1">
@@ -197,12 +195,8 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
                   <p className="text-xs text-gray-500 uppercase mb-2">Quote Details</p>
                   <div className="space-y-1.5">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Date:</span>
-                      <span className="font-semibold text-gray-900">{currentDate}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Valid Until:</span>
-                      <span className="font-semibold text-gray-900">{expirationFormatted}</span>
+                      <span className="text-gray-600">Due Date:</span>
+                      <span className="font-semibold text-gray-900">{dueDateFormatted}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Manager:</span>
@@ -225,17 +219,18 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
               <table className="w-full border-collapse border border-gray-300" style={{ fontSize: "9px" }}>
                 <thead>
                   <tr className="bg-blue-900 text-white">
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-left font-semibold">No</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-left font-semibold">Circuit</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-left font-semibold">Site B</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-left font-semibold">County</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-left font-semibold">PM</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-right font-semibold">Dist</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-right font-semibold">Survey</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-right font-semibold">Callout</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-right font-semibold">Install</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-right font-semibold">Mouse</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-right font-semibold bg-blue-800">Total</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">No</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Circuit</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Site B</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">County</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">PM</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Dist</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Survey</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Callout</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Install</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Mousepad</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Misc</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold bg-blue-800">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -244,14 +239,15 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
                       <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">{index + 1}</td>
                       <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700 font-medium">{item.circuit_number}</td>
                       <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">{item.site_b_name}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">{item.county || "-"}</td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">{item.county === "tablebay" ? "Table Bay" : item.county || "-"}</td>
                       <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">{item.pm || "-"}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-right text-gray-700">{item.distance || 0}m</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-right text-gray-700">{formatCurrency(item.survey_planning_cost || 0)}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-right text-gray-700">{formatCurrency(item.callout_cost || 0)}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-right text-gray-700">{formatCurrency(item.installation_cost || 0)}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-right text-gray-700">{formatCurrency(item.mousepad_cost || 0)}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-right font-bold text-gray-900 bg-blue-50">{formatCurrency(item.total)}</td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">{item.distance || 0}m</td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">{formatCurrency(item.survey_planning_cost || 0)}</td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">{formatCurrency(item.callout_cost || 0)}</td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">{formatCurrency(item.installation_cost || 0)}</td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">{formatCurrency(item.mousepad_cost || 0)}</td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">{formatCurrency(item.additional_cost || 0)}</td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center font-bold text-gray-900 bg-blue-50">{formatCurrency(item.total)}</td>
                     </tr>
                   ))}
                 </tbody>

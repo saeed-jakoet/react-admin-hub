@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar as LucideCalendar } from "lucide-react";
 import { Loader } from "@/components/shared/Loader";
+import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
 
 export default function CalendarBigCalendar({
   localizer,
@@ -31,6 +32,57 @@ export default function CalendarBigCalendar({
   formatStatusText,
   transformOrdersToEvents,
 }) {
+  // Color mapping function for event types using dropCableColors
+  const getEventColorByType = (eventType, status) => {
+    // Normalize the eventType/status to snake_case for lookup
+    let colorKey = eventType || status || "";
+
+    // If eventType is a description like "As-Built Submitted", normalize it
+    if (typeof colorKey === "string") {
+      colorKey = colorKey
+        .toLowerCase()
+        .trim()
+        .replace(/[\s-]+/g, "_")
+        .replace(/[^a-z0-9_]/g, "");
+    }
+
+    // Get color from dropCableColors - it will handle the normalization
+    const hexColor = getDropCableStatusColor(colorKey, "hex");
+
+    // Darken the color slightly for border
+    const darkenColor = (hex) => {
+      const num = parseInt(hex.replace("#", ""), 16);
+      const r = Math.max(0, ((num >> 16) & 0xff) - 30);
+      const g = Math.max(0, ((num >> 8) & 0xff) - 30);
+      const b = Math.max(0, (num & 0xff) - 30);
+      return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    };
+
+    return {
+      backgroundColor: hexColor,
+      borderColor: darkenColor(hexColor),
+      color: "#ffffff",
+    };
+  };
+
+  // Create a wrapper for eventPropGetter that uses event type-based colors
+  const eventPropGetterWrapper = (event) => {
+    const order = event.resource;
+    const colors = getEventColorByType(order?.eventType, order?.status);
+
+    return {
+      style: {
+        backgroundColor: colors.backgroundColor,
+        borderColor: colors.borderColor,
+        color: colors.color,
+        borderWidth: "2px",
+        borderStyle: "solid",
+        borderRadius: "6px",
+        boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
+      },
+    };
+  };
+
   return (
     <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-lg rounded-2xl overflow-hidden">
       <div className="p-6 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
@@ -109,27 +161,43 @@ export default function CalendarBigCalendar({
             </select>
           </div>
         </div>
-        {/* Status Legend */}
-        <div className="mt-6 flex flex-wrap gap-2">
-          {Object.entries(statusColors)
-            .filter(
-              ([key]) => key !== "default" && uniqueStatuses.includes(key)
-            )
-            .slice(0, 8)
-            .map(([status, color]) => (
+        {/* Event Type Legend */}
+        <div className="mt-6">
+          <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">
+            Event Types
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {[
+              {
+                label: "Installation Completed",
+                key: "installation_completed",
+              },
+              {
+                label: "Installation Scheduled",
+                key: "installation_scheduled",
+              },
+              { label: "Survey Scheduled", key: "survey_scheduled" },
+              { label: "Survey Completed", key: "survey_completed" },
+              { label: "As-Built Submitted", key: "as_built_submitted" },
+              { label: "LLA Required", key: "lla_required" },
+              { label: "LLA Received", key: "lla_received" },
+            ].map(({ label, key }) => (
               <div
-                key={status}
+                key={key}
                 className="flex items-center space-x-2 bg-gray-50 dark:bg-slate-700 rounded-lg px-3 py-1.5"
               >
                 <div
                   className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: color }}
+                  style={{
+                    backgroundColor: getDropCableStatusColor(key, "hex"),
+                  }}
                 ></div>
                 <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
-                  {formatStatusText(status)}
+                  {label}
                 </span>
               </div>
             ))}
+          </div>
         </div>
       </div>
       <div className="p-6 bg-gray-50 dark:bg-slate-900/50">
@@ -183,7 +251,7 @@ export default function CalendarBigCalendar({
                 onNavigate={handleNavigate}
                 onView={handleViewChange}
                 onSelectEvent={handleEventClick}
-                eventPropGetter={getEventProp}
+                eventPropGetter={eventPropGetterWrapper}
                 style={{ height: "100%" }}
                 className="premium-calendar"
                 views={["month", "week", "day", "agenda"]}
@@ -233,23 +301,35 @@ ${order.pm ? `PM: ${order.pm}` : ""}
 
 Click to edit this job`;
 
+                    // Determine dot color based on event type using dropCableColors
+                    const getEventDotColor = () => {
+                      // Use eventType first, fallback to status
+                      let colorKey = order.eventType || order.status || "";
+
+                      // Normalize to snake_case for lookup
+                      if (typeof colorKey === "string") {
+                        colorKey = colorKey
+                          .toLowerCase()
+                          .trim()
+                          .replace(/[\s-]+/g, "_")
+                          .replace(/[^a-z0-9_]/g, "");
+                      }
+
+                      // Get hex color from dropCableColors
+                      const hexColor = getDropCableStatusColor(colorKey, "hex");
+                      return hexColor;
+                    };
+
                     return (
                       <div
                         className="group relative text-xs font-semibold px-2 py-1 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:z-20 w-full flex items-center"
                         title={tooltipText}
                       >
                         <div className="flex items-center gap-1.5 w-full">
-                          {/* Status indicator dot */}
+                          {/* Event type indicator dot */}
                           <div
-                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 shadow-sm ${
-                              order.status === "completed"
-                                ? "bg-emerald-400"
-                                : order.status === "in_progress"
-                                  ? "bg-blue-400"
-                                  : order.status === "pending"
-                                    ? "bg-amber-400"
-                                    : "bg-slate-400"
-                            }`}
+                            className="w-1.5 h-1.5 rounded-full flex-shrink-0 shadow-sm"
+                            style={{ backgroundColor: getEventDotColor() }}
                           />
 
                           {/* Event title */}

@@ -57,9 +57,11 @@ export default function DropCablePage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [weekFilter, setWeekFilter] = useState("all");
   const [editFormData, setEditFormData] = useState({});
   const [saving, setSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   // New Job Modal State
   const [newJobModalOpen, setNewJobModalOpen] = useState(false);
@@ -164,6 +166,12 @@ export default function DropCablePage() {
     return [...new Set(statuses)];
   }, [jobs]);
 
+  // Get unique weeks for filter
+  const uniqueWeeks = useMemo(() => {
+    const weeks = jobs.map((job) => job.week).filter(Boolean);
+    return [...new Set(weeks)].sort();
+  }, [jobs]);
+
   // Filter jobs based on search term and status
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
@@ -181,9 +189,11 @@ export default function DropCablePage() {
       const matchesStatus =
         statusFilter === "all" || job.status === statusFilter;
 
-      return matchesSearch && matchesStatus;
+      const matchesWeek = weekFilter === "all" || job.week === weekFilter;
+
+      return matchesSearch && matchesStatus && matchesWeek;
     });
-  }, [jobs, searchTerm, statusFilter]);
+  }, [jobs, searchTerm, statusFilter, weekFilter]);
 
   // Export columns configuration
   const exportColumns = [
@@ -653,11 +663,18 @@ export default function DropCablePage() {
             exportColumns={exportColumns}
             exportFilename="drop-cable-jobs"
             exportTitle="Export"
+            weekFilterEnabled={true}
+            weeks={uniqueWeeks}
+            weekFilter={weekFilter}
+            onWeekFilterChange={setWeekFilter}
             statusFilterEnabled={true}
             statuses={uniqueStatuses}
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
             formatStatus={formatDropCableStatus}
+            pageIndex={pagination.pageIndex}
+            pageSize={pagination.pageSize}
+            onPaginationChange={setPagination}
           />
         </div>
       </div>

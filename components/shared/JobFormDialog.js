@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import {useEffect, useState} from "react";
 import {
   Dialog,
   DialogContent,
@@ -72,23 +72,27 @@ export default function JobFormDialog({
     return initialData;
   };
 
-  const [formData, setFormData] = React.useState(getInitialData);
-  const [internalSaving, setInternalSaving] = React.useState(false);
-  const [errorMsg, setErrorMsg] = React.useState("");
+  const [formData, setFormData] = useState(getInitialData);
+  const [internalSaving, setInternalSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  // Install completion percent override (0-100)
+  const [installPercentEnabled, setInstallPercentEnabled] = useState(
+    Boolean(jobData?.install_completion_percent)
+  );
   // New note input (used in edit mode to append without overwriting)
-  const [newNote, setNewNote] = React.useState("");
+  const [newNote, setNewNote] = useState("");
   // Add week state
-  const [week, setWeek] = React.useState(jobData?.week || "");
+  const [week, setWeek] = useState(jobData?.week || "");
   
   // Technician state
-  const [technicians, setTechnicians] = React.useState([]);
-  const [loadingTechnicians, setLoadingTechnicians] = React.useState(false);
-  const [selectedTechnicianId, setSelectedTechnicianId] = React.useState(jobData?.technician_id || "");
+  const [technicians, setTechnicians] = useState([]);
+  const [loadingTechnicians, setLoadingTechnicians] = useState(false);
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState(jobData?.technician_id || "");
 
   const saving = externalSaving || internalSaving;
 
   // Fetch technicians from /staff
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchTechnicians = async () => {
       try {
         setLoadingTechnicians(true);
@@ -114,7 +118,7 @@ export default function JobFormDialog({
   }, [open, toastError]);
 
   // Update form data when jobData changes (edit mode)
-  React.useEffect(() => {
+  useEffect(() => {
     if (mode === "edit" && jobData) {
       setFormData({ ...jobData });
       setNewNote("");
@@ -124,7 +128,7 @@ export default function JobFormDialog({
   }, [jobData, mode]);
 
   // Update client name when prop changes (create mode)
-  React.useEffect(() => {
+  useEffect(() => {
     if (mode === "create" && clientName && clientName !== formData.client) {
       setFormData((prev) => ({
         ...prev,
@@ -144,14 +148,33 @@ export default function JobFormDialog({
         .replace(/(\..*)\./g, "$1");
       value = cleaned;
     }
-    if (field === "additonal_cost_reason" && typeof value === "string") {
-      value = value.replace(/\s+/g, " ").trim();
-    }
+    // Do not collapse or trim whitespace for additonal_cost_reason
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
+
+  // Keep local flag in sync if editing an existing job with a value
+  useEffect(() => {
+    if (mode === "edit" && jobData) {
+      setInstallPercentEnabled(Boolean(jobData.install_completion_percent));
+    }
+  }, [mode, jobData]);
+
+  // Ensure installation is enabled if user enables the completion % override
+  useEffect(() => {
+    if (installPercentEnabled && !Boolean(formData.installation)) {
+      setFormData((prev) => ({ ...prev, installation: true }));
+    }
+  }, [installPercentEnabled]);
+
+  // If user unchecks Installation, disable the completion % override to avoid confusion
+  useEffect(() => {
+    if (!Boolean(formData.installation) && installPercentEnabled) {
+      setInstallPercentEnabled(false);
+    }
+  }, [formData.installation]);
 
   const handleTechnicianChange = (technicianId) => {
     setSelectedTechnicianId(technicianId);
@@ -322,6 +345,17 @@ export default function JobFormDialog({
 
     // When submitting, include week in the payload
     if (week) payload.week = week;
+
+    // Include install completion percent if enabled; coerce 0-100
+    if (installPercentEnabled) {
+      const raw = Number(formData.install_completion_percent);
+      if (!Number.isNaN(raw)) {
+        payload.install_completion_percent = Math.max(0, Math.min(100, raw));
+      }
+    } else {
+      // Explicitly clear if user disabled it in edit mode
+      if (mode === "edit") payload.install_completion_percent = null;
+    }
 
     // Include technician_id if selected
     if (selectedTechnicianId) {
@@ -903,6 +937,50 @@ export default function JobFormDialog({
                         : f.name !== "status" && f.name !== "notes",
                     )
                     ?.map(renderField)}
+
+                  {/* Show installation completion % only in Services section */}
+                  {jobConfig.apiEndpoint === "/drop-cable" && 
+                   section.title === "Services" && (
+                    <div className="space-y-2 col-span-full">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Installation Completion Override
+                      </Label>
+                      <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+                        <input
+                          type="checkbox"
+                          checked={installPercentEnabled}
+                          onChange={(e) => setInstallPercentEnabled(e.target.checked)}
+                          className="h-5 w-5 rounded border-gray-300 text-blue-600 mt-0.5"
+                        />
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step="1"
+                              disabled={!installPercentEnabled}
+                              value={formData.install_completion_percent || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "install_completion_percent",
+                                  e.target.value === "" ? "" : parseInt(e.target.value)
+                                )
+                              }
+                              placeholder="e.g. 60"
+                              className="w-32 h-10"
+                            />
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              % of installation completed
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            If the installation wasn't completed 100%, enter the completion percentage here. Leave unchecked to bill full installation amount.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
             );
