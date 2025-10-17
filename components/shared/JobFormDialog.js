@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Save, RefreshCw, Plus, AlertCircle, UserCircle } from "lucide-react";
+import { X, Save, RefreshCw, Plus, AlertCircle, UserCircle, LogIn } from "lucide-react";
 import { post, put, get } from "@/lib/api/fetcher";
 import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
 import { useToast } from "@/components/shared/Toast";
@@ -62,6 +62,8 @@ export default function JobFormDialog({
       section.fields?.forEach((field) => {
         if (field.defaultValue !== undefined) {
           initialData[field.name] = field.defaultValue;
+        } else if (field.type === "checkbox") {
+          initialData[field.name] = false;
         } else {
           initialData[field.name] = "";
         }
@@ -133,6 +135,18 @@ export default function JobFormDialog({
 
   const handleInputChange = (field, value) => {
     if (errorMsg) setErrorMsg("");
+    // Sanitize additional cost fields
+    if (field === "additonal_cost") {
+      // Keep digits and a single dot, strip whitespace
+      const cleaned = String(value)
+        .replace(/\s+/g, "")
+        .replace(/[^0-9.]/g, "")
+        .replace(/(\..*)\./g, "$1");
+      value = cleaned;
+    }
+    if (field === "additonal_cost_reason" && typeof value === "string") {
+      value = value.replace(/\s+/g, " ").trim();
+    }
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -241,7 +255,13 @@ export default function JobFormDialog({
 
       let value = formData[name];
 
-      // Skip empty/undefined/null values
+      // For checkboxes (boolean), always include explicit true/false.
+      if (fieldConfig?.type === "checkbox") {
+        payload[name] = Boolean(value);
+        continue;
+      }
+
+      // Skip empty/undefined/null values for other field types
       if (value === "" || value === null || typeof value === "undefined") {
         continue;
       }
@@ -264,7 +284,7 @@ export default function JobFormDialog({
 
       // Coerce by type
       if (fieldConfig?.type === "number") {
-        const n = parseInt(value);
+        const n = name === "additonal_cost" ? parseFloat(value) : parseInt(value);
         if (!Number.isNaN(n)) value = n;
         else continue; // drop invalid numbers
       }
@@ -354,6 +374,7 @@ export default function JobFormDialog({
       if (mode === "create") {
         result = await post(jobConfig.apiEndpoint, payload);
       } else {
+        console.log(payload)
         result = await put(jobConfig.apiEndpoint, payload);
       }
 
@@ -443,6 +464,21 @@ export default function JobFormDialog({
       }
 
       switch (field.type) {
+        case "checkbox":
+          return (
+            <label className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer group">
+              <input
+                id={fieldId}
+                type="checkbox"
+                checked={Boolean(formData[field.name])}
+                onChange={(e) => handleInputChange(field.name, e.target.checked)}
+                className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+              />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100">
+                {field.checkboxLabel || field.label}
+              </span>
+            </label>
+          );
         case "select":
           return (
             <select
@@ -478,6 +514,22 @@ export default function JobFormDialog({
           );
 
         case "number":
+          // Allow decimals for additonal_cost
+          if (field.name === "additonal_cost") {
+            return (
+              <Input
+                id={fieldId}
+                type="number"
+                step="any"
+                value={value}
+                onChange={(e) =>
+                  handleInputChange(field.name, e.target.value)
+                }
+                placeholder={field.placeholder}
+                className={`${baseClasses} h-12`}
+              />
+            );
+          }
           return (
             <Input
               id={fieldId}

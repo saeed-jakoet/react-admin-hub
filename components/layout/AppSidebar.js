@@ -6,7 +6,6 @@ import { useCallback } from "react";
 import { get } from "@/lib/api/fetcher";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
-// import axios from "axios";
 import { isAllowed } from "@/components/providers/accessControl";
 import {
   Users,
@@ -190,16 +189,16 @@ export function AppSidebar() {
       <aside className="group fixed left-0 top-0 z-50 h-screen bg-white dark:bg-slate-950 border-r border-slate-200/80 dark:border-slate-800/80 backdrop-blur-xl w-20 hover:w-72 transition-all duration-300 ease-in-out">
         {/* Header */}
         <div className="h-16 border-b border-slate-200/80 dark:border-slate-800/80">
-          <div className="flex items-center h-full px-5">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center h-full px-5 mt-4">
+            <div className="flex items-center gap-3 mb-4">
               <div className="relative flex-shrink-0">
-                  <Image
-                    src="/logo.svg"
-                    alt="Logo"
-                    width={55}
-                    height={55}
-                    className="object-contain"
-                  />
+                <Image
+                  src="/logo.svg"
+                  alt="Logo"
+                  width={55}
+                  height={55}
+                  className="object-contain"
+                />
               </div>
               <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap overflow-hidden">
                 <h1 className="text-base font-semibold text-slate-900 dark:text-slate-50 tracking-tight">
@@ -292,8 +291,9 @@ export function AppSidebar() {
                             </div>
                           ) : (
                             clients.map((client, index) => {
-                              const activeClient =
-                                pathname === `/clients/${client.id}`;
+                              const activeClient = pathname.startsWith(
+                                `/clients/${client.id}`
+                              );
                               return (
                                 <Link
                                   key={client.id}

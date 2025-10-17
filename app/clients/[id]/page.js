@@ -36,6 +36,7 @@ import { Loader } from "@/components/shared/Loader";
 import DocumentsTreeView from "@/components/shared/DocumentsTreeView";
 import Header from "@/components/shared/Header";
 import { useToast } from "@/components/shared/Toast";
+import GenerateQuoteDialog from "@/components/quotes/GenerateQuoteDialog";
 
 export default function ClientDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -73,6 +74,9 @@ export default function ClientDetailPage({ params }) {
   const logoExtensions = [".png", ".jpg", ".jpeg", ".svg"];
   const [logoError, setLogoError] = useState(false);
   const [currentLogoIdx, setCurrentLogoIdx] = useState(0);
+
+  // Quote dialog state
+  const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
 
   // Reset logo error/index when company changes
   useEffect(() => {
@@ -356,6 +360,14 @@ export default function ClientDetailPage({ params }) {
                   className="h-10 w-10 rounded-xl"
                 >
                   <MoreVertical className="w-4 h-4" />
+                </Button>
+                <Button
+                  onClick={() => setQuoteDialogOpen(true)}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Generate Quote
                 </Button>
                 <Button
                   onClick={handleEdit}
@@ -856,6 +868,14 @@ export default function ClientDetailPage({ params }) {
           )}
         </div>
       </div>
+
+      {/* Generate Quote Dialog */}
+      <GenerateQuoteDialog
+        open={quoteDialogOpen}
+        onOpenChange={setQuoteDialogOpen}
+        clientId={resolvedParams.id}
+        clientInfo={client}
+      />
     </div>
   );
 }
