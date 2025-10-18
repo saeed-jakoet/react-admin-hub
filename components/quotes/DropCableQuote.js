@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import Image from "next/image";
 import { Card } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, Eye, Loader2 } from "lucide-react";
@@ -166,7 +167,7 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
                 </p>
               </div>
               <div className="ml-6">
-                <img
+                  <Image
                   src="https://res.cloudinary.com/di3tech8i/image/upload/v1760287427/logo_t75170.png"
                   alt="Fiber Africa Logo"
                   className="w-28 h-22 object-contain"

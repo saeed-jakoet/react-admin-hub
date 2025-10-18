@@ -167,14 +167,14 @@ export default function JobFormDialog({
     if (installPercentEnabled && !Boolean(formData.installation)) {
       setFormData((prev) => ({ ...prev, installation: true }));
     }
-  }, [installPercentEnabled]);
+  }, [installPercentEnabled, formData.installation]);
 
   // If user unchecks Installation, disable the completion % override to avoid confusion
   useEffect(() => {
     if (!Boolean(formData.installation) && installPercentEnabled) {
       setInstallPercentEnabled(false);
     }
-  }, [formData.installation]);
+  }, [formData.installation, installPercentEnabled]);
 
   const handleTechnicianChange = (technicianId) => {
     setSelectedTechnicianId(technicianId);
@@ -975,7 +975,7 @@ export default function JobFormDialog({
                             </span>
                           </div>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            If the installation wasn't completed 100%, enter the completion percentage here. Leave unchecked to bill full installation amount.
+                            If the installation wasn&apos;t completed 100%, enter the completion percentage here. Leave unchecked to bill full installation amount.
                           </p>
                         </div>
                       </div>

@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { APP_VERSION } from "@/lib/version";
 
 const navigationSections = [
   {
@@ -388,6 +389,10 @@ export function AppSidebar() {
             </div>
           ))}
         </nav>
+        {/* Version at the very bottom */}
+        <div className="absolute bottom-0 left-0 w-full py-2 text-center text-xs text-gray-400 dark:text-gray-600 select-none">
+         v.{APP_VERSION}
+        </div>
       </aside>
     </>
   );
