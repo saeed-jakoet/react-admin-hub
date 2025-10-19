@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState } from "react";
 
@@ -528,214 +528,217 @@ export default function DocumentsPage() {
   })();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-        <div className="p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                  <svg
-                    className="w-8 h-8 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white dark:border-slate-900"></div>
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-                  Document Management
-                </h1>
-                <p className="text-slate-600 dark:text-slate-400 mt-1">
-                  Access and manage all system documents
-                </p>
-              </div>
-            </div>
-          </div>
+    // <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    //   {/* Header */}
+    //   <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+    //     <div className="p-8">
+    //       <div className="flex items-center justify-between mb-6">
+    //         <div className="flex items-center gap-4">
+    //           <div className="relative">
+    //             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+    //               <svg
+    //                 className="w-8 h-8 text-white"
+    //                 fill="none"
+    //                 viewBox="0 0 24 24"
+    //                 stroke="currentColor"
+    //               >
+    //                 <path
+    //                   strokeLinecap="round"
+    //                   strokeLinejoin="round"
+    //                   strokeWidth={2}
+    //                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+    //                 />
+    //               </svg>
+    //             </div>
+    //             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white dark:border-slate-900"></div>
+    //           </div>
+    //           <div>
+    //             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+    //               Document Management
+    //             </h1>
+    //             <p className="text-slate-600 dark:text-slate-400 mt-1">
+    //               Access and manage all system documents
+    //             </p>
+    //           </div>
+    //         </div>
+    //       </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-blue-600 dark:text-blue-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                    {stats.totalFolders}
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Total Folders
-                  </p>
-                </div>
-              </div>
-            </div>
+    //       {/* Stats */}
+    //       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    //         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
+    //           <div className="flex items-center gap-3">
+    //             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+    //               <svg
+    //                 className="w-5 h-5 text-blue-600 dark:text-blue-400"
+    //                 fill="none"
+    //                 viewBox="0 0 24 24"
+    //                 stroke="currentColor"
+    //               >
+    //                 <path
+    //                   strokeLinecap="round"
+    //                   strokeLinejoin="round"
+    //                   strokeWidth={2}
+    //                   d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+    //                 />
+    //               </svg>
+    //             </div>
+    //             <div>
+    //               <p className="text-2xl font-bold text-slate-900 dark:text-white">
+    //                 {stats.totalFolders}
+    //               </p>
+    //               <p className="text-xs text-slate-600 dark:text-slate-400">
+    //                 Total Folders
+    //               </p>
+    //             </div>
+    //           </div>
+    //         </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-emerald-600 dark:text-emerald-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                    {stats.totalFiles}
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Total Files
-                  </p>
-                </div>
-              </div>
-            </div>
+    //         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
+    //           <div className="flex items-center gap-3">
+    //             <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+    //               <svg
+    //                 className="w-5 h-5 text-emerald-600 dark:text-emerald-400"
+    //                 fill="none"
+    //                 viewBox="0 0 24 24"
+    //                 stroke="currentColor"
+    //               >
+    //                 <path
+    //                   strokeLinecap="round"
+    //                   strokeLinejoin="round"
+    //                   strokeWidth={2}
+    //                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+    //                 />
+    //               </svg>
+    //             </div>
+    //             <div>
+    //               <p className="text-2xl font-bold text-slate-900 dark:text-white">
+    //                 {stats.totalFiles}
+    //               </p>
+    //               <p className="text-xs text-slate-600 dark:text-slate-400">
+    //                 Total Files
+    //               </p>
+    //             </div>
+    //           </div>
+    //         </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-purple-600 dark:text-purple-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                    {stats.totalSize} MB
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Total Storage
-                  </p>
-                </div>
-              </div>
-            </div>
+    //         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
+    //           <div className="flex items-center gap-3">
+    //             <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+    //               <svg
+    //                 className="w-5 h-5 text-purple-600 dark:text-purple-400"
+    //                 fill="none"
+    //                 viewBox="0 0 24 24"
+    //                 stroke="currentColor"
+    //               >
+    //                 <path
+    //                   strokeLinecap="round"
+    //                   strokeLinejoin="round"
+    //                   strokeWidth={2}
+    //                   d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+    //                 />
+    //               </svg>
+    //             </div>
+    //             <div>
+    //               <p className="text-2xl font-bold text-slate-900 dark:text-white">
+    //                 {stats.totalSize} MB
+    //               </p>
+    //               <p className="text-xs text-slate-600 dark:text-slate-400">
+    //                 Total Storage
+    //               </p>
+    //             </div>
+    //           </div>
+    //         </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-amber-600 dark:text-amber-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                    24
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Recent Uploads
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    //         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
+    //           <div className="flex items-center gap-3">
+    //             <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+    //               <svg
+    //                 className="w-5 h-5 text-amber-600 dark:text-amber-400"
+    //                 fill="none"
+    //                 viewBox="0 0 24 24"
+    //                 stroke="currentColor"
+    //               >
+    //                 <path
+    //                   strokeLinecap="round"
+    //                   strokeLinejoin="round"
+    //                   strokeWidth={2}
+    //                   d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+    //                 />
+    //               </svg>
+    //             </div>
+    //             <div>
+    //               <p className="text-2xl font-bold text-slate-900 dark:text-white">
+    //                 24
+    //               </p>
+    //               <p className="text-xs text-slate-600 dark:text-slate-400">
+    //                 Recent Uploads
+    //               </p>
+    //             </div>
+    //           </div>
+    //         </div>
+    //       </div>
+    //     </div>
+    //   </div>
 
-      {/* Search and Filters */}
-      <div className="p-8 pb-0">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <svg
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search documents, folders, or categories..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-0 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button className="px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-slate-600 dark:text-slate-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                  />
-                </svg>
-                <span className="text-sm font-medium text-slate-900 dark:text-white">
-                  Filters
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    //   {/* Search and Filters */}
+    //   <div className="p-8 pb-0">
+    //     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 mb-6">
+    //       <div className="flex flex-col md:flex-row gap-4">
+    //         <div className="flex-1 relative">
+    //           <svg
+    //             className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400"
+    //             fill="none"
+    //             viewBox="0 0 24 24"
+    //             stroke="currentColor"
+    //           >
+    //             <path
+    //               strokeLinecap="round"
+    //               strokeLinejoin="round"
+    //               strokeWidth={2}
+    //               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+    //             />
+    //           </svg>
+    //           <input
+    //             type="text"
+    //             placeholder="Search documents, folders, or categories..."
+    //             value={searchTerm}
+    //             onChange={(e) => setSearchTerm(e.target.value)}
+    //             className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-0 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    //           />
+    //         </div>
+    //         <div className="flex gap-2">
+    //           <button className="px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
+    //             <svg
+    //               className="w-5 h-5 text-slate-600 dark:text-slate-400"
+    //               fill="none"
+    //               viewBox="0 0 24 24"
+    //               stroke="currentColor"
+    //             >
+    //               <path
+    //                 strokeLinecap="round"
+    //                 strokeLinejoin="round"
+    //                 strokeWidth={2}
+    //                 d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+    //               />
+    //             </svg>
+    //             <span className="text-sm font-medium text-slate-900 dark:text-white">
+    //               Filters
+    //             </span>
+    //           </button>
+    //         </div>
+    //       </div>
+    //     </div>
+    //   </div>
 
-      {/* Document Tree */}
-      <div className="p-8 pt-0 space-y-6">
-        {Object.entries(dummyDocuments).map(([key, data]) => (
-          <CategorySection key={key} category={key} data={data} />
-        ))}
-      </div>
+    //   {/* Document Tree */}
+    //   <div className="p-8 pt-0 space-y-6">
+    //     {Object.entries(dummyDocuments).map(([key, data]) => (
+    //       <CategorySection key={key} category={key} data={data} />
+    //     ))}
+    //   </div>
+    // </div>
+    <div className="flex items-center justify-center mt-10">
+      <h1 className="text-center mt-50 text-xl">Coming soon...</h1>
     </div>
   );
 }

@@ -22,6 +22,9 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
     })}`;
   };
 
+  console.log(quoteData);
+  
+
   const generatePDF = async (preview = false) => {
     if (!quoteRef.current) return;
 
@@ -33,6 +36,8 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
+        windowHeight: quoteRef.current.scrollHeight,
+        height: quoteRef.current.scrollHeight,
       });
 
       const imgData = canvas.toDataURL("image/png");
@@ -51,10 +56,12 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
       // Handle multi-page PDFs if content is too tall
       let heightLeft = imgHeight;
       let position = 0;
+      let pageNumber = 0;
       
-      // Add first page - stretch to full width, no margins
+      // Add first page
       pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
       heightLeft -= pdfHeight;
+      pageNumber++;
       
       // Add additional pages if needed
       while (heightLeft > 0) {
@@ -62,6 +69,7 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
         pdf.addPage();
         pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
         heightLeft -= pdfHeight;
+        pageNumber++;
       }
 
       if (preview) {
@@ -100,8 +108,12 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
     year: "numeric",
   }).toUpperCase();
 
-  // Generate quote number
-  const quoteNumber = `${clientInfo.company_name.substring(0, 4).toUpperCase()}-Q${String(quoteData.week).padStart(2, "0")}${new Date().getFullYear().toString().substring(2)}`;
+  // Use quote_no from the first item in quoteData.items if available
+  let quoteNumber = "-";
+  if (quoteData && Array.isArray(quoteData.items) && quoteData.items.length > 0) {
+    const found = quoteData.items.find(q => q.quote_no && typeof q.quote_no === "string" && q.quote_no.trim() !== "");
+    quoteNumber = found ? found.quote_no : "-";
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -153,7 +165,7 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
 
         {/* Quote Content */}
         <div className="p-8 overflow-y-auto max-h-[calc(100vh-200px)] flex justify-center bg-gray-100">
-          <div ref={quoteRef} className="bg-white shadow-lg" style={{ width: "220mm", padding: "12mm" }}>
+          <div ref={quoteRef} className="bg-white shadow-lg" style={{ width: "210mm", minHeight: "297mm", padding: "12mm" }}>
             {/* Company Header */}
             <div className="flex items-start justify-between mb-4 pb-3 border-b-2 border-blue-600">
               <div className="flex-1">
@@ -168,11 +180,13 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
               </div>
               <div className="ml-6">
                   <Image
-                  src="https://res.cloudinary.com/di3tech8i/image/upload/v1760287427/logo_t75170.png"
-                  alt="Fiber Africa Logo"
-                  className="w-28 h-22 object-contain"
-                  crossOrigin="anonymous"
-                />
+                    src="https://res.cloudinary.com/di3tech8i/image/upload/v1760287427/logo_t75170.png"
+                    alt="Fiber Africa Logo"
+                    width={112}
+                    height={88}
+                    className="w-28 h-22 object-contain"
+                    crossOrigin="anonymous"
+                  />
               </div>
             </div>
 
@@ -266,9 +280,9 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
             </div>
 
             {/* Footer */}
-            <div className="text-xs text-gray-600 pt-3 border-t-2 border-gray-300">
+            <div className="text-xs text-gray-600 pt-3 border-t-2 border-gray-300 pb-6 mb-8">
               <p className="font-bold text-gray-800 mb-2">Terms & Conditions</p>
-              <ul className="space-y-1 text-gray-600">
+              <ul className="space-y-1.5 text-gray-600">
                 <li className="flex items-start">
                   <span className="mr-2 text-blue-600 font-bold">•</span>
                   <span>Payment terms: 30 days from date of invoice</span>
@@ -283,6 +297,9 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
                 </li>
               </ul>
             </div>
+            
+            {/* Bottom padding to ensure footer is fully captured */}
+            <div style={{ height: "30mm" }}></div>
           </div>
         </div>
       </div>

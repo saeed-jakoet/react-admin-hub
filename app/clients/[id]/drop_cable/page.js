@@ -160,10 +160,10 @@ export default function DropCablePage() {
     );
   }, [jobs]);
 
-  // Get unique statuses for filter
+  // Get unique statuses for filter, sorted alphabetically
   const uniqueStatuses = useMemo(() => {
     const statuses = jobs.map((job) => job.status).filter(Boolean);
-    return [...new Set(statuses)];
+    return [...new Set(statuses)].sort((a, b) => a.localeCompare(b));
   }, [jobs]);
 
   // Get unique weeks for filter
@@ -433,11 +433,13 @@ export default function DropCablePage() {
       header: "Location",
       cell: ({ row }) => {
         const job = row.original;
+        let countyDisplay = job.county || "-";
+        if (countyDisplay.toLowerCase() === "tablebay") countyDisplay = "Table Bay";
         return (
           <div className="flex items-center space-x-2">
             <MapPin className="w-4 h-4 text-slate-400" />
             <span className="text-slate-900 dark:text-white capitalize">
-              {job.county || "-"}
+              {countyDisplay}
             </span>
           </div>
         );

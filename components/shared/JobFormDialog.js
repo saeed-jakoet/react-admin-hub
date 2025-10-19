@@ -89,31 +89,45 @@ export default function JobFormDialog({
   const [loadingTechnicians, setLoadingTechnicians] = useState(false);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState(jobData?.technician_id || "");
 
+  // Link Manager state
+  const [linkManagers, setLinkManagers] = useState([]);
+  const [loadingLinkManagers, setLoadingLinkManagers] = useState(false);
+  const [selectedLinkManagerId, setSelectedLinkManagerId] = useState(jobData?.link_manager_id || "");
+
   const saving = externalSaving || internalSaving;
 
-  // Fetch technicians from /staff
+  // Fetch staff from /staff (for both technicians and link managers)
   useEffect(() => {
-    const fetchTechnicians = async () => {
+    const fetchStaff = async () => {
       try {
         setLoadingTechnicians(true);
+        setLoadingLinkManagers(true);
         const response = await get("/staff");
         if (response?.status === "success" && Array.isArray(response.data)) {
-          // Filter for technicians only
+          // Filter for technicians
           const technicianList = response.data.filter(
             (staff) => staff.role?.toLowerCase() === "technician"
           );
           setTechnicians(technicianList);
+          
+          // Filter for link managers: only Operations Manager or General Manager positions
+          const linkManagerList = response.data.filter((staff) => {
+            const position = (staff.position || "").toLowerCase();
+            return position.includes("operations manager") || position.includes("general manager");
+          });
+          setLinkManagers(linkManagerList);
         }
       } catch (error) {
-        console.error("Error fetching technicians:", error);
-        toastError("Error", "Failed to load technicians");
+        console.error("Error fetching staff:", error);
+        toastError("Error", "Failed to load staff");
       } finally {
         setLoadingTechnicians(false);
+        setLoadingLinkManagers(false);
       }
     };
 
     if (open) {
-      fetchTechnicians();
+      fetchStaff();
     }
   }, [open, toastError]);
 
@@ -123,6 +137,7 @@ export default function JobFormDialog({
       setFormData({ ...jobData });
       setNewNote("");
       setSelectedTechnicianId(jobData?.technician_id || "");
+      setSelectedLinkManagerId(jobData?.link_manager_id || "");
       setWeek(jobData?.week || "");
     }
   }, [jobData, mode]);
@@ -189,6 +204,19 @@ export default function JobFormDialog({
     } else {
       handleInputChange("technician", "");
       handleInputChange("technician_name", "");
+    }
+  };
+
+  const handleLinkManagerChange = (linkManagerId) => {
+    setSelectedLinkManagerId(linkManagerId);
+    
+    // Find the selected link manager and update the link_manager field (name)
+    const selectedLM = linkManagers.find((lm) => lm.id === linkManagerId);
+    if (selectedLM) {
+      const linkManagerName = `${selectedLM.first_name || ""} ${selectedLM.surname || ""}`.trim();
+      handleInputChange("link_manager", linkManagerName);
+    } else {
+      handleInputChange("link_manager", "");
     }
   };
 
@@ -284,8 +312,12 @@ export default function JobFormDialog({
         continue;
       }
 
-      // Skip empty/undefined/null values for other field types
-      if (value === "" || value === null || typeof value === "undefined") {
+      // For other types, if cleared to empty string/undefined/null, send null to explicitly clear on backend (in edit mode)
+      if (value === "" || typeof value === "undefined" || value === null) {
+        // Only send null in edit mode to avoid failing create requireds; create validation handles requireds separately
+        if (mode === "edit") {
+          payload[name] = null;
+        }
         continue;
       }
 
@@ -309,7 +341,8 @@ export default function JobFormDialog({
       if (fieldConfig?.type === "number") {
         const n = name === "additonal_cost" ? parseFloat(value) : parseInt(value);
         if (!Number.isNaN(n)) value = n;
-        else continue; // drop invalid numbers
+        else if (mode === "edit") { payload[name] = null; continue; }
+        else { continue; }
       }
 
       if (fieldConfig?.type === "date") {
@@ -343,8 +376,9 @@ export default function JobFormDialog({
       payload[name] = value;
     }
 
-    // When submitting, include week in the payload
-    if (week) payload.week = week;
+  // When submitting, include week in the payload; allow clearing to null in edit mode
+  if (week) payload.week = week;
+  else if (mode === "edit") payload.week = null;
 
     // Include install completion percent if enabled; coerce 0-100
     if (installPercentEnabled) {
@@ -357,9 +391,11 @@ export default function JobFormDialog({
       if (mode === "edit") payload.install_completion_percent = null;
     }
 
-    // Include technician_id if selected
+    // Include technician_id if selected or explicitly clear when unselected in edit mode
     if (selectedTechnicianId) {
       payload.technician_id = selectedTechnicianId;
+    } else if (mode === "edit") {
+      payload.technician_id = null;
     }
 
     return payload;
@@ -491,6 +527,39 @@ export default function JobFormDialog({
             {selectedTechnicianId && (formData.technician || formData.technician_name) && (
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Assigned: {formData.technician || formData.technician_name}
+              </p>
+            )}
+          </div>
+        );
+      }
+
+      // Special handling for link_manager field
+      if (field.name === "link_manager") {
+        return (
+          <div className="space-y-2">
+            {loadingLinkManagers ? (
+              <div className="flex items-center gap-2 p-3 text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Loading staff...
+              </div>
+            ) : (
+              <select
+                id={fieldId}
+                value={selectedLinkManagerId}
+                onChange={(e) => handleLinkManagerChange(e.target.value)}
+                className={`${baseClasses} p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 ${focusClasses}`}
+              >
+                <option value="">Select a link manager</option>
+                {linkManagers.map((staff) => (
+                  <option key={staff.id} value={staff.id}>
+                    {staff.first_name} {staff.surname}
+                  </option>
+                ))}
+              </select>
+            )}
+            {selectedLinkManagerId && formData.link_manager && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Assigned: {formData.link_manager}
               </p>
             )}
           </div>
@@ -649,6 +718,18 @@ export default function JobFormDialog({
       }
     };
 
+    // Dynamic label for PM field based on client
+    const getFieldLabel = () => {
+      if (field.name === "pm") {
+        const client = formData.client || "";
+        if (client.toLowerCase().includes("britelinkmct") || client.toLowerCase().includes("gio")) {
+          return "DFA PM";
+        }
+        return "PM";
+      }
+      return field.label;
+    };
+
     return (
       <div key={field.name} className={`space-y-1 ${field.gridCols || ""}`}>
         <Label
@@ -658,7 +739,7 @@ export default function JobFormDialog({
           }`}
         >
           {LabelIcon && <LabelIcon className="w-4 h-4 text-gray-500" />}
-          {field.label}
+          {getFieldLabel()}
           {isRequired && (
             <Badge variant="destructive" className="ml-2 text-xs px-1.5 py-0.5">
               Required
