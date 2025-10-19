@@ -182,6 +182,26 @@ async function proxy(method, req, ctx) {
     return new Response(resBody, { status: loRes.status, headers: outHeaders });
   }
 
+  // Special handling for csrf/refresh: forward Set-Cookie to update CSRF token
+  const isCsrfRefresh = path === "csrf/refresh" && lowerMethod === "get";
+  if (isCsrfRefresh) {
+    const csrfRes = await fetch(url.toString(), {
+      method,
+      headers: incomingHeaders,
+      cache: "no-store",
+    });
+    const resBody = await csrfRes.text();
+    const contentType = csrfRes.headers.get("content-type") || "application/json";
+    const outHeaders = new Headers();
+    outHeaders.set("Content-Type", contentType);
+    csrfRes.headers.forEach((value, key) => {
+      if (key.toLowerCase() === "set-cookie") {
+        outHeaders.append("set-cookie", value);
+      }
+    });
+    return new Response(resBody, { status: csrfRes.status, headers: outHeaders });
+  }
+
   // Normal proxy flow with server-side refresh on 401
   // Add a timeout to avoid hanging the UI if the backend stalls
   const controller = new AbortController();

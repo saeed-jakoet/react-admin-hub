@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider.js";
 import { AuthProvider } from "@/components/providers/AuthProvider.js";
+import { CsrfProvider } from "@/components/providers/CsrfProvider.js";
 import { AppShell } from "@/components/layout/AppShell.js";
 import { ToastProvider } from "@/components/shared/Toast.js";
 
@@ -25,9 +26,11 @@ export default function RootLayout({ children }) {
       <body className={inter.className}>
         <ThemeProvider defaultTheme="system" storageKey="fibre-admin-theme">
           <AuthProvider>
-            <ToastProvider>
-                <AppShell>{children}</AppShell>
-            </ToastProvider>
+            <CsrfProvider>
+              <ToastProvider>
+                  <AppShell>{children}</AppShell>
+              </ToastProvider>
+            </CsrfProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
