@@ -4,7 +4,7 @@ import * as React from "react";
 
 const ThemeContext = React.createContext(undefined);
 
-export function ThemeProvider({ children, defaultTheme = "system", storageKey = "fibre-admin-theme" }) {
+export function ThemeProvider({ children, defaultTheme = "system", storageKey = "fiber-admin-theme" }) {
   const [theme, setThemeState] = React.useState(defaultTheme);
 
   React.useEffect(() => {

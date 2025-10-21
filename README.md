@@ -1,4 +1,4 @@
-# Fibre Admin Panel (Frontend)
+# Fiber Admin Panel (Frontend)
 
 A modern Next.js 15 + React 19 admin panel for managing clients, staff, inventory, fleet, documents and operational jobs. Uses SWR for data fetching, a global Toast system for notifications, and a shared UI library.
 
