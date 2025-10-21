@@ -2,7 +2,6 @@
 
 import React, { useRef, useState } from "react";
 import Image from "next/image";
-import { Card } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, Eye, Loader2 } from "lucide-react";
 import html2canvas from "html2canvas";
@@ -23,14 +22,13 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
   };
 
   console.log(quoteData);
-  
 
   const generatePDF = async (preview = false) => {
     if (!quoteRef.current) return;
 
     try {
       setGenerating(true);
-      
+
       const canvas = await html2canvas(quoteRef.current, {
         scale: 2,
         useCORS: true,
@@ -41,7 +39,7 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
       });
 
       const imgData = canvas.toDataURL("image/png");
-      
+
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -52,24 +50,33 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = pdfWidth;
       const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      // Handle multi-page PDFs if content is too tall
-      let heightLeft = imgHeight;
-      let position = 0;
-      let pageNumber = 0;
-      
-      // Add first page
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
-      pageNumber++;
-      
-      // Add additional pages if needed
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
+
+      // If the rendered image is taller than a single PDF page, scale it down to fit on one page
+      if (imgHeight > pdfHeight) {
+        const scale = pdfHeight / imgHeight;
+        const scaledWidth = imgWidth * scale;
+        const scaledHeight = pdfHeight; // exactly fit one page height
+        const xOffset = (pdfWidth - scaledWidth) / 2;
+        pdf.addImage(imgData, "PNG", xOffset, 0, scaledWidth, scaledHeight);
+      } else {
+        // Handle multi-page PDFs if content is too tall (but in this branch imgHeight <= pdfHeight)
+        let heightLeft = imgHeight;
+        let position = 0;
+        let pageNumber = 0;
+
+        // Add first page
         pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
         heightLeft -= pdfHeight;
         pageNumber++;
+
+        // Add additional pages if needed
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+          heightLeft -= pdfHeight;
+          pageNumber++;
+        }
       }
 
       if (preview) {
@@ -95,25 +102,59 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
     }
   };
 
-  const total = quoteData.items.reduce((sum, item) => sum + (item.total || 0), 0);
-
+  const total = quoteData.items.reduce(
+    (sum, item) => sum + (item.total || 0),
+    0
+  );
 
   // Calculate due date: last day of the month for the selected week
   const weekNumber = quoteData.week;
   const year = new Date().getFullYear();
   const dueDateObj = getDueDateForWeek(weekNumber, year);
-  const dueDateFormatted = dueDateObj.toLocaleDateString("en-US", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).toUpperCase();
+  const dueDateFormatted = dueDateObj
+    .toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
+    .toUpperCase();
 
   // Use quote_no from the first item in quoteData.items if available
   let quoteNumber = "-";
-  if (quoteData && Array.isArray(quoteData.items) && quoteData.items.length > 0) {
-    const found = quoteData.items.find(q => q.quote_no && typeof q.quote_no === "string" && q.quote_no.trim() !== "");
+  if (
+    quoteData &&
+    Array.isArray(quoteData.items) &&
+    quoteData.items.length > 0
+  ) {
+    const found = quoteData.items.find(
+      (q) =>
+        q.quote_no && typeof q.quote_no === "string" && q.quote_no.trim() !== ""
+    );
     quoteNumber = found ? found.quote_no : "-";
   }
+
+  const firstItem = quoteData?.items?.[0] || {};
+  const toCountyLabel = (c) => {
+    if (!c) return "";
+    const lc = String(c).toLowerCase();
+    if (lc === "tablebay") return "Table Bay";
+    let s = String(c).replace(/[-_]/g, " ");
+    s = s.replace(/([a-z])([A-Z])/g, "$1 $2");
+    if (!s.includes(" ") && s.endsWith("bay")) {
+      s = s.slice(0, s.length - 3) + " Bay";
+    }
+    return s
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
+  };
+  const countyLabel = toCountyLabel(firstItem.county);
+  const pmInitials = (firstItem.pm || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((n) => n[0].toUpperCase())
+    .join("");
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -165,28 +206,37 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
 
         {/* Quote Content */}
         <div className="p-8 overflow-y-auto max-h-[calc(100vh-200px)] flex justify-center bg-gray-100">
-          <div ref={quoteRef} className="bg-white shadow-lg" style={{ width: "210mm", minHeight: "297mm", padding: "12mm" }}>
+          <div
+            ref={quoteRef}
+            className="bg-white shadow-lg"
+            style={{ width: "210mm", minHeight: "297mm", padding: "12mm" }}
+          >
             {/* Company Header */}
             <div className="flex items-start justify-between mb-4 pb-3 border-b-2 border-blue-600">
               <div className="flex-1">
-                <h1 className="text-xl font-bold text-blue-900 mb-1.5">FIBER AFRICA (PTY) LTD</h1>
+                <h1 className="text-xl font-bold text-blue-900 mb-1.5">
+                  FIBER AFRICA (PTY) LTD
+                </h1>
                 <div className="text-xs text-gray-700 space-y-0.5">
                   <p className="font-medium">E-mail: admin@fiberafrica.co.za</p>
-                  <p>The Hub, 2 Engine Avenue, Montague Gardens, Western Cape, 7441</p>
+                  <p>
+                    The Hub, 2 Engine Avenue, Montague Gardens, Western Cape,
+                    7441
+                  </p>
                 </div>
                 <p className="text-xs text-gray-500 mt-1.5 pt-1.5 border-t border-gray-200">
                   Company Reg No. 2018/318249/07 | VAT No. 4920288976
                 </p>
               </div>
               <div className="ml-6">
-                  <Image
-                    src="https://res.cloudinary.com/di3tech8i/image/upload/v1760287427/logo_t75170.png"
-                    alt="Fiber Africa Logo"
-                    width={112}
-                    height={88}
-                    className="w-28 h-22 object-contain"
-                    crossOrigin="anonymous"
-                  />
+                <Image
+                  src="https://res.cloudinary.com/di3tech8i/image/upload/v1760287427/logo_t75170.png"
+                  alt="Fiber Africa Logo"
+                  width={112}
+                  height={88}
+                  className="w-28 h-22 object-contain"
+                  crossOrigin="anonymous"
+                />
               </div>
             </div>
 
@@ -195,27 +245,43 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xl font-bold text-blue-900">QUOTATION</h2>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500 uppercase">Quote Number</p>
-                  <p className="text-sm font-bold text-blue-900 mt-0.5">{quoteNumber}</p>
+                  <p className="text-xs text-gray-500 uppercase">
+                    Quote Number
+                  </p>
+                  <p className="text-sm font-bold text-blue-900 mt-0.5">
+                    {quoteNumber}
+                  </p>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-300">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase mb-1.5">Client Information</p>
-                  <h3 className="font-bold text-sm text-gray-900 mb-1">{clientInfo.company_name}</h3>
-                  <p className="text-xs text-gray-600">{clientInfo.address || "Address not provided"}</p>
+                  <p className="text-xs text-gray-500 uppercase mb-1.5">
+                    Client Information
+                  </p>
+                  <h3 className="font-bold text-sm text-gray-900 mb-1">
+                    {clientInfo.company_name}
+                  </h3>
+                  <p className="text-xs text-gray-600">
+                    {clientInfo.address || "Address not provided"}
+                  </p>
                 </div>
                 <div className="text-xs">
-                  <p className="text-xs text-gray-500 uppercase mb-2">Quote Details</p>
+                  <p className="text-xs text-gray-500 uppercase mb-2">
+                    Quote Details
+                  </p>
                   <div className="space-y-1.5">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Due Date:</span>
-                      <span className="font-semibold text-gray-900">{dueDateFormatted}</span>
+                      <span className="font-semibold text-gray-900">
+                        {dueDateFormatted}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Manager:</span>
-                      <span className="font-semibold text-gray-900">{clientInfo.first_name} {clientInfo.last_name}</span>
+                      <span className="font-semibold text-gray-900">
+                        {clientInfo.first_name} {clientInfo.last_name}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -225,44 +291,100 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
             {/* Quote Title */}
             <div className="mb-3">
               <h3 className="font-semibold text-xs bg-blue-50 px-3 py-1.5 rounded border-l-4 border-blue-600">
-                Drop Cable_Table Bay_SL (Week {quoteData.week}) - {new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                {`Drop Cable_${countyLabel}_${pmInitials} (Week ${quoteData.week}) - ${new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" })}`}
               </h3>
             </div>
 
             {/* Items Table */}
             <div className="mb-4">
-              <table className="w-full border-collapse border border-gray-300" style={{ fontSize: "9px" }}>
+              <table
+                className="w-full border-collapse border border-gray-300"
+                style={{ fontSize: "9px" }}
+              >
                 <thead>
                   <tr className="bg-blue-900 text-white">
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">No</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Circuit</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Site B</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">County</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">PM</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Dist</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Survey</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Callout</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Install</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Mousepad</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">Misc</th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold bg-blue-800">Total</th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                      No
+                    </th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                      Circuit
+                    </th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                      Site B
+                    </th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                      County
+                    </th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                      PM
+                    </th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                      Dist
+                    </th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                      Survey
+                    </th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                      Callout
+                    </th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                      Install
+                    </th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                      Mousepad
+                    </th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                      Misc
+                    </th>
+                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold bg-blue-800">
+                      Total
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {quoteData.items.map((item, index) => (
-                    <tr key={item.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">{index + 1}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700 font-medium">{item.circuit_number}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">{item.site_b_name}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">{item.county === "tablebay" ? "Table Bay" : item.county || "-"}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">{item.pm || "-"}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">{item.distance || 0}m</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">{formatCurrency(item.survey_planning_cost || 0)}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">{formatCurrency(item.callout_cost || 0)}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">{formatCurrency(item.installation_cost || 0)}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">{formatCurrency(item.mousepad_cost || 0)}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">{formatCurrency(item.additional_cost || 0)}</td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center font-bold text-gray-900 bg-blue-50">{formatCurrency(item.total)}</td>
+                    <tr
+                      key={item.id}
+                      className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                    >
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">
+                        {index + 1}
+                      </td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700 font-medium">
+                        {item.circuit_number}
+                      </td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">
+                        {item.site_b_name}
+                      </td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">
+                        {item.county === "tablebay"
+                          ? "Table Bay"
+                          : item.county || "-"}
+                      </td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">
+                        {item.pm || "-"}
+                      </td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">
+                        {item.distance || 0}m
+                      </td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">
+                        {formatCurrency(item.survey_planning_cost || 0)}
+                      </td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">
+                        {formatCurrency(item.callout_cost || 0)}
+                      </td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">
+                        {formatCurrency(item.installation_cost || 0)}
+                      </td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">
+                        {formatCurrency(item.mousepad_cost || 0)}
+                      </td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">
+                        {formatCurrency(item.additional_cost || 0)}
+                      </td>
+                      <td className="border border-gray-300 px-1.5 py-1.5 text-center font-bold text-gray-900 bg-blue-50">
+                        {formatCurrency(item.total)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -273,8 +395,10 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
             <div className="flex justify-end mb-4">
               <div className="bg-gradient-to-r from-blue-900 to-blue-700 text-white px-5 py-2.5 rounded-lg shadow-lg">
                 <div className="flex items-center gap-4">
-                  <span className="font-bold text-sm">TOTAL AMOUNT</span>
-                  <span className="font-bold text-xl">{formatCurrency(total)}</span>
+                  <span className="font-bold text-md mb-3">TOTAL AMOUNT</span>
+                  <span className="font-bold text-xl mb-3">
+                    {formatCurrency(total)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -297,7 +421,7 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
                 </li>
               </ul>
             </div>
-            
+
             {/* Bottom padding to ensure footer is fully captured */}
             <div style={{ height: "30mm" }}></div>
           </div>

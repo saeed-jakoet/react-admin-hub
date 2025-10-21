@@ -10,18 +10,13 @@ import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
 export default function CalendarBigCalendar({
   localizer,
   orders,
-  filteredOrders,
   loading,
   selectedClient,
   selectedOrderType,
-  statusFilter,
   setSelectedClient,
   setSelectedOrderType,
-  setStatusFilter,
   clients,
   orderTypes,
-  uniqueStatuses,
-  statusColors,
   handleNewJobClick,
   currentDate,
   currentView,
@@ -83,6 +78,70 @@ export default function CalendarBigCalendar({
     };
   };
 
+  // Event type options: only the scheduling/completion events requested
+  const eventTypeOptions = [
+    { key: "installation_scheduled_date", label: "Installation Scheduled", timeField: "installation_scheduled_time" },
+    { key: "installation_completed_date", label: "Installation Completed" },
+    { key: "survey_scheduled_date", label: "Survey Scheduled", timeField: "survey_scheduled_time" },
+    { key: "survey_completed_at", label: "Survey Completed" },
+    { key: "as_built_submitted_at", label: "As-Built Submitted" },
+  ];
+
+  // Helper: convert event date-field keys to status keys used by the color map
+  const eventFieldToStatusKey = (field) =>
+    typeof field === "string" ? field.replace(/(_date|_at)$/, "") : field;
+
+  // Local calendar-scoped filter (do not modify global statusFilter)
+  const [eventTypeFilter, setEventTypeFilter] = React.useState("all");
+
+  // Persist the eventTypeFilter per client+orderType so it doesn't reset on navigation
+  const storageKey = (client, orderType) => `calendar:eventType:${client}:${orderType}`;
+
+  // Restore persisted filter when client or orderType changes
+  React.useEffect(() => {
+    if (!selectedClient || !selectedOrderType) {
+      setEventTypeFilter("all");
+      return;
+    }
+    try {
+      const saved = localStorage.getItem(storageKey(selectedClient, selectedOrderType));
+      if (saved) setEventTypeFilter(saved);
+      else setEventTypeFilter("all");
+    } catch (e) {
+      setEventTypeFilter("all");
+    }
+  }, [selectedClient, selectedOrderType]);
+
+  // Safe orders array
+  const safeOrders = Array.isArray(orders) ? orders : [];
+
+  // Allowed event fields list derived from eventTypeOptions
+  const allowedEventFields = eventTypeOptions.map((opt) => opt.key);
+
+  // Decide which orders to transform:
+  // - If an eventType is selected, include only orders that have that field
+  // - Otherwise include orders that contain any allowed event field
+  const baseOrders =
+    eventTypeFilter && eventTypeFilter !== "all"
+      ? safeOrders.filter((o) => o && o[eventTypeFilter])
+      : safeOrders.filter((o) => o && allowedEventFields.some((f) => o[f]));
+
+  // Transform baseOrders to events and filter at the event level so that
+  // only events whose eventField is in allowedEventFields are kept. If a
+  // specific event type is selected, filter to that exact field.
+  const calendarEvents = React.useMemo(() => {
+    const events = transformOrdersToEvents(baseOrders) || [];
+    const allowedEvents = events.filter((ev) =>
+      allowedEventFields.includes(ev?.resource?.eventField)
+    );
+    if (eventTypeFilter && eventTypeFilter !== "all") {
+      return allowedEvents.filter(
+        (ev) => ev.resource.eventField === eventTypeFilter
+      );
+    }
+    return allowedEvents;
+  }, [baseOrders, transformOrdersToEvents, eventTypeFilter, allowedEventFields]);
+
   return (
     <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-lg rounded-2xl overflow-hidden">
       <div className="p-6 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
@@ -97,7 +156,7 @@ export default function CalendarBigCalendar({
               </h2>
               <p className="text-gray-600 dark:text-slate-400 text-sm">
                 {selectedClient && selectedOrderType
-                  ? `${orders.length} orders • ${filteredOrders.length} filtered`
+                  ? `${orders.length} orders • ${calendarEvents.length} events`
                   : "Select client and order type to view calendar"}
               </p>
             </div>
@@ -141,21 +200,32 @@ export default function CalendarBigCalendar({
               ))}
             </select>
           </div>
-          {/* Status Filter */}
+          {/* status filter removed */}
+          {/* Event Type Filter (calendar scoped) */}
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
-              Status
+              Event Type
             </label>
             <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              value={eventTypeFilter}
+              onChange={(e) => {
+                const val = e.target.value;
+                setEventTypeFilter(val);
+                try {
+                  if (selectedClient && selectedOrderType) {
+                    localStorage.setItem(storageKey(selectedClient, selectedOrderType), val);
+                  }
+                } catch (err) {
+                  // ignore
+                }
+              }}
               disabled={!selectedClient || !selectedOrderType}
               className="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
             >
-              <option value="all">All Statuses</option>
-              {uniqueStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {formatStatusText(status)}
+              <option value="all">All Events</option>
+              {eventTypeOptions.map((opt) => (
+                <option key={opt.key} value={opt.key}>
+                  {opt.label}
                 </option>
               ))}
             </select>
@@ -167,21 +237,7 @@ export default function CalendarBigCalendar({
             Event Types
           </h4>
           <div className="flex flex-wrap gap-2">
-            {[
-              {
-                label: "Installation Completed",
-                key: "installation_completed",
-              },
-              {
-                label: "Installation Scheduled",
-                key: "installation_scheduled",
-              },
-              { label: "Survey Scheduled", key: "survey_scheduled" },
-              { label: "Survey Completed", key: "survey_completed" },
-              { label: "As-Built Submitted", key: "as_built_submitted" },
-              { label: "LLA Required", key: "lla_required" },
-              { label: "LLA Received", key: "lla_received" },
-            ].map(({ label, key }) => (
+            {eventTypeOptions.map(({ label, key }) => (
               <div
                 key={key}
                 className="flex items-center space-x-2 bg-gray-50 dark:bg-slate-700 rounded-lg px-3 py-1.5"
@@ -189,7 +245,7 @@ export default function CalendarBigCalendar({
                 <div
                   className="w-3 h-3 rounded-full"
                   style={{
-                    backgroundColor: getDropCableStatusColor(key, "hex"),
+                    backgroundColor: getDropCableStatusColor(eventFieldToStatusKey(key), "hex"),
                   }}
                 ></div>
                 <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">
@@ -234,6 +290,18 @@ export default function CalendarBigCalendar({
               </Button>
             </div>
           </div>
+        ) : calendarEvents.length === 0 ? (
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <LucideCalendar className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                No Scheduled Events
+              </h3>
+              <p className="text-gray-600 dark:text-slate-400 mb-4">
+                There are orders, but none contain installation/survey/as-built dates to show on the calendar.
+              </p>
+            </div>
+          </div>
         ) : (
           <div className="relative h-[800px] bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50">
             {/* Subtle gradient overlay */}
@@ -243,7 +311,7 @@ export default function CalendarBigCalendar({
             <div className="relative h-full p-6">
               <BigCalendar
                 localizer={localizer}
-                events={transformOrdersToEvents(filteredOrders)}
+                events={calendarEvents}
                 startAccessor="start"
                 endAccessor="end"
                 date={currentDate}

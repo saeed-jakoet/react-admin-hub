@@ -58,6 +58,8 @@ export default function OverviewPage() {
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  // Persist selection by id so changing calendar month/view won't lose selection
+  const [selectedEventId, setSelectedEventId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
 
   // Calendar Navigation State
@@ -330,6 +332,7 @@ export default function OverviewPage() {
     } else {
       // Fallback to details dialog if navigation fails
       setSelectedEvent(order);
+      setSelectedEventId(order?.id ?? null);
     }
   };
 
@@ -363,17 +366,6 @@ export default function OverviewPage() {
   const handleViewChange = (view) => {
     setCurrentView(view);
   };
-
-  // Dynamically get unique statuses from the actual order data
-  const uniqueStatuses = useMemo(() => {
-    const statuses = new Set();
-    orders.forEach((order) => {
-      if (order.status) {
-        statuses.add(order.status);
-      }
-    });
-    return Array.from(statuses);
-  }, [orders]);
 
   // Handle opening New Job dialog
   const handleNewJobClick = () => {
@@ -423,24 +415,28 @@ export default function OverviewPage() {
   console.log("Calendar events:", events);
 
   // --- Extracted Components ---
+  // Re-select previously selected event (by id) after events change/navigations
+  useEffect(() => {
+    if (!selectedEventId) return;
+    const found = events.find((e) => e.resource && e.resource.id === selectedEventId);
+    if (found) {
+      setSelectedEvent(found.resource);
+    }
+    // do not clear selection if not found; it may be off-view due to filters
+  }, [events, selectedEventId]);
   function CalendarSection() {
     return (
       <div className="lg:col-span-3">
         <CalendarBigCalendar
           localizer={localizer}
           orders={orders}
-          filteredOrders={filteredOrders}
           loading={loading}
           selectedClient={selectedClient}
           selectedOrderType={selectedOrderType}
-          statusFilter={statusFilter}
           setSelectedClient={setSelectedClient}
           setSelectedOrderType={setSelectedOrderType}
-          setStatusFilter={setStatusFilter}
           clients={clients}
           orderTypes={orderTypes}
-          uniqueStatuses={uniqueStatuses}
-          statusColors={statusColors}
           handleNewJobClick={handleNewJobClick}
           currentDate={currentDate}
           currentView={currentView}
