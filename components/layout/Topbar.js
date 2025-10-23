@@ -40,14 +40,14 @@ export function Topbar() {
         {/* Right Actions */}
         <div className="flex items-center gap-3 ml-6">
           {/* Quick Actions Button */}
-          <Button
+          {/* <Button
             variant="ghost"
             size="icon"
             className="h-11 w-11 rounded-xl text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
             title="Quick Actions"
           >
             <Zap className="h-5 w-5" />
-          </Button>
+          </Button> */}
 
           {/* Notifications */}
           <DropdownMenu>

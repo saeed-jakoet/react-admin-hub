@@ -289,8 +289,8 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
             </div>
 
             {/* Quote Title */}
-            <div className="mb-3">
-              <h3 className="font-semibold text-xs bg-blue-50 px-3 py-1.5 rounded border-l-4 border-blue-600">
+            <div className="font-semibold text-xs bg-blue-50 px-3 py-1.5 rounded border-l-4 border-blue-600 mb-3">
+              <h3 className="mb-2">
                 {`Drop Cable_${countyLabel}_${pmInitials} (Week ${quoteData.week}) - ${new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" })}`}
               </h3>
             </div>
@@ -396,7 +396,7 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
               <div className="bg-gradient-to-r from-blue-900 to-blue-700 text-white px-5 py-2.5 rounded-lg shadow-lg">
                 <div className="flex items-center gap-4">
                   <span className="font-bold text-md mb-3">TOTAL AMOUNT</span>
-                  <span className="font-bold text-xl mb-3">
+                  <span className="font-bold text-xl mb-4">
                     {formatCurrency(total)}
                   </span>
                 </div>
