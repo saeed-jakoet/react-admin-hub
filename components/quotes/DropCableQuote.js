@@ -1,18 +1,37 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, Loader2 } from "lucide-react";
+import {
+  Download,
+  Eye,
+  Loader2,
+  Upload,
+  X,
+  FileText,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import html2canvas from "html2canvas";
-
 import jsPDF from "jspdf";
+import { PDFDocument } from "pdf-lib";
 import { getDueDateForWeek } from "@/lib/utils/dueDateForWeek";
 
 export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
   const quoteRef = useRef(null);
+  const fileInputRef = useRef(null);
   const [generating, setGenerating] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [additionalPDFs, setAdditionalPDFs] = useState([]);
+  const [showUploadManager, setShowUploadManager] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
 
   const formatCurrency = (amount) => {
     return `R${Number(amount || 0).toLocaleString("en-ZA", {
@@ -21,14 +40,46 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
     })}`;
   };
 
-  console.log(quoteData);
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    const pdfFiles = files.filter((file) => file.type === "application/pdf");
+
+    if (pdfFiles.length !== files.length) {
+      alert("Only PDF files are allowed");
+    }
+
+    if (pdfFiles.length > 0) {
+      setAdditionalPDFs((prev) => [...prev, ...pdfFiles]);
+      setShowUploadManager(true);
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removeFile = (index) => {
+    setAdditionalPDFs((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const clearAllFiles = () => {
+    setAdditionalPDFs([]);
+    setShowUploadManager(false);
+  };
 
   const generatePDF = async (preview = false) => {
     if (!quoteRef.current) return;
-
     try {
       setGenerating(true);
-
       const canvas = await html2canvas(quoteRef.current, {
         scale: 2,
         useCORS: true,
@@ -37,39 +88,29 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
         windowHeight: quoteRef.current.scrollHeight,
         height: quoteRef.current.scrollHeight,
       });
-
       const imgData = canvas.toDataURL("image/png");
-
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
-
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = pdfWidth;
       const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      // If the rendered image is taller than a single PDF page, scale it down to fit on one page
       if (imgHeight > pdfHeight) {
         const scale = pdfHeight / imgHeight;
         const scaledWidth = imgWidth * scale;
-        const scaledHeight = pdfHeight; // exactly fit one page height
+        const scaledHeight = pdfHeight;
         const xOffset = (pdfWidth - scaledWidth) / 2;
         pdf.addImage(imgData, "PNG", xOffset, 0, scaledWidth, scaledHeight);
       } else {
-        // Handle multi-page PDFs if content is too tall (but in this branch imgHeight <= pdfHeight)
         let heightLeft = imgHeight;
         let position = 0;
         let pageNumber = 0;
-
-        // Add first page
         pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
         heightLeft -= pdfHeight;
         pageNumber++;
-
-        // Add additional pages if needed
         while (heightLeft > 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
@@ -79,20 +120,54 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
         }
       }
 
-      if (preview) {
-        // Open in new window
-        setPreviewing(true);
-        const pdfBlob = pdf.output("blob");
-        const url = URL.createObjectURL(pdfBlob);
-        window.open(url, "_blank");
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-          setPreviewing(false);
-        }, 1000);
+      // Merge additional PDFs as extra pages
+      if (additionalPDFs.length > 0) {
+        const mainPdfBlob = pdf.output("arraybuffer");
+        const mainPdfDoc = await PDFDocument.load(mainPdfBlob);
+        for (const file of additionalPDFs) {
+          const arrayBuffer = await file.arrayBuffer();
+          const extraPdf = await PDFDocument.load(arrayBuffer);
+          const copiedPages = await mainPdfDoc.copyPages(
+            extraPdf,
+            extraPdf.getPageIndices()
+          );
+          copiedPages.forEach((page) => mainPdfDoc.addPage(page));
+        }
+        const mergedPdfBytes = await mainPdfDoc.save();
+        const mergedPdfBlob = new Blob([mergedPdfBytes], {
+          type: "application/pdf",
+        });
+        if (preview) {
+          setPreviewing(true);
+          const url = URL.createObjectURL(mergedPdfBlob);
+          window.open(url, "_blank");
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+            setPreviewing(false);
+          }, 1000);
+        } else {
+          const filename = `Quote_${clientInfo.company_name.replace(/[^a-z0-9]/gi, "_")}_Week${quoteData.week}_${new Date().toISOString().split("T")[0]}.pdf`;
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(mergedPdfBlob);
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
       } else {
-        // Download
-        const filename = `Quote_${clientInfo.company_name.replace(/[^a-z0-9]/gi, "_")}_Week${quoteData.week}_${new Date().toISOString().split("T")[0]}.pdf`;
-        pdf.save(filename);
+        if (preview) {
+          setPreviewing(true);
+          const pdfBlob = pdf.output("blob");
+          const url = URL.createObjectURL(pdfBlob);
+          window.open(url, "_blank");
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+            setPreviewing(false);
+          }, 1000);
+        } else {
+          const filename = `Quote_${clientInfo.company_name.replace(/[^a-z0-9]/gi, "_")}_Week${quoteData.week}_${new Date().toISOString().split("T")[0]}.pdf`;
+          pdf.save(filename);
+        }
       }
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -107,7 +182,6 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
     0
   );
 
-  // Calculate due date: last day of the month for the selected week
   const weekNumber = quoteData.week;
   const year = new Date().getFullYear();
   const dueDateObj = getDueDateForWeek(weekNumber, year);
@@ -119,7 +193,6 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
     })
     .toUpperCase();
 
-  // Use quote_no from the first item in quoteData.items if available
   let quoteNumber = "-";
   if (
     quoteData &&
@@ -158,11 +231,61 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-2xl max-w-5xl w-full my-8">
+      <div className="bg-white rounded-lg shadow-2xl max-w-6xl w-full my-8">
         {/* Action Bar */}
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-900">Quote Preview</h2>
-          <div className="flex items-center gap-2">
+        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-slate-100">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Quote Preview</h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Review and download your quote document
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              onClick={onClose}
+              className="h-8 w-8 p-0 rounded-full hover:bg-gray-200"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Upload Button */}
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="gap-2 border-2 border-dashed border-blue-300 hover:border-blue-500 hover:bg-blue-50 hover:text-slate-900 transition-all"
+            >
+              <Upload className="w-4 h-4" />
+              Attach Documents
+            </Button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            {/* Upload Manager Toggle */}
+            {additionalPDFs.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setShowUploadManager(!showUploadManager)}
+                className="gap-2 bg-blue-50 border-blue-200 hover:bg-blue-100 hover:text-slate-900"
+              >
+                <FileText className="w-4 h-4" />
+                {additionalPDFs.length} Attached (
+                {showUploadManager ? "Hide" : "Show"})
+              </Button>
+            )}
+
+            <div className="flex-1" />
+
+            {/* Preview Button */}
             <Button
               variant="outline"
               onClick={() => generatePDF(true)}
@@ -177,14 +300,16 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
               ) : (
                 <>
                   <Eye className="w-4 h-4" />
-                  Preview PDF
+                  Preview
                 </>
               )}
             </Button>
+
+            {/* Download Button */}
             <Button
               onClick={() => generatePDF(false)}
               disabled={generating || previewing}
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
+              className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-md"
             >
               {generating ? (
                 <>
@@ -198,14 +323,85 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
                 </>
               )}
             </Button>
-            <Button variant="outline" onClick={onClose}>
-              Close
-            </Button>
           </div>
+
+          {/* Upload Manager Panel */}
+          {showUploadManager && additionalPDFs.length > 0 && (
+            <div className="mt-4 p-4 bg-white rounded-lg border-2 border-blue-100 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-sm text-gray-900 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-600" />
+                  Attached Documents ({additionalPDFs.length})
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFiles}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  Clear All
+                </Button>
+              </div>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {additionalPDFs.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <FileText className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {file.name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-gray-500">
+                            {formatFileSize(file.size)}
+                          </span>
+                          <span className="text-xs text-gray-400">•</span>
+                          <span className="text-xs text-gray-500">
+                            PDF Document
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFile(index)}
+                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between text-xs text-gray-600">
+                  <span className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    These files will be appended to the end of your quote
+                  </span>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 hover:underline"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add More
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Quote Content */}
-        <div className="p-8 overflow-y-auto max-h-[calc(100vh-200px)] flex justify-center bg-gray-100">
+        <div className="p-8 overflow-y-auto max-h-[calc(100vh-280px)] flex justify-center bg-gray-100">
           <div
             ref={quoteRef}
             className="bg-white shadow-lg"

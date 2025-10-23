@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, use } from "react";
-import { getDropCableStatusColor, formatStatusText } from "@/lib/utils/dropCableColors";
+import {
+  getDropCableStatusColor,
+  formatStatusText,
+} from "@/lib/utils/dropCableColors";
 import { useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { Button } from "@/components/ui/button";
@@ -47,7 +50,11 @@ export default function ClientDetailPage({ params }) {
   const [formData, setFormData] = useState({});
 
   // SWR for client data
-  const { data: clientData, isLoading: loading, error: clientError } = useSWR(
+  const {
+    data: clientData,
+    isLoading: loading,
+    error: clientError,
+  } = useSWR(
     resolvedParams.id ? `/client/${resolvedParams.id}` : null,
     () => get(`/client/${resolvedParams.id}`),
     { revalidateOnFocus: true, dedupingInterval: 60000 }
@@ -125,16 +132,16 @@ export default function ClientDetailPage({ params }) {
       setSaving(true);
       // Transform empty strings to null for optional fields
       const payload = { ...formData };
-      Object.keys(payload).forEach(key => {
+      Object.keys(payload).forEach((key) => {
         if (payload[key] === "") {
           payload[key] = null;
         }
         // Ensure boolean fields are properly typed
-        if (key === 'is_active') {
+        if (key === "is_active") {
           payload[key] = Boolean(payload[key]);
         }
         // Trim string fields
-        if (typeof payload[key] === 'string') {
+        if (typeof payload[key] === "string") {
           payload[key] = payload[key].trim();
         }
       });
@@ -273,7 +280,8 @@ export default function ClientDetailPage({ params }) {
             Client Not Found
           </h1>
           <p className="text-slate-600 dark:text-slate-400 max-w-md">
-            The client you&apos;re looking for doesn&apos;t exist or has been removed.
+            The client you&apos;re looking for doesn&apos;t exist or has been
+            removed.
           </p>
         </div>
         <Button
@@ -831,23 +839,21 @@ export default function ClientDetailPage({ params }) {
 
                     {category.totalCount > 0 ? (
                       <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-slate-800">
-                        {Object.entries(category.statusCounts).map(
-                          ([status, count]) => (
+                        {Object.entries(category.statusCounts)
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .map(([status, count]) => (
                             <div
                               key={status}
                               className="flex items-center justify-between text-sm"
                             >
-                              <span
-                                className="text-xs px-2 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                              >
+                              <span className="text-xs px-2 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                                 {formatStatusText(status)}
                               </span>
                               <Badge variant="outline" className="text-xs">
                                 {count}
                               </Badge>
                             </div>
-                          )
-                        )}
+                          ))}
                       </div>
                     ) : (
                       <p className="text-sm text-slate-500 dark:text-slate-400 pt-4 border-t border-slate-200 dark:border-slate-800">
