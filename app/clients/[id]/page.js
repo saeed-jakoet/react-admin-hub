@@ -410,20 +410,20 @@ export default function ClientDetailPage({ params }) {
                 iconBg: "bg-blue-500",
               },
               {
-                label: "Completed",
-                value: jobStats.completedDropCables,
-                icon: CheckCircle,
-                color: "emerald",
-                bgGradient: "from-emerald-500/10 to-emerald-600/10",
-                iconBg: "bg-emerald-500",
-              },
-              {
                 label: "In Progress",
                 value: jobStats.totalDropCables - jobStats.completedDropCables,
                 icon: Clock,
                 color: "amber",
                 bgGradient: "from-amber-500/10 to-amber-600/10",
                 iconBg: "bg-amber-500",
+              },
+              {
+                label: "Completed",
+                value: jobStats.completedDropCables,
+                icon: CheckCircle,
+                color: "emerald",
+                bgGradient: "from-emerald-500/10 to-emerald-600/10",
+                iconBg: "bg-emerald-500",
               },
               {
                 label: "Success Rate",

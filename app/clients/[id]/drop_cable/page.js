@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTable } from "@/components/shared/DataTable";
 import { get, post } from "@/lib/api/fetcher";
+import { del } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
 import JobFormDialog from "@/components/shared/JobFormDialog";
 import UploadDocumentDialog from "@/components/shared/UploadDocumentDialog";
@@ -32,11 +33,34 @@ import AsBuiltDocumentDialog from "@/components/shared/AsBuiltDocumentDialog";
 import { EmailDropCableDialog } from "@/components/clients/EmailDropCableDialog";
 import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
 import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
+import { Trash2 } from "lucide-react";
 import Header from "@/components/shared/Header";
 import { useToast } from "@/components/shared/Toast";
 import InventoryUsageDialog from "@/components/inventory/InventoryUsageDialog";
 
 export default function DropCablePage() {
+  const handleDeleteOrder = (job) => {
+    const title = "Delete order?";
+    const message =
+      "This action cannot be undone. This will permanently delete the order and its associated data.";
+    toast.warning(title, message, {
+      action: "Delete",
+      duration: 0,
+      onAction: async () => {
+        try {
+          await del(`/drop-cable/${job.id}`);
+          await mutate([`/drop-cable/client/${clientId}`]);
+          toast.success("Deleted", "Order deleted successfully.");
+        } catch (e) {
+          console.error(e);
+          toast.error("Error", e.message || "Failed to delete order.");
+        }
+      },
+      onCancel: () => {
+        // no-op
+      },
+    });
+  };
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -414,6 +438,21 @@ export default function DropCablePage() {
       },
     },
     {
+      accessorKey: "service_provider",
+      header: "ISP",
+      cell: ({ row }) => {
+        const job = row.original;
+        return (
+          <div className="flex items-center space-x-2">
+            <User className="w-4 h-4 text-slate-400" />
+            <span className="text-slate-600 dark:text-slate-400">
+              {job.service_provider || "-"}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
@@ -434,7 +473,8 @@ export default function DropCablePage() {
       cell: ({ row }) => {
         const job = row.original;
         let countyDisplay = job.county || "-";
-        if (countyDisplay.toLowerCase() === "tablebay") countyDisplay = "Table Bay";
+        if (countyDisplay.toLowerCase() === "tablebay")
+          countyDisplay = "Table Bay";
         return (
           <div className="flex items-center space-x-2">
             <MapPin className="w-4 h-4 text-slate-400" />
@@ -506,31 +546,6 @@ export default function DropCablePage() {
       },
     },
     {
-      accessorKey: "dates",
-      header: "Key Dates",
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <div className="space-y-1 text-sm">
-            {job.survey_date && (
-              <div className="text-slate-600 dark:text-slate-400">
-                Survey: {new Date(job.survey_date).toLocaleDateString()}
-              </div>
-            )}
-            {job.installation_scheduled_for && (
-              <div className="text-slate-600 dark:text-slate-400">
-                Install:{" "}
-                {new Date(job.installation_scheduled_for).toLocaleDateString()}
-              </div>
-            )}
-            {!job.survey_date && !job.installation_scheduled_for && (
-              <span className="text-slate-400">—</span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
       id: "actions",
       cell: ({ row }) => {
         const job = row.original;
@@ -570,6 +585,13 @@ export default function DropCablePage() {
                 >
                   <Mail className="h-4 w-4" />
                   Send Email
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleDeleteOrder(job)}
+                  className="flex items-center gap-2 text-red-600 focus:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Order
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
