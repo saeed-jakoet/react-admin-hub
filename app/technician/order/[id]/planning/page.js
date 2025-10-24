@@ -2,18 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, FileText, Loader2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, FileText, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { get } from "@/lib/api/fetcher";
-import { Document, Page, pdfjs } from "react-pdf";
+import dynamic from "next/dynamic";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { Loader } from "@/components/shared/Loader";
 
-// Use local worker from pdfjs-dist
-if (typeof window !== "undefined") {
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-}
+// Dynamically import react-pdf components on the client only
+const PDFDocument = dynamic(
+  () =>
+    import("react-pdf").then((mod) => {
+      // Set worker when module loads
+      mod.pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${mod.pdfjs.version}/build/pdf.worker.min.mjs`;
+      return mod.Document;
+    }),
+  { ssr: false }
+);
+const PDFPage = dynamic(() => import("react-pdf").then((m) => m.Page), {
+  ssr: false,
+});
 
 export default function PlanningDocumentPage() {
   const { id } = useParams();
@@ -22,12 +31,22 @@ export default function PlanningDocumentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [numPages, setNumPages] = useState(null);
+  const [pdfReady, setPdfReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [pdfLoaded, setPdfLoaded] = useState(false);
+
+  // Ensure we only render the PDF after first client mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     async function fetchPlanningDoc() {
       try {
         setLoading(true);
         setError(null);
+        setPdfReady(false);
+        setNumPages(null);
 
         // Fetch all documents for this drop cable job
         const response = await get(`/documents/job/drop_cable/${id}`);
@@ -51,13 +70,18 @@ export default function PlanningDocumentPage() {
 
         if (urlResponse?.data?.url) {
           setPdfUrl(urlResponse.data.url);
+          // Longer delay to ensure worker is ready after navigation
+          setTimeout(() => {
+            setPdfReady(true);
+            setLoading(false);
+          }, 300);
         } else {
           setError("Failed to retrieve document URL.");
+          setLoading(false);
         }
       } catch (err) {
         console.error("Error fetching planning document:", err);
         setError("Failed to load planning document. Please try again.");
-      } finally {
         setLoading(false);
       }
     }
@@ -65,6 +89,12 @@ export default function PlanningDocumentPage() {
     if (id) {
       fetchPlanningDoc();
     }
+    
+    // Cleanup on unmount
+    return () => {
+      setPdfReady(false);
+      setNumPages(null);
+    };
   }, [id]);
 
   if (loading) {
@@ -137,24 +167,29 @@ export default function PlanningDocumentPage() {
         className="flex-1 w-full h-full overflow-auto bg-white"
         style={{ minHeight: 0 }}
       >
-        {pdfUrl && !loading ? (
-          <Document
+        {!pdfLoaded && (
+          <div className="flex items-center justify-center h-full">
+            <Loader variant="bars" size="lg" text="Loading your planning document..." />
+          </div>
+        )}
+        {mounted && pdfUrl && !loading && pdfReady && (
+          <PDFDocument
             file={pdfUrl}
-            onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-            loading={
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-              </div>
-            }
+            onLoadSuccess={({ numPages }) => {
+              setNumPages(numPages);
+              setPdfLoaded(true);
+            }}
+            loading={<div />}
             error={
               <div className="flex items-center justify-center h-full text-red-600">
                 Failed to load PDF
               </div>
             }
+            key={pdfUrl}
           >
             {numPages &&
               Array.from({ length: numPages }, (_, i) => (
-                <Page
+                <PDFPage
                   key={i}
                   pageNumber={i + 1}
                   width={
@@ -165,11 +200,7 @@ export default function PlanningDocumentPage() {
                   className="mx-auto"
                 />
               ))}
-          </Document>
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-          </div>
+          </PDFDocument>
         )}
       </div>
     </div>
