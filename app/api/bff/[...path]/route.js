@@ -99,25 +99,29 @@ async function proxy(method, req, ctx) {
   incomingHeaders.delete("host");
   incomingHeaders.delete("connection");
   incomingHeaders.delete("content-length");
+  
+  // Add ngrok bypass header (for ngrok free tier during development)
+  // Safe to keep in production - ignored by non-ngrok backends
+  if (API_BASE?.includes("ngrok")) {
+    incomingHeaders.set("ngrok-skip-browser-warning", "true");
+  }
+  
   // Ensure CSRF header is present for mutating requests
   const lowerMethod = method.toLowerCase();
   const isMutating = ["post", "put", "patch", "delete"].includes(lowerMethod);
   if (isMutating && !incomingHeaders.get("x-csrf-token")) {
-    const c = await nextCookies();
-    const csrf = c.get("csrfToken")?.value;
-    if (csrf) incomingHeaders.set("x-csrf-token", csrf);
-  }
-  // Attach Cookie header from Next cookies
-  let cookieHeader = await buildCookieHeaderFromNext();
-  if (cookieHeader) incomingHeaders.set("Cookie", cookieHeader);
-
-  // If we don't have an accessToken yet (e.g., cold tab resume), try a server refresh once
-  if (!/accessToken=/.test(cookieHeader || "")) {
-    const refreshed = await tryServerRefresh();
-    if (refreshed.ok) {
-      cookieHeader = await buildCookieHeaderFromNext();
-      if (cookieHeader) incomingHeaders.set("Cookie", cookieHeader);
+    // Try to get CSRF from browser cookies first
+    const browserCookies = req.headers.get("cookie") || "";
+    const csrfMatch = browserCookies.match(/csrfToken=([^;]+)/);
+    if (csrfMatch) {
+      incomingHeaders.set("x-csrf-token", csrfMatch[1]);
     }
+  }
+  
+  // Attach Cookie header from browser request (NOT from Next.js server cookies)
+  const browserCookieHeader = req.headers.get("cookie");
+  if (browserCookieHeader) {
+    incomingHeaders.set("Cookie", browserCookieHeader);
   }
 
   // Body handling

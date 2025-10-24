@@ -24,7 +24,11 @@ export function AuthProvider({ children }) {
       } else {
         setUser(null);
       }
-    } catch {
+    } catch (err) {
+      // Only log errors in development
+      if (process.env.NODE_ENV === "development") {
+        console.error("fetchCurrentUser error:", err);
+      }
       setUser(null);
     }
   };
@@ -43,13 +47,17 @@ export function AuthProvider({ children }) {
         throw new Error("Invalid email or password");
       }
 
-      await fetchCurrentUser(); // cookies are set; fetch profile
+      // Fetch user profile (cookies are now set)
+      await fetchCurrentUser();
+      
+      // Wait a bit to ensure user state is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       setIsLoading(false);
       
-      // Redirect based on role after fetching user
+      // Get user role from state (already fetched by fetchCurrentUser)
       const userData = await axiosInstance.get("/auth/me");
-      const userRole = userData?.data?.data?.role;
+      const userRole = userData?.data?.data?.role || userData?.data?.data?.user_metadata?.role;
       
       if (userRole === "technician") {
         router.push("/technician");
@@ -60,6 +68,9 @@ export function AuthProvider({ children }) {
       return true;
     } catch (err) {
       setIsLoading(false);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Login error:", err);
+      }
       throw err;
     }
   };
