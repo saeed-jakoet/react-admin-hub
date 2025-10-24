@@ -590,7 +590,7 @@ function OrderCard({ order }) {
 
   return (
     <Card
-      onClick={() => router.push(`/technician/${order.id}/options`)}
+      onClick={() => router.push(`/technician/options/${order.id}`)}
       className="group p-4 bg-white border border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer rounded-xl relative overflow-hidden"
     >
       {/* Blue accent bar */}
