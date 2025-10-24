@@ -349,7 +349,6 @@ export default function DropCablePage() {
       const result = await post("/documents/upload", formData);
       toast.success("Success", "Document uploaded successfully.");
       mutate([`/drop-cable/client/${clientId}`]);
-      console.log("Upload successful:", result);
     } catch (error) {
       toast.error("Error", error.message || "Upload failed.");
       console.error("Upload error:", error);
@@ -400,7 +399,6 @@ export default function DropCablePage() {
         setAsBuiltModalOpen(false);
         toast.success("Success", "As-Built document generated and downloaded.");
         mutate([`/drop-cable/client/${clientId}`]);
-        console.log("As-Built document generated successfully:", result);
       } else {
         toast.error("Error", "Failed to generate As-Built document.");
         throw new Error("Failed to generate As-Built document");

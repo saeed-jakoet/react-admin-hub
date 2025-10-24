@@ -412,8 +412,6 @@ export default function OverviewPage() {
   };
 
   const events = transformOrdersToEvents(filteredOrders);
-  console.log("Calendar events:", events);
-
   // --- Extracted Components ---
   // Re-select previously selected event (by id) after events change/navigations
   useEffect(() => {

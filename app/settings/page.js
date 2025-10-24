@@ -129,7 +129,6 @@ function UserSettingsPage() {
   };
 
   const [saveError, setSaveError] = useState("");
-  console.log(userData);
 
   const editableFields = [
     "first_name",

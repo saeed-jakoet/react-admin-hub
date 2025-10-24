@@ -17,13 +17,11 @@ export function AddFleetDialog({
     if (open) {
       get("/staff")
         .then((data) => {
-          console.log("/staff response", data);
           if (Array.isArray(data.data)) {
             const options = data.data.map((s) => ({
               value: s.id,
               label: `${s.first_name} ${s.surname}`,
             }));
-            console.log("Mapped staff options", options);
             setStaffOptions(options);
           } else {
             setStaffOptions([]);

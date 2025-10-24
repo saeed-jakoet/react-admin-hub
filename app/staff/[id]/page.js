@@ -65,7 +65,6 @@ export default function StaffDetailPage({ params }) {
     { revalidateOnFocus: true, dedupingInterval: 60000 }
   );
   const staff = staffData?.data || null;
-console.log(staffData);
 
   // SWR for profile data (only fetch if auth_user_id exists)
   const { data: profileData } = useSWR(

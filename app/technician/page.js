@@ -67,10 +67,8 @@ export default function TechnicianDashboard() {
     const fetchProfile = async () => {
       try {
         const response = await get("/staff/me");
-        console.log("Profile response:", response);
         if (response?.status === "success") {
           setProfileData(response.data);
-          console.log("Profile data set:", response.data);
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -88,12 +86,9 @@ export default function TechnicianDashboard() {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        console.log("Fetching orders for technician ID:", profileData.id);
         const response = await get(`/drop-cable/technician/${profileData.id}`);
-        console.log("Orders response:", response);
         if (response?.status === "success") {
           setOrders(response.data || []);
-          console.log("Orders set:", response.data?.length || 0, "items");
         }
       } catch (error) {
         console.error("Error fetching orders:", error);

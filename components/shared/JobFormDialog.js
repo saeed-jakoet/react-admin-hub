@@ -444,7 +444,6 @@ export default function JobFormDialog({
       if (mode === "create") {
         result = await post(jobConfig.apiEndpoint, payload);
       } else {
-        console.log(payload)
         result = await put(jobConfig.apiEndpoint, payload);
       }
 

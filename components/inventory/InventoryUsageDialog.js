@@ -155,10 +155,8 @@ export default function InventoryUsageDialog({
       }
 
       const payload = { jobType: jobType, jobId, items };
-      console.log("Applying inventory usage:", payload);
 
       const res = await post("/inventory/usage", payload);
-      console.log("Response:", res);
 
       // Check for success in response
       if (res && res.success !== false) {
