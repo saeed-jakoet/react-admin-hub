@@ -137,11 +137,16 @@ export default function JobFormDialog({
       setFormData({ ...jobData });
       setNewNote("");
       setSelectedTechnicianId(jobData?.technician_id || "");
-      setSelectedLinkManagerId(jobData?.link_manager_id || "");
-      // Keep canonical week value from DB if present (e.g., '2025-43')
+      
+      // Map link_manager name to id
+      const match = linkManagers.find(lm => 
+        `${lm.first_name} ${lm.surname}`.trim() === jobData.link_manager?.trim()
+      );
+      setSelectedLinkManagerId(match?.id || "");
+      
       setWeek(jobData?.week || "");
     }
-  }, [jobData, mode]);
+  }, [jobData, mode, linkManagers]);
 
   // Update client name when prop changes (create mode)
   useEffect(() => {
