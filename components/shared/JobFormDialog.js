@@ -81,7 +81,7 @@ export default function JobFormDialog({
   );
   // New note input (used in edit mode to append without overwriting)
   const [newNote, setNewNote] = useState("");
-  // Add week state
+  // Add week state (use canonical format 'YYYY-WW' when possible)
   const [week, setWeek] = useState(jobData?.week || "");
   
   // Technician state
@@ -138,6 +138,7 @@ export default function JobFormDialog({
       setNewNote("");
       setSelectedTechnicianId(jobData?.technician_id || "");
       setSelectedLinkManagerId(jobData?.link_manager_id || "");
+      // Keep canonical week value from DB if present (e.g., '2025-43')
       setWeek(jobData?.week || "");
     }
   }, [jobData, mode]);
@@ -792,20 +793,32 @@ export default function JobFormDialog({
             <div className="flex gap-2 min-w-[400px]">
               {/* Week Number Dropdown (left) */}
               <div className="relative w-1/2">
-                <select
-                  id="week"
-                  value={week}
-                  onChange={(e) => setWeek(e.target.value)}
-                  aria-label="Week Number"
-                  className="block w-full appearance-none pl-4 pr-12 py-3 rounded-lg text-sm font-medium border-0 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                >
-                  <option value="">Select week</option>
-                  {Array.from({ length: 52 }, (_, i) => (
-                    <option key={i + 1} value={i + 1}>
-                      Week {i + 1}
-                    </option>
-                  ))}
-                </select>
+                {(() => {
+                  // Determine which year to show in the week options
+                  const currentYear = new Date().getFullYear();
+                  const weekRegex = /^(\d{4})-(\d{2})$/;
+                  const selectedYear =
+                    typeof week === "string" && weekRegex.test(week)
+                      ? parseInt(week.slice(0, 4), 10)
+                      : currentYear;
+                  const makeValue = (w) => `${selectedYear}-${String(w).padStart(2, "0")}`;
+                  return (
+                    <select
+                      id="week"
+                      value={week}
+                      onChange={(e) => setWeek(e.target.value)}
+                      aria-label="Week Number"
+                      className="block w-full appearance-none pl-4 pr-12 py-3 rounded-lg text-sm font-medium border-0 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="">Select week</option>
+                      {Array.from({ length: 52 }, (_, i) => (
+                        <option key={i + 1} value={makeValue(i + 1)}>
+                          Week {i + 1}
+                        </option>
+                      ))}
+                    </select>
+                  );
+                })()}
                 <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
                   <svg
                     className="h-4 w-4 text-current opacity-60"
