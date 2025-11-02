@@ -84,6 +84,10 @@ export default function JobFormDialog({
   // Add week state (use canonical format 'YYYY-WW' when possible)
   const [week, setWeek] = useState(jobData?.week || "");
   
+  // Multiplier states for services
+  const [surveyMultiplier, setSurveyMultiplier] = useState(jobData?.survey_planning_multiplier || 1);
+  const [calloutMultiplier, setCalloutMultiplier] = useState(jobData?.callout_multiplier || 1);
+  
   // Technician state
   const [technicians, setTechnicians] = useState([]);
   const [loadingTechnicians, setLoadingTechnicians] = useState(false);
@@ -145,6 +149,10 @@ export default function JobFormDialog({
       setSelectedLinkManagerId(match?.id || "");
       
       setWeek(jobData?.week || "");
+      
+      // Set multipliers from jobData
+      setSurveyMultiplier(jobData?.survey_planning_multiplier || 1);
+      setCalloutMultiplier(jobData?.callout_multiplier || 1);
     }
   }, [jobData, mode, linkManagers]);
 
@@ -157,6 +165,35 @@ export default function JobFormDialog({
       }));
     }
   }, [clientName, mode, formData.client]);
+
+  // Fetch and auto-fill client contact details in create mode
+  useEffect(() => {
+    const fetchClientDetails = async () => {
+      if (mode !== "create" || !clientId || !open) return;
+      
+      try {
+        const response = await get(`/client/${clientId}`);
+        if (response?.status === "success" && response.data) {
+          const client = response.data;
+          // Combine first_name and last_name for client_contact_name
+          const contactName = [client.first_name, client.last_name]
+            .filter(Boolean)
+            .join(" ");
+          
+          setFormData((prev) => ({
+            ...prev,
+            client: client.company_name || prev.client,
+            client_contact_name: contactName || "",
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching client details:", error);
+        // Silent fail - user can still fill manually
+      }
+    };
+
+    fetchClientDetails();
+  }, [mode, clientId, open]);
 
   const handleInputChange = (field, value) => {
     if (errorMsg) setErrorMsg("");
@@ -196,6 +233,19 @@ export default function JobFormDialog({
       setInstallPercentEnabled(false);
     }
   }, [formData.installation, installPercentEnabled]);
+
+  // Reset multipliers to 1 when services are unchecked
+  useEffect(() => {
+    if (!Boolean(formData.survey_planning)) {
+      setSurveyMultiplier(1);
+    }
+  }, [formData.survey_planning]);
+
+  useEffect(() => {
+    if (!Boolean(formData.callout)) {
+      setCalloutMultiplier(1);
+    }
+  }, [formData.callout]);
 
   const handleTechnicianChange = (technicianId) => {
     setSelectedTechnicianId(technicianId);
@@ -386,6 +436,10 @@ export default function JobFormDialog({
   if (week) payload.week = week;
   else if (mode === "edit") payload.week = null;
 
+    // Include quote_no in the payload; allow clearing to null in edit mode
+    if (formData.quote_no) payload.quote_no = formData.quote_no.trim();
+    else if (mode === "edit") payload.quote_no = null;
+
     // Include install completion percent if enabled; coerce 0-100
     if (installPercentEnabled) {
       const raw = Number(formData.install_completion_percent);
@@ -402,6 +456,19 @@ export default function JobFormDialog({
       payload.technician_id = selectedTechnicianId;
     } else if (mode === "edit") {
       payload.technician_id = null;
+    }
+
+    // Include multiplier values for services (only if the service is enabled)
+    if (payload.survey_planning) {
+      payload.survey_planning_multiplier = surveyMultiplier;
+    } else if (mode === "edit") {
+      payload.survey_planning_multiplier = null;
+    }
+    
+    if (payload.callout) {
+      payload.callout_multiplier = calloutMultiplier;
+    } else if (mode === "edit") {
+      payload.callout_multiplier = null;
     }
 
     return payload;
@@ -573,19 +640,55 @@ export default function JobFormDialog({
 
       switch (field.type) {
         case "checkbox":
+          // Check if this is a field that needs a multiplier
+          const needsMultiplier = ["survey_planning", "callout"].includes(field.name);
+          const isChecked = Boolean(formData[field.name]);
+          
+          // Get the appropriate multiplier state
+          let multiplierValue = 1;
+          let setMultiplierValue = () => {};
+          if (field.name === "survey_planning") {
+            multiplierValue = surveyMultiplier;
+            setMultiplierValue = setSurveyMultiplier;
+          } else if (field.name === "callout") {
+            multiplierValue = calloutMultiplier;
+            setMultiplierValue = setCalloutMultiplier;
+          }
+          
           return (
-            <label className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer group">
-              <input
-                id={fieldId}
-                type="checkbox"
-                checked={Boolean(formData[field.name])}
-                onChange={(e) => handleInputChange(field.name, e.target.checked)}
-                className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
-              />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100">
-                {field.checkboxLabel || field.label}
-              </span>
-            </label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer group">
+                <input
+                  id={fieldId}
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={(e) => handleInputChange(field.name, e.target.checked)}
+                  className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100">
+                  {field.checkboxLabel || field.label}
+                </span>
+              </label>
+              {needsMultiplier && isChecked && (
+                <div className="ml-8 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Multiply by:
+                  </label>
+                  <select
+                    value={multiplierValue}
+                    onChange={(e) => setMultiplierValue(parseInt(e.target.value))}
+                    className="text-sm px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value={1}>1x</option>
+                    <option value={2}>2x</option>
+                    <option value={3}>3x</option>
+                  </select>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    (for quote calculation)
+                  </span>
+                </div>
+              )}
+            </div>
           );
         case "select":
           return (
@@ -795,9 +898,20 @@ export default function JobFormDialog({
           </div>
           {/* Status dropdown on the right */}
           {statusFieldConfig && (
-            <div className="flex gap-2 min-w-[400px]">
-              {/* Week Number Dropdown (left) */}
-              <div className="relative w-1/2">
+            <div className="flex gap-2 min-w-[600px]">
+              {/* Quote Number Input */}
+              <div className="relative w-1/3">
+                <Input
+                  id="quote_no"
+                  type="text"
+                  value={formData.quote_no || ""}
+                  onChange={(e) => handleInputChange("quote_no", e.target.value)}
+                  placeholder="Quote #"
+                  className="w-full h-12 px-4 text-sm font-medium bg-gray-100 dark:bg-gray-800 border-0 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              {/* Week Number Dropdown */}
+              <div className="relative w-1/3">
                 {(() => {
                   // Determine which year to show in the week options
                   const currentYear = new Date().getFullYear();
@@ -840,8 +954,8 @@ export default function JobFormDialog({
                   </svg>
                 </div>
               </div>
-              {/* Status Dropdown (right) */}
-              <div className="relative w-[340px] min-w-[240px]">
+              {/* Status Dropdown */}
+              <div className="relative w-1/3">
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                   <div
                     className={`w-2.5 h-2.5 rounded-full ${
