@@ -71,7 +71,6 @@ export default function DropCableFormDialog({
   const [installPercentEnabled, setInstallPercentEnabled] = useState(
     Boolean(jobData?.install_completion_percent)
   );
-  const [newNote, setNewNote] = useState("");
   const [surveyMultiplier, setSurveyMultiplier] = useState(
     jobData?.survey_planning_multiplier || 1
   );
@@ -288,19 +287,20 @@ export default function DropCableFormDialog({
     setSaving(true);
     try {
       const payload = preparePayload();
+      
+      // Handle notes based on mode
+      if (mode === "create" && formData.newNote?.trim()) {
+        payload.notes = formData.newNote.trim();
+      } else if (mode === "edit" && formData.newNote?.trim()) {
+        payload.notes = formData.newNote.trim();
+      }
+      
       let result;
 
       if (mode === "create") {
         result = await post(jobConfig.apiEndpoint, payload);
-        success("Created", `${jobConfig.shortName} created successfully!`);
       } else {
-        result = await put(`${jobConfig.apiEndpoint}/${jobData.id}`, payload);
-        if (newNote.trim()) {
-          await post(`${jobConfig.apiEndpoint}/${jobData.id}/notes`, {
-            note: newNote.trim(),
-          });
-        }
-        success("Updated", `${jobConfig.shortName} updated successfully!`);
+        result = await put(jobConfig.apiEndpoint, payload);
       }
 
       onSuccess?.(result?.data || result);
@@ -605,6 +605,72 @@ export default function DropCableFormDialog({
         );
 
       case "textarea":
+        // Special handling for notes field to show previous notes as cards
+        if (field.name === "notes") {
+          const previousNotes = Array.isArray(formData.notes) ? formData.notes : [];
+          const newNote = formData.newNote || "";
+          
+          return (
+            <div className="space-y-4">
+              {/* Display previous notes as read-only cards */}
+              {previousNotes.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    Previous Notes
+                  </p>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {previousNotes.map((note, index) => (
+                      <div
+                        key={index}
+                        className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+                      >
+                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
+                          {new Date(note.timestamp).toLocaleString()}
+                        </p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                          {note.text}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Textarea for new note (only in edit mode) */}
+              {mode === "edit" && (
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="new-note"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Add New Note
+                  </Label>
+                  <textarea
+                    id="new-note"
+                    value={newNote}
+                    onChange={(e) => handleInputChange("newNote", e.target.value)}
+                    placeholder="Type a new note to append..."
+                    className={`${baseClasses} p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 ${focusClasses} resize-none min-h-[120px]`}
+                    rows={5}
+                  />
+                </div>
+              )}
+              
+              {/* In create mode, just show a regular textarea */}
+              {mode === "create" && (
+                <textarea
+                  id={fieldId}
+                  value={newNote}
+                  onChange={(e) => handleInputChange("newNote", e.target.value)}
+                  placeholder={field.placeholder}
+                  className={`${baseClasses} p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 ${focusClasses} resize-none min-h-[120px]`}
+                  rows={5}
+                />
+              )}
+            </div>
+          );
+        }
+        
         return (
           <textarea
             id={fieldId}

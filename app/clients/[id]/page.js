@@ -195,9 +195,7 @@ export default function ClientDetailPage({ params }) {
     }, {});
 
     const linkBuildStatusCounts = linkBuildJobs.reduce((acc, job) => {
-      if (job.atp_pack_submitted) {
-        acc[job.atp_pack_submitted] = (acc[job.atp_pack_submitted] || 0) + 1;
-      }
+      acc[job.status] = (acc[job.status] || 0) + 1;
       return acc;
     }, {});
 

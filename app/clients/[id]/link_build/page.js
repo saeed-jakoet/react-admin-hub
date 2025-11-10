@@ -67,6 +67,7 @@ export default function LinkBuildPage() {
   const jobs = useMemo(() => jobsData?.data || [], [jobsData]);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [weekFilter, setWeekFilter] = useState("all");
   const [editFormData, setEditFormData] = useState({});
   const [saving, setSaving] = useState(false);
@@ -165,13 +166,19 @@ export default function LinkBuildPage() {
     );
   }, [jobs]);
 
+  // Get unique statuses for filter, sorted alphabetically
+  const uniqueStatuses = useMemo(() => {
+    const statuses = jobs.map((job) => job.status).filter(Boolean);
+    return [...new Set(statuses)].sort((a, b) => a.localeCompare(b));
+  }, [jobs]);
+
   // Get unique weeks for filter
   const uniqueWeeks = useMemo(() => {
     const weeks = jobs.map((job) => job.week).filter(Boolean);
     return [...new Set(weeks)].sort();
   }, [jobs]);
 
-  // Filter jobs based on search term and week
+  // Filter jobs based on search term, status, and week
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
       const matchesSearch =
@@ -182,11 +189,14 @@ export default function LinkBuildPage() {
         job.client?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         job.pm?.toLowerCase().includes(searchTerm.toLowerCase());
 
+      const matchesStatus =
+        statusFilter === "all" || job.status === statusFilter;
+
       const matchesWeek = weekFilter === "all" || job.week === weekFilter;
 
-      return matchesSearch && matchesWeek;
+      return matchesSearch && matchesStatus && matchesWeek;
     });
-  }, [jobs, searchTerm, weekFilter]);
+  }, [jobs, searchTerm, statusFilter, weekFilter]);
 
   // Export columns configuration
   const exportColumns = [
@@ -425,21 +435,6 @@ export default function LinkBuildPage() {
       },
     },
     {
-      accessorKey: "week",
-      header: "Week",
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <div className="flex items-center space-x-2">
-            <Hash className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-600 dark:text-slate-400">
-              {job.week || "-"}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
       id: "actions",
       cell: ({ row }) => {
         const job = row.original;
@@ -575,6 +570,11 @@ export default function LinkBuildPage() {
             weeks={uniqueWeeks}
             weekFilter={weekFilter}
             onWeekFilterChange={setWeekFilter}
+            statusFilterEnabled={true}
+            statuses={uniqueStatuses}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            formatStatus={formatStatusText}
             pageIndex={pagination.pageIndex}
             pageSize={pagination.pageSize}
             onPaginationChange={setPagination}

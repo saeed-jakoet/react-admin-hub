@@ -33,29 +33,24 @@ export const useJobFormLogic = ({
       const companyName =
         jobData?.clients?.company_name || jobData?.client || clientName || "";
       
-      // Convert notes from JSON array to readable string
-      let notesText = "";
+      // Keep notes as array for better display control
+      let notesArray = [];
       if (jobData?.notes) {
         try {
-          const notesArray = typeof jobData.notes === "string" 
+          notesArray = typeof jobData.notes === "string" 
             ? JSON.parse(jobData.notes) 
             : jobData.notes;
           
-          if (Array.isArray(notesArray) && notesArray.length > 0) {
-            notesText = notesArray
-              .map((note) => {
-                const date = new Date(note.timestamp).toLocaleString();
-                return `[${date}] ${note.text}`;
-              })
-              .join("\n\n");
+          if (!Array.isArray(notesArray)) {
+            notesArray = [];
           }
         } catch (err) {
           console.error("Failed to parse notes:", err);
-          notesText = "";
+          notesArray = [];
         }
       }
       
-      setFormData({ ...jobData, client: companyName, notes: notesText });
+      setFormData({ ...jobData, client: companyName, notes: notesArray, newNote: "" });
       setWeek(jobData.week || "");
       setInitialized(true);
     } else if (mode === "create") {
