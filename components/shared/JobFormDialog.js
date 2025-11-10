@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Save, RefreshCw, Plus, AlertCircle, UserCircle, LogIn } from "lucide-react";
 import { post, put, get } from "@/lib/api/fetcher";
 import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
+import { getLinkBuildStatusColor } from "@/lib/utils/linkBuildColors";
 import { useToast } from "@/components/shared/Toast";
 
 /**
@@ -863,8 +864,8 @@ export default function JobFormDialog({
 
   // Get display title
   const getTitle = () => {
-    // For drop-cable jobs, show dynamic title/subtitle for create/edit
-    if (jobConfig.apiEndpoint === "/drop-cable") {
+    // For drop-cable and link-build jobs, show dynamic title/subtitle for create/edit
+    if (jobConfig.apiEndpoint === "/drop-cable" || jobConfig.apiEndpoint === "/link-build") {
       let displayName;
       let subtitle;
       if (mode === "create") {
@@ -959,8 +960,9 @@ export default function JobFormDialog({
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                   <div
                     className={`w-2.5 h-2.5 rounded-full ${
-                      getDropCableStatusColor(
-                        formData.status || statusFieldConfig.defaultValue || "",
+                      (jobConfig.apiEndpoint === "/link-build"
+                        ? getLinkBuildStatusColor(formData.status || statusFieldConfig.defaultValue || "")
+                        : getDropCableStatusColor(formData.status || statusFieldConfig.defaultValue || "")
                       )
                         .split(" ")
                         .find((cls) => cls.startsWith("bg-"))
@@ -975,9 +977,11 @@ export default function JobFormDialog({
                   }
                   onChange={(e) => handleInputChange("status", e.target.value)}
                   aria-label="Status"
-                  className={`block w-full appearance-none pl-10 pr-12 py-3 rounded-lg text-sm font-medium border-0 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${getDropCableStatusColor(
-                    formData.status || statusFieldConfig.defaultValue || "",
-                  )}`}
+                  className={`block w-full appearance-none pl-10 pr-12 py-3 rounded-lg text-sm font-medium border-0 cursor-pointer transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    jobConfig.apiEndpoint === "/link-build"
+                      ? getLinkBuildStatusColor(formData.status || statusFieldConfig.defaultValue || "")
+                      : getDropCableStatusColor(formData.status || statusFieldConfig.defaultValue || "")
+                  }`}
                 >
                   {(statusFieldConfig.options || []).map((option) => (
                     <option

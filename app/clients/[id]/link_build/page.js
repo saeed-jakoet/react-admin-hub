@@ -8,12 +8,12 @@ import {
   Activity,
   MoreVertical,
   Upload,
-  FileText,
   Cable,
   MapPin,
   User,
-  Mail,
+  Hash,
   BarChart,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,76 +24,49 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DataTable } from "@/components/shared/DataTable";
-import { get, post } from "@/lib/api/fetcher";
-import { del } from "@/lib/api/fetcher";
+import { get, post, del } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
-import DropCableFormDialog from "@/components/shared/DropCableFormDialog";
+import LinkBuildFormDialog from "@/components/shared/LinkBuildFormDialog";
 import UploadDocumentDialog from "@/components/shared/UploadDocumentDialog";
-import AsBuiltDocumentDialog from "@/components/shared/AsBuiltDocumentDialog";
-import { EmailDropCableDialog } from "@/components/clients/EmailDropCableDialog";
 import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
-import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
-import { Trash2 } from "lucide-react";
+import { getLinkBuildStatusColor, formatStatusText } from "@/lib/utils/linkBuildColors";
 import Header from "@/components/shared/Header";
 import { useToast } from "@/components/shared/Toast";
 import InventoryUsageDialog from "@/components/inventory/InventoryUsageDialog";
 
-export default function DropCablePage() {
-  const handleDeleteOrder = (job) => {
-    const title = "Delete order?";
-    const message =
-      "This action cannot be undone. This will permanently delete the order and its associated data.";
-    toast.warning(title, message, {
-      action: "Delete",
-      duration: 0,
-      onAction: async () => {
-        try {
-          await del(`/drop-cable/${job.id}`);
-          await mutate([`/drop-cable/client/${clientId}`]);
-          toast.success("Deleted", "Order deleted successfully.");
-        } catch (e) {
-          console.error(e);
-          toast.error("Error", e.message || "Failed to delete order.");
-        }
-      },
-      onCancel: () => {
-        // no-op
-      },
-    });
-  };
+export default function LinkBuildPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const clientId = params.id;
   const toast = useToast();
 
-  // SWR for client data to get contact information
+  // Get client data to retrieve company name and contact info
   const { data: clientData } = useSWR(
     clientId ? `/client/${clientId}` : null,
     () => get(`/client/${clientId}`),
     { revalidateOnFocus: true, dedupingInterval: 60000 }
   );
   const client = clientData?.data;
-  const clientCompanyName = client?.company_name || "";
+  const clientName = client?.company_name || "";
   const clientContactName = client
     ? `${client.first_name || ""} ${client.last_name || ""}`.trim()
     : "";
   const clientContactPhone = client?.phone_number || "";
 
-  // SWR for jobs
+  // SWR for jobs - using client name as parameter
   const {
     data: jobsData,
     isLoading: loading,
     error,
   } = useSWR(
-    clientId ? [`/drop-cable/client/${clientId}`] : null,
-    () => get(`/drop-cable/client/${clientId}`),
+    clientName ? [`/link-build/client/${encodeURIComponent(clientName)}`] : null,
+    () => get(`/link-build/client/${encodeURIComponent(clientName)}`),
     { revalidateOnFocus: true, dedupingInterval: 60000 }
   );
   const jobs = useMemo(() => jobsData?.data || [], [jobsData]);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [weekFilter, setWeekFilter] = useState("all");
   const [editFormData, setEditFormData] = useState({});
   const [saving, setSaving] = useState(false);
@@ -109,15 +82,6 @@ export default function DropCablePage() {
   const [selectedJobForUpload, setSelectedJobForUpload] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  // As-Built Document Modal State
-  const [asBuiltModalOpen, setAsBuiltModalOpen] = useState(false);
-  const [selectedJobForAsBuilt, setSelectedJobForAsBuilt] = useState(null);
-  const [generatingAsBuilt, setGeneratingAsBuilt] = useState(false);
-
-  // Email Modal State
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [clientForEmail, setClientForEmail] = useState(null);
-
   // Inventory usage dialog state
   const [usageOpen, setUsageOpen] = useState(false);
   const [selectedJobForUsage, setSelectedJobForUsage] = useState(null);
@@ -125,12 +89,12 @@ export default function DropCablePage() {
   // Check URL parameters for new job creation
   useEffect(() => {
     const isNew = searchParams.get("new") === "true";
-    const clientName = searchParams.get("clientName");
+    const clientNameParam = searchParams.get("clientName");
 
     if (isNew) {
       setNewJobModalOpen(true);
-      if (clientName) {
-        setClientNameForModal(decodeURIComponent(clientName));
+      if (clientNameParam) {
+        setClientNameForModal(decodeURIComponent(clientNameParam));
       }
       const newUrl = window.location.pathname;
       window.history.replaceState({}, "", newUrl);
@@ -153,13 +117,29 @@ export default function DropCablePage() {
     }
   }, [searchParams, jobs]);
 
-  // Format status for display
-  const formatDropCableStatus = (status) => {
-    if (!status) return "Unknown";
-    return status
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+  const handleDeleteOrder = (job) => {
+    const title = "Delete order?";
+    const message =
+      "This action cannot be undone. This will permanently delete the order and its associated data.";
+    toast.warning(title, message, {
+      action: "Delete",
+      duration: 0,
+      onAction: async () => {
+        try {
+          await del(`/link-build/${job.id}`);
+          if (clientName) {
+            await mutate([`/link-build/client/${encodeURIComponent(clientName)}`]);
+          }
+          toast.success("Deleted", "Order deleted successfully.");
+        } catch (e) {
+          console.error(e);
+          toast.error("Error", e.message || "Failed to delete order.");
+        }
+      },
+      onCancel: () => {
+        // no-op
+      },
+    });
   };
 
   // Job stats calculations
@@ -169,38 +149,20 @@ export default function DropCablePage() {
         total: 0,
         completed: 0,
         inProgress: 0,
-        scheduled: 0,
-        issues: 0,
       };
 
     return jobs.reduce(
       (acc, job) => {
         acc.total += 1;
-        if (
-          job.status === "installation_completed" ||
-          job.status === "as_built_submitted"
-        ) {
+        if (job.atp_pack_submitted?.toLowerCase() === "yes" || job.atp_date) {
           acc.completed += 1;
-        } else if (
-          job.status === "installation_scheduled" ||
-          job.status === "survey_scheduled"
-        ) {
-          acc.scheduled += 1;
-        } else if (job.status === "issue_logged" || job.status === "on_hold") {
-          acc.issues += 1;
         } else {
           acc.inProgress += 1;
         }
         return acc;
       },
-      { total: 0, completed: 0, inProgress: 0, scheduled: 0, issues: 0 }
+      { total: 0, completed: 0, inProgress: 0 }
     );
-  }, [jobs]);
-
-  // Get unique statuses for filter, sorted alphabetically
-  const uniqueStatuses = useMemo(() => {
-    const statuses = jobs.map((job) => job.status).filter(Boolean);
-    return [...new Set(statuses)].sort((a, b) => a.localeCompare(b));
   }, [jobs]);
 
   // Get unique weeks for filter
@@ -209,48 +171,34 @@ export default function DropCablePage() {
     return [...new Set(weeks)].sort();
   }, [jobs]);
 
-  // Filter jobs based on search term and status
+  // Filter jobs based on search term and week
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
       const matchesSearch =
         !searchTerm ||
         job.circuit_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         job.site_b_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.physical_address_site_b
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        job.technician_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.technician?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         job.client?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.service_provider?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesStatus =
-        statusFilter === "all" || job.status === statusFilter;
+        job.pm?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesWeek = weekFilter === "all" || job.week === weekFilter;
 
-      return matchesSearch && matchesStatus && matchesWeek;
+      return matchesSearch && matchesWeek;
     });
-  }, [jobs, searchTerm, statusFilter, weekFilter]);
+  }, [jobs, searchTerm, weekFilter]);
 
   // Export columns configuration
   const exportColumns = [
     { header: "Circuit Number", accessorKey: "circuit_number" },
     { header: "Site B", accessorKey: "site_b_name" },
-    { header: "Status", accessor: (job) => formatDropCableStatus(job.status) },
     { header: "County", accessorKey: "county" },
-    { header: "Technician", accessorKey: "technician_name" },
-    {
-      header: "Survey Date",
-      accessor: (job) =>
-        job.survey_date ? new Date(job.survey_date).toLocaleDateString() : "-",
-    },
-    {
-      header: "Install Date",
-      accessor: (job) =>
-        job.installation_scheduled_for
-          ? new Date(job.installation_scheduled_for).toLocaleDateString()
-          : "-",
-    },
+    { header: "PM", accessorKey: "pm" },
+    { header: "Client", accessorKey: "client" },
+    { header: "Technician", accessorKey: "technician" },
+    { header: "Week", accessorKey: "week" },
+    { header: "ATP Submitted", accessorKey: "atp_pack_submitted" },
+    { header: "Quote Number", accessorKey: "quote_number" },
     {
       header: "Created",
       accessor: (job) => new Date(job.created_at).toLocaleDateString(),
@@ -267,34 +215,16 @@ export default function DropCablePage() {
     setUploadModalOpen(true);
   };
 
-  const handleGenerateAsBuilt = (job) => {
-    setSelectedJobForAsBuilt(job);
-    setAsBuiltModalOpen(true);
-  };
-
   const handleInventoryUsage = (job) => {
     setSelectedJobForUsage(job);
     setUsageOpen(true);
   };
 
-  const handleSendEmail = async (job) => {
-    // Fetch client data for email
-    try {
-      const clientResponse = await get(`/client/${clientId}`);
-      setClientForEmail(clientResponse.data);
-      setEmailModalOpen(true);
-    } catch (error) {
-      console.error("Error fetching client data:", error);
-      toast.error("Error", "Failed to fetch client data for email.");
-      // Still open dialog with empty client data
-      setClientForEmail(null);
-      setEmailModalOpen(true);
-    }
-  };
-
   // Handler for job create/edit success
   const handleJobSuccess = (job, mode) => {
-    mutate([`/drop-cable/client/${clientId}`]);
+    if (clientName) {
+      mutate([`/link-build/client/${encodeURIComponent(clientName)}`]);
+    }
     if (mode === "edit") {
       toast.success("Success", "Order updated successfully.");
     } else {
@@ -323,7 +253,7 @@ export default function DropCablePage() {
           .replace(/\s+/g, "_")
           .replace(/[^a-zA-Z0-9_-]/g, "");
 
-      let clientName = "";
+      let clientNameStr = "";
       let clientIdentifier = "";
       try {
         const resp = await get(`/client/${clientId}`);
@@ -331,19 +261,19 @@ export default function DropCablePage() {
         const baseName =
           client.company_name ||
           [client.first_name, client.last_name].filter(Boolean).join(" ");
-        clientName = String(baseName || "Client").trim();
+        clientNameStr = String(baseName || "Client").trim();
         clientIdentifier = toIdentifier(baseName || "client");
       } catch (e) {
         const fallbackName =
           (jobData.client && String(jobData.client).trim()) || "Client";
-        clientName = fallbackName;
+        clientNameStr = fallbackName;
         clientIdentifier =
           (jobData.client_identifier &&
             String(jobData.client_identifier).trim()) ||
           toIdentifier(fallbackName);
       }
 
-      if (!clientName || !clientIdentifier) {
+      if (!clientNameStr || !clientIdentifier) {
         throw new Error(
           "Missing client details (name/identifier). Please ensure the client has a name."
         );
@@ -351,77 +281,25 @@ export default function DropCablePage() {
 
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("clientName", clientName);
+      formData.append("clientName", clientNameStr);
       formData.append("clientIdentifier", clientIdentifier);
       formData.append("circuitNumber", String(jobData.circuit_number));
-      formData.append("jobType", "drop_cable");
+      formData.append("jobType", "link_build");
       formData.append("category", category);
-      formData.append("dropCableJobId", String(jobData.id));
+      formData.append("linkBuildJobId", String(jobData.id));
       formData.append("clientId", String(clientId));
 
       const result = await post("/documents/upload", formData);
       toast.success("Success", "Document uploaded successfully.");
-      mutate([`/drop-cable/client/${clientId}`]);
+      if (clientName) {
+        mutate([`/link-build/client/${encodeURIComponent(clientName)}`]);
+      }
     } catch (error) {
       toast.error("Error", error.message || "Upload failed.");
       console.error("Upload error:", error);
       throw error;
     } finally {
       setUploading(false);
-    }
-  };
-
-  const generateAsBuiltDocument = async (documentData) => {
-    setGeneratingAsBuilt(true);
-    try {
-      const formData = new FormData();
-
-      Object.keys(documentData).forEach((key) => {
-        if (
-          key !== "images" &&
-          documentData[key] !== undefined &&
-          documentData[key] !== ""
-        ) {
-          formData.append(key, documentData[key]);
-        }
-      });
-
-      documentData.images?.forEach((image, index) => {
-        if (image.file) {
-          formData.append(`image_${index}`, image.file);
-          formData.append(`caption_${index}`, image.caption || "");
-        }
-      });
-
-      formData.append("jobId", documentData.jobId);
-      formData.append("clientId", clientId);
-      formData.append("documentType", "as_built");
-      formData.append("jobType", "drop_cable");
-
-      const result = await post("/documents/generate-as-built", formData);
-
-      if (result.success && result.downloadUrl) {
-        const link = document.createElement("a");
-        link.href = result.downloadUrl;
-        link.download = `AsBuilt_${documentData.circuitNumber}_${
-          new Date().toISOString().split("T")[0]
-        }.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setAsBuiltModalOpen(false);
-        toast.success("Success", "As-Built document generated and downloaded.");
-        mutate([`/drop-cable/client/${clientId}`]);
-      } else {
-        toast.error("Error", "Failed to generate As-Built document.");
-        throw new Error("Failed to generate As-Built document");
-      }
-    } catch (error) {
-      toast.error("Error", error.message || "As-Built generation failed.");
-      console.error("As-Built generation error:", error);
-      throw error;
-    } finally {
-      setGeneratingAsBuilt(false);
     }
   };
 
@@ -433,7 +311,7 @@ export default function DropCablePage() {
         const job = row.original;
         return (
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/20">
               <Cable className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -449,21 +327,6 @@ export default function DropCablePage() {
       },
     },
     {
-      accessorKey: "service_provider",
-      header: "ISP",
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <div className="flex items-center space-x-2">
-            <User className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-600 dark:text-slate-400">
-              {job.service_provider || "-"}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
@@ -471,9 +334,44 @@ export default function DropCablePage() {
         return (
           <Badge
             variant="outline"
-            className={getDropCableStatusColor(job.status)}
+            className={getLinkBuildStatusColor(job.status)}
           >
-            {formatDropCableStatus(job.status)}
+            {formatStatusText(job.status) || "Unknown"}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "client",
+      header: "Client",
+      cell: ({ row }) => {
+        const job = row.original;
+        return (
+          <div className="flex items-center space-x-2">
+            <User className="w-4 h-4 text-slate-400" />
+            <span className="text-slate-600 dark:text-slate-400">
+              {job.client || "-"}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "atp_pack_submitted",
+      header: "ATP Status",
+      cell: ({ row }) => {
+        const job = row.original;
+        const isSubmitted = job.atp_pack_submitted || job.atp_date;
+        return (
+          <Badge
+            variant="outline"
+            className={
+              isSubmitted
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400"
+                : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400"
+            }
+          >
+            {isSubmitted ? "Submitted" : "Pending"}
           </Badge>
         );
       },
@@ -512,37 +410,7 @@ export default function DropCablePage() {
       },
     },
     {
-      accessorKey: "end_client_contact_name",
-      header: "End Client",
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <div className="flex items-center space-x-2">
-            <User className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-600 dark:text-slate-400">
-              {job.end_client_contact_name || "-"}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "end_client_contact_email",
-      header: "End Client Email",
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <div className="flex items-center space-x-2">
-            <Mail className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-600 dark:text-slate-400">
-              {job.end_client_contact_email || "-"}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "technician_name",
+      accessorKey: "technician",
       header: "Technician",
       cell: ({ row }) => {
         const job = row.original;
@@ -550,7 +418,22 @@ export default function DropCablePage() {
           <div className="flex items-center space-x-2">
             <User className="w-4 h-4 text-slate-400" />
             <span className="text-slate-600 dark:text-slate-400">
-              {job.technician_name || "-"}
+              {job.technician || "-"}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "week",
+      header: "Week",
+      cell: ({ row }) => {
+        const job = row.original;
+        return (
+          <div className="flex items-center space-x-2">
+            <Hash className="w-4 h-4 text-slate-400" />
+            <span className="text-slate-600 dark:text-slate-400">
+              {job.week || "-"}
             </span>
           </div>
         );
@@ -583,20 +466,6 @@ export default function DropCablePage() {
                   <BarChart className="h-4 w-4" />
                   Inventory Usage
                 </DropdownMenuItem>
-                {/* <DropdownMenuItem
-                  onClick={() => handleGenerateAsBuilt(job)}
-                  className="flex items-center gap-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  Generate As-Built
-                </DropdownMenuItem> */}
-                <DropdownMenuItem
-                  onClick={() => handleSendEmail(job)}
-                  className="flex items-center gap-2"
-                >
-                  <Mail className="h-4 w-4" />
-                  Send Email
-                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleDeleteOrder(job)}
                   className="flex items-center gap-2 text-red-600 focus:text-red-600"
@@ -613,11 +482,11 @@ export default function DropCablePage() {
   ];
 
   if (loading) {
-    return <Loader variant="bars" text="Loading Drop Cable data..." />;
+    return <Loader variant="bars" text="Loading Link Build data..." />;
   }
 
   if (error) {
-    toast.error("Error", "Failed to load drop cable jobs.");
+    toast.error("Error", "Failed to load link build jobs.");
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-6">
@@ -629,7 +498,11 @@ export default function DropCablePage() {
           </p>
           <Button
             variant="outline"
-            onClick={() => mutate([`/drop-cable/client/${clientId}`])}
+            onClick={() => {
+              if (clientName) {
+                mutate([`/link-build/client/${encodeURIComponent(clientName)}`]);
+              }
+            }}
             className="mt-4"
           >
             Try Again
@@ -646,12 +519,12 @@ export default function DropCablePage() {
         title={
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/20">
                 <Cable className="w-8 h-8 text-white" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white dark:border-slate-900"></div>
             </div>
-            <span>Drop Cable Orders</span>
+            <span>Link Build Orders</span>
           </div>
         }
         stats={
@@ -673,7 +546,7 @@ export default function DropCablePage() {
         actions={
           <Button
             onClick={() => setNewJobModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
+            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20 gap-2"
           >
             <Plus className="w-4 h-4" />
             New Order
@@ -696,17 +569,12 @@ export default function DropCablePage() {
             exportEnabled={true}
             exportData={filteredJobs}
             exportColumns={exportColumns}
-            exportFilename="drop-cable-jobs"
+            exportFilename="link-build-jobs"
             exportTitle="Export"
             weekFilterEnabled={true}
             weeks={uniqueWeeks}
             weekFilter={weekFilter}
             onWeekFilterChange={setWeekFilter}
-            statusFilterEnabled={true}
-            statuses={uniqueStatuses}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            formatStatus={formatDropCableStatus}
             pageIndex={pagination.pageIndex}
             pageSize={pagination.pageSize}
             onPaginationChange={setPagination}
@@ -715,12 +583,12 @@ export default function DropCablePage() {
       </div>
 
       {/* Edit Dialog */}
-      <DropCableFormDialog
+      <LinkBuildFormDialog
         mode="edit"
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         jobData={editFormData}
-        jobConfig={jobTypeConfigs["drop-cable"]}
+        jobConfig={jobTypeConfigs["link-build"]}
         onSuccess={(updatedJob) => {
           handleJobSuccess(updatedJob, "edit");
           setEditFormData({});
@@ -729,13 +597,13 @@ export default function DropCablePage() {
       />
 
       {/* New Job Creation Modal */}
-      <DropCableFormDialog
+      <LinkBuildFormDialog
         mode="create"
         open={newJobModalOpen}
         onOpenChange={setNewJobModalOpen}
-        jobConfig={jobTypeConfigs["drop-cable"]}
+        jobConfig={jobTypeConfigs["link-build"]}
         clientId={clientId}
-        clientName={clientCompanyName || clientNameForModal}
+        clientName={clientName || clientNameForModal}
         clientContactName={clientContactName}
         clientContactPhone={clientContactPhone}
         onSuccess={(newJob) => {
@@ -753,30 +621,16 @@ export default function DropCablePage() {
         uploading={uploading}
       />
 
-      {/* As-Built Document Generation Modal */}
-      <AsBuiltDocumentDialog
-        open={asBuiltModalOpen}
-        onOpenChange={setAsBuiltModalOpen}
-        onGenerate={generateAsBuiltDocument}
-        jobData={selectedJobForAsBuilt}
-        generating={generatingAsBuilt}
-      />
-
-      {/* Email Dialog */}
-      <EmailDropCableDialog
-        open={emailModalOpen}
-        onOpenChange={setEmailModalOpen}
-        clientData={clientForEmail}
-      />
-
       {/* Inventory Usage Dialog */}
       <InventoryUsageDialog
         open={usageOpen}
         onOpenChange={setUsageOpen}
-        jobType="drop_cable"
+        jobType="link_build"
         jobId={selectedJobForUsage?.id}
         onSuccess={() => {
-          mutate([`/drop-cable/client/${clientId}`]);
+          if (clientName) {
+            mutate([`/link-build/client/${encodeURIComponent(clientName)}`]);
+          }
           mutate([`/inventory`]);
           toast.success("Success", "Inventory usage applied.");
         }}

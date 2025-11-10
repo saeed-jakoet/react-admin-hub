@@ -68,6 +68,20 @@ export default function ClientDetailPage({ params }) {
     { revalidateOnFocus: true, dedupingInterval: 60000 }
   );
   const dropCableJobs = useMemo(() => jobsData?.data || [], [jobsData]);
+
+  // SWR for link build jobs
+  const { data: linkBuildJobsData } = useSWR(
+    client?.company_name
+      ? `/link-build/client/${encodeURIComponent(client.company_name)}`
+      : null,
+    () => get(`/link-build/client/${encodeURIComponent(client.company_name)}`),
+    { revalidateOnFocus: true, dedupingInterval: 60000 }
+  );
+  const linkBuildJobs = useMemo(
+    () => linkBuildJobsData?.data || [],
+    [linkBuildJobsData]
+  );
+
   const localStorageKey = `client-${resolvedParams.id}-activeTab`;
   const [activeTab, setActiveTabState] = useState(() => {
     if (typeof window !== "undefined") {
@@ -180,6 +194,13 @@ export default function ClientDetailPage({ params }) {
       return acc;
     }, {});
 
+    const linkBuildStatusCounts = linkBuildJobs.reduce((acc, job) => {
+      if (job.atp_pack_submitted) {
+        acc[job.atp_pack_submitted] = (acc[job.atp_pack_submitted] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
     const jobCategories = [
       {
         name: "Drop Cable Installations",
@@ -192,8 +213,8 @@ export default function ClientDetailPage({ params }) {
       {
         name: "Link Build",
         type: "link_build",
-        totalCount: 0,
-        statusCounts: {},
+        totalCount: linkBuildJobs.length,
+        statusCounts: linkBuildStatusCounts,
         icon: Activity,
         color: "purple",
       },
@@ -258,7 +279,7 @@ export default function ClientDetailPage({ params }) {
       totalDropCables,
       completedDropCables,
     };
-  }, [dropCableJobs]);
+  }, [dropCableJobs, linkBuildJobs]);
 
   if (loading) {
     return <Loader variant="bars" text="Loading client data..." />;
@@ -802,17 +823,11 @@ export default function ClientDetailPage({ params }) {
                 {jobStats.jobCategories.map((category, index) => (
                   <Card
                     key={index}
-                    className={`p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all ${
-                      category.totalCount > 0
-                        ? "cursor-pointer hover:border-blue-300 dark:hover:border-blue-700"
-                        : "opacity-60"
-                    }`}
+                    className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all cursor-pointer hover:border-blue-300 dark:hover:border-blue-700"
                     onClick={() => {
-                      if (category.totalCount > 0) {
-                        router.push(
-                          `/clients/${resolvedParams.id}/${category.type}`
-                        );
-                      }
+                      router.push(
+                        `/clients/${resolvedParams.id}/${category.type}`
+                      );
                     }}
                   >
                     <div className="flex items-start justify-between mb-4">
