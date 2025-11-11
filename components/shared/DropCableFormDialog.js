@@ -105,14 +105,18 @@ export default function DropCableFormDialog({
     loadTechnicians();
   }, [open]);
 
-  // Load link managers
+  // Load link managers (super_admin, admin, manager)
   useEffect(() => {
     if (!open) return;
     const loadLinkManagers = async () => {
       setLoadingLinkManagers(true);
       try {
-        const res = await get("/staff?role=link_manager");
-        setLinkManagers(res.data || []);
+        const allStaff = await get("/staff");
+        // Filter to only include super_admin, admin, and manager roles
+        const managers = (allStaff.data || []).filter(
+          (staff) => ["super_admin", "admin", "manager"].includes(staff.role)
+        );
+        setLinkManagers(managers);
       } catch (err) {
         console.error("Failed to load link managers:", err);
       } finally {
@@ -473,6 +477,10 @@ export default function DropCableFormDialog({
               <RefreshCw className="w-4 h-4 animate-spin" />
               Loading staff...
             </div>
+          ) : technicians.length === 0 ? (
+            <div className="p-3 text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
+              No technicians available
+            </div>
           ) : (
             <select
               id={fieldId}
@@ -506,6 +514,10 @@ export default function DropCableFormDialog({
             <div className="flex items-center gap-2 p-3 text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg">
               <RefreshCw className="w-4 h-4 animate-spin" />
               Loading staff...
+            </div>
+          ) : linkManagers.length === 0 ? (
+            <div className="p-3 text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
+              No managers available
             </div>
           ) : (
             <select
@@ -801,9 +813,9 @@ export default function DropCableFormDialog({
 
         <div className="space-y-6">
           {jobConfig.sections?.map((section, index) => {
-            // Skip status in sections since it's in header
+            // Skip status, week, and quote_no in sections since they're in header
             const sectionFields = section.fields.filter(
-              (f) => f.name !== "status" && f.name !== "week"
+              (f) => f.name !== "status" && f.name !== "week" && f.name !== "quote_no"
             );
             if (sectionFields.length === 0) return null;
 

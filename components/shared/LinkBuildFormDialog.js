@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { X, Save, RefreshCw, Plus, AlertCircle } from "lucide-react";
-import { post, put } from "@/lib/api/fetcher";
+import { post, put, get } from "@/lib/api/fetcher";
 import { getLinkBuildStatusColor } from "@/lib/utils/linkBuildColors";
 import { useToast } from "@/components/shared/Toast";
 import { useJobFormLogic, validateForm } from "./BaseJobFormDialog";
@@ -43,6 +43,46 @@ export default function LinkBuildFormDialog({
     setWeek,
     handleInputChange,
   } = useJobFormLogic({ mode, open, jobData, jobConfig, clientName });
+
+  // Link build specific states for technician dropdown
+  const [technicians, setTechnicians] = useState([]);
+  const [loadingTechnicians, setLoadingTechnicians] = useState(false);
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState(
+    jobData?.technician_id || ""
+  );
+
+  // Load technicians
+  useEffect(() => {
+    if (!open) return;
+    const loadTechnicians = async () => {
+      setLoadingTechnicians(true);
+      try {
+        const res = await get("/staff?role=technician");
+        setTechnicians(res.data || []);
+      } catch (err) {
+        console.error("Failed to load technicians:", err);
+      } finally {
+        setLoadingTechnicians(false);
+      }
+    };
+    loadTechnicians();
+  }, [open]);
+
+  // Handler for technician change
+  const handleTechnicianChange = (technicianId) => {
+    setSelectedTechnicianId(technicianId);
+    if (technicianId) {
+      const selected = technicians.find((t) => t.id === technicianId);
+      if (selected) {
+        const technicianName = `${selected.first_name} ${selected.surname}`;
+        handleInputChange("technician", technicianName);
+        handleInputChange("technician_id", technicianId);
+      }
+    } else {
+      handleInputChange("technician", "");
+      handleInputChange("technician_id", "");
+    }
+  };
 
   // Auto-populate client fields in create mode
   useEffect(() => {
@@ -312,6 +352,43 @@ export default function LinkBuildFormDialog({
       "w-full text-sm text-gray-900 dark:text-gray-100 focus:outline-none";
     const focusClasses = "focus:ring-2 focus:ring-purple-500 focus:border-purple-500";
 
+    // Special handling for technician field
+    if (field.name === "technician") {
+      return (
+        <div className="space-y-2">
+          {loadingTechnicians ? (
+            <div className="flex items-center gap-2 p-3 text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Loading staff...
+            </div>
+          ) : technicians.length === 0 ? (
+            <div className="p-3 text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
+              No technicians available
+            </div>
+          ) : (
+            <select
+              id={fieldId}
+              value={selectedTechnicianId}
+              onChange={(e) => handleTechnicianChange(e.target.value)}
+              className={`${baseClasses} p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 ${focusClasses}`}
+            >
+              <option value="">Select a technician</option>
+              {technicians.map((staff) => (
+                <option key={staff.id} value={staff.id}>
+                  {staff.first_name} {staff.surname}
+                </option>
+              ))}
+            </select>
+          )}
+          {selectedTechnicianId && formData.technician && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Assigned: {formData.technician}
+            </p>
+          )}
+        </div>
+      );
+    }
+
     switch (field.type) {
       case "select":
         return (
@@ -483,9 +560,9 @@ export default function LinkBuildFormDialog({
 
         <div className="space-y-6">
           {jobConfig.sections?.map((section, index) => {
-            // Skip status and week in sections since they're in header
+            // Skip status, week, and quote_no in sections since they're in header
             const sectionFields = section.fields.filter(
-              (f) => f.name !== "status" && f.name !== "week"
+              (f) => f.name !== "status" && f.name !== "week" && f.name !== "quote_no"
             );
             if (sectionFields.length === 0) return null;
 
