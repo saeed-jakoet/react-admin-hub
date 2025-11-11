@@ -643,7 +643,6 @@ export default function DropCableFormDialog({
                     htmlFor="new-note"
                     className="text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
-                    Add New Note
                   </Label>
                   <textarea
                     id="new-note"

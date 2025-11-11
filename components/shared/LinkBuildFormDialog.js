@@ -144,7 +144,7 @@ export default function LinkBuildFormDialog({
       
       let result;
 
-      console.log('payload: ', payload);
+      console.log(payload);
       
       if (mode === "create") {
         result = await post(jobConfig.apiEndpoint, payload);
@@ -370,7 +370,6 @@ export default function LinkBuildFormDialog({
                     htmlFor="new-note"
                     className="text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
-                    Add New Note
                   </Label>
                   <textarea
                     id="new-note"
