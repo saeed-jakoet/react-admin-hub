@@ -16,12 +16,22 @@ import { useToast } from "@/components/shared/Toast";
 import DropCableQuote from "./DropCableQuote";
 
 export default function GenerateQuoteDialog({ open, onOpenChange, clientId, clientInfo }) {
+  const [selectedOrderType, setSelectedOrderType] = useState("");
   const [selectedWeek, setSelectedWeek] = useState("");
   const [loading, setLoading] = useState(false);
   const [quoteData, setQuoteData] = useState(null);
   const { error } = useToast();
 
+  const orderTypeOptions = [
+    { value: "drop_cable", label: "Drop Cable" },
+    { value: "link_build", label: "Link Build" },
+  ];
+
   const handleGenerate = async () => {
+    if (!selectedOrderType) {
+      error("Error", "Please select an order type");
+      return;
+    }
     if (!selectedWeek) {
       error("Error", "Please select a week");
       return;
@@ -29,9 +39,13 @@ export default function GenerateQuoteDialog({ open, onOpenChange, clientId, clie
 
     try {
       setLoading(true);
-      const response = await post("/drop-cable/weekly-totals", {
+      const endpoint = selectedOrderType === "drop_cable" 
+        ? "/drop-cable/weekly-totals"
+        : "/link-build/weekly-totals";
+      
+      const response = await post(endpoint, {
         client_id: clientId,
-        order_type: "drop_cable",
+        order_type: selectedOrderType,
         week: selectedWeek,
       });
 
@@ -39,6 +53,7 @@ export default function GenerateQuoteDialog({ open, onOpenChange, clientId, clie
         setQuoteData({
           ...response.data,
           week: selectedWeek,
+          orderType: selectedOrderType,
         });
       } else {
         error("Error", "Failed to fetch quote data");
@@ -53,6 +68,7 @@ export default function GenerateQuoteDialog({ open, onOpenChange, clientId, clie
 
   const handleClose = () => {
     setQuoteData(null);
+    setSelectedOrderType("");
     setSelectedWeek("");
     onOpenChange(false);
   };
@@ -78,13 +94,32 @@ export default function GenerateQuoteDialog({ open, onOpenChange, clientId, clie
             <div>
               <DialogTitle className="text-xl">Generate Quote</DialogTitle>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Select a week to generate an invoice
+                Select order type and week to generate an invoice
               </p>
             </div>
           </div>
         </DialogHeader>
 
         <div className="py-6 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="orderType" className="text-sm font-medium">
+              Order Type
+            </Label>
+            <select
+              id="orderType"
+              value={selectedOrderType}
+              onChange={(e) => setSelectedOrderType(e.target.value)}
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="">Select order type</option>
+              {orderTypeOptions.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="week" className="text-sm font-medium">
               Week Number
@@ -93,7 +128,8 @@ export default function GenerateQuoteDialog({ open, onOpenChange, clientId, clie
               id="week"
               value={selectedWeek}
               onChange={(e) => setSelectedWeek(e.target.value)}
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              disabled={!selectedOrderType}
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="">Select a week</option>
               {Array.from({ length: 52 }, (_, i) => (
@@ -106,8 +142,16 @@ export default function GenerateQuoteDialog({ open, onOpenChange, clientId, clie
 
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
             <p className="text-sm text-blue-800 dark:text-blue-300">
-              <strong>Note:</strong> The quote will include all drop cable installations for{" "}
-              <strong>{clientInfo.company_name}</strong> in the selected week.
+              <strong>Note:</strong> The quote will include all{" "}
+              {selectedOrderType ? (
+                <strong>
+                  {orderTypeOptions.find((t) => t.value === selectedOrderType)?.label}
+                </strong>
+              ) : (
+                "selected"
+              )}{" "}
+              jobs for <strong>{clientInfo?.company_name || "this client"}</strong> in
+              the selected week.
             </p>
           </div>
         </div>
@@ -118,7 +162,7 @@ export default function GenerateQuoteDialog({ open, onOpenChange, clientId, clie
           </Button>
           <Button
             onClick={handleGenerate}
-            disabled={loading || !selectedWeek}
+            disabled={loading || !selectedWeek || !selectedOrderType}
             className="bg-blue-600 hover:bg-blue-700 gap-2"
           >
             {loading ? (

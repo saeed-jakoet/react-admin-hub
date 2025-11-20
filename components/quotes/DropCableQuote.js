@@ -487,52 +487,74 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
             {/* Quote Title */}
             <div className="font-semibold text-xs bg-blue-50 px-3 py-1.5 rounded border-l-4 border-blue-600 mb-3">
               <h3 className="mb-2">
-                {`Drop Cable_${countyLabel}_${pmInitials} (Week ${quoteData.week}) - ${new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" })}`}
+                {`${quoteData.orderType === 'link_build' ? 'Link Build' : 'Drop Cable'}_${countyLabel}_${pmInitials} (Week ${quoteData.week}) - ${new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" })}`}
               </h3>
             </div>
 
             {/* Items Table */}
-            <div className="mb-4">
+            <div className="mb-4 overflow-x-auto">
               <table
                 className="w-full border-collapse border border-gray-300"
-                style={{ fontSize: "9px" }}
+                style={{ fontSize: "8px" }}
               >
                 <thead>
                   <tr className="bg-blue-900 text-white">
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                    <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "3%" }}>
                       No
                     </th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                    <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "15%" }}>
                       Circuit
                     </th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                    <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "15%" }}>
                       Site B
                     </th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                    <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "8%" }}>
                       County
                     </th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
+                    <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "8%" }}>
                       PM
                     </th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
-                      Dist
-                    </th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
-                      Survey
-                    </th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
-                      Callout
-                    </th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
-                      Install
-                    </th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
-                      Mousepad
-                    </th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold">
-                      Misc
-                    </th>
-                    <th className="border border-gray-300 px-1.5 py-1.5 text-center font-semibold bg-blue-800">
+                    {quoteData.orderType === 'link_build' ? (
+                      <>
+                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "6%" }}>
+                          Pairs
+                        </th>
+                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "7%" }}>
+                          Dist
+                        </th>
+                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "12%" }}>
+                          Service
+                        </th>
+                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "10%" }}>
+                          Base
+                        </th>
+                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "10%" }}>
+                          Splices
+                        </th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "6%" }}>
+                          Dist
+                        </th>
+                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "9%" }}>
+                          Survey
+                        </th>
+                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "9%" }}>
+                          Callout
+                        </th>
+                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "9%" }}>
+                          Install
+                        </th>
+                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "9%" }}>
+                          Mousepad
+                        </th>
+                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "9%" }}>
+                          Misc
+                        </th>
+                      </>
+                    )}
+                    <th className="border border-gray-300 px-1 py-1 text-center font-semibold bg-blue-800" style={{ width: "10%" }}>
                       Total
                     </th>
                   </tr>
@@ -543,42 +565,64 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
                       key={item.id}
                       className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                     >
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">
+                      <td className="border border-gray-300 px-1 py-1 text-gray-700">
                         {index + 1}
                       </td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700 font-medium">
+                      <td className="border border-gray-300 px-1 py-1 text-gray-700 font-medium" style={{ wordBreak: "break-word" }}>
                         {item.circuit_number}
                       </td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">
+                      <td className="border border-gray-300 px-1 py-1 text-gray-700" style={{ wordBreak: "break-word" }}>
                         {item.site_b_name}
                       </td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">
+                      <td className="border border-gray-300 px-1 py-1 text-gray-700">
                         {item.county === "tablebay"
                           ? "Table Bay"
                           : item.county || "-"}
                       </td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-gray-700">
+                      <td className="border border-gray-300 px-1 py-1 text-gray-700">
                         {item.pm || "-"}
                       </td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">
-                        {item.distance || 0}m
-                      </td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">
-                        {formatCurrency(item.survey_planning_cost || 0)}
-                      </td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">
-                        {formatCurrency(item.callout_cost || 0)}
-                      </td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">
-                        {formatCurrency(item.installation_cost || 0)}
-                      </td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">
-                        {formatCurrency(item.mousepad_cost || 0)}
-                      </td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center text-gray-700">
-                        {formatCurrency(item.additional_cost || 0)}
-                      </td>
-                      <td className="border border-gray-300 px-1.5 py-1.5 text-center font-bold text-gray-900 bg-blue-50">
+                      {quoteData.orderType === 'link_build' ? (
+                        <>
+                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
+                            {item.fiber_pairs || 0}
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
+                            {item.link_distance || 0}km
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700" style={{ fontSize: "7px", wordBreak: "break-word" }}>
+                            {item.service_type || "-"}
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
+                            {formatCurrency(item.base_cost || 0)}
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
+                            {formatCurrency(item.splices_cost || 0)}
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
+                            {item.distance || 0}m
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
+                            {formatCurrency(item.survey_planning_cost || 0)}
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
+                            {formatCurrency(item.callout_cost || 0)}
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
+                            {formatCurrency(item.installation_cost || 0)}
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
+                            {formatCurrency(item.mousepad_cost || 0)}
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
+                            {formatCurrency(item.additional_cost || 0)}
+                          </td>
+                        </>
+                      )}
+                      <td className="border border-gray-300 px-1 py-1 text-center font-bold text-gray-900 bg-blue-50">
                         {formatCurrency(item.total)}
                       </td>
                     </tr>
