@@ -59,8 +59,9 @@ export function AuthProvider({ children }) {
       const userData = await axiosInstance.get("/auth/me");
       const userRole = userData?.data?.data?.role || userData?.data?.data?.user_metadata?.role;
       
+      // Technicians should use the mobile app - redirect to 403
       if (userRole === "technician") {
-        router.push("/technician");
+        router.push("/403");
       } else {
         router.push("/");
       }

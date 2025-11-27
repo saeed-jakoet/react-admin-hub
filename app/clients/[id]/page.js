@@ -266,16 +266,27 @@ export default function ClientDetailPage({ params }) {
       },
     ];
 
-    const totalDropCables = dropCableJobs.length;
+    // Calculate totals including both drop cables and link builds
+    const totalJobs = dropCableJobs.length + linkBuildJobs.length;
+    
+    // Drop cable completed: installation_completed or closed
     const completedDropCables =
       (dropCableStatusCounts.closed || 0) +
       (dropCableStatusCounts.installation_completed || 0);
+    
+    // Link build completed: complete status
+    const completedLinkBuilds = linkBuildStatusCounts.completed || 0;
+    
+    // Total completed across all job types
+    const totalCompleted = completedDropCables + completedLinkBuilds;
 
     return {
       jobCategories,
       dropCableStatusCounts,
-      totalDropCables,
-      completedDropCables,
+      linkBuildStatusCounts,
+      totalJobs,
+      totalCompleted,
+      inProgress: totalJobs - totalCompleted,
     };
   }, [dropCableJobs, linkBuildJobs]);
 
@@ -421,8 +432,8 @@ export default function ClientDetailPage({ params }) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             {[
               {
-                label: "Total Jobs",
-                value: jobStats.totalDropCables,
+                label: "Total Orders",
+                value: jobStats.totalJobs,
                 icon: Briefcase,
                 color: "blue",
                 bgGradient: "from-blue-500/10 to-blue-600/10",
@@ -430,7 +441,7 @@ export default function ClientDetailPage({ params }) {
               },
               {
                 label: "In Progress",
-                value: jobStats.totalDropCables - jobStats.completedDropCables,
+                value: jobStats.inProgress,
                 icon: Clock,
                 color: "amber",
                 bgGradient: "from-amber-500/10 to-amber-600/10",
@@ -438,7 +449,7 @@ export default function ClientDetailPage({ params }) {
               },
               {
                 label: "Completed",
-                value: jobStats.completedDropCables,
+                value: jobStats.totalCompleted,
                 icon: CheckCircle,
                 color: "emerald",
                 bgGradient: "from-emerald-500/10 to-emerald-600/10",
@@ -447,10 +458,10 @@ export default function ClientDetailPage({ params }) {
               {
                 label: "Success Rate",
                 value: `${
-                  jobStats.totalDropCables
+                  jobStats.totalJobs
                     ? Math.round(
-                        (jobStats.completedDropCables /
-                          jobStats.totalDropCables) *
+                        (jobStats.totalCompleted /
+                          jobStats.totalJobs) *
                           100
                       )
                     : 0
@@ -870,7 +881,7 @@ export default function ClientDetailPage({ params }) {
                       </div>
                     ) : (
                       <p className="text-sm text-slate-500 dark:text-slate-400 pt-4 border-t border-slate-200 dark:border-slate-800">
-                        No jobs in this category
+                        No orders in this category
                       </p>
                     )}
                   </Card>

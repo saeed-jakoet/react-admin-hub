@@ -47,9 +47,12 @@ export default function LinkBuildFormDialog({
   // Link build specific states for technician dropdown
   const [technicians, setTechnicians] = useState([]);
   const [loadingTechnicians, setLoadingTechnicians] = useState(false);
-  const [selectedTechnicianId, setSelectedTechnicianId] = useState(
-    jobData?.technician_id || ""
-  );
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
+
+  // Reset selectedTechnicianId when jobData changes (switching between different link builds)
+  useEffect(() => {
+    setSelectedTechnicianId(jobData?.technician_id || "");
+  }, [jobData?.technician_id, jobData?.id, open]);
 
   // Load technicians
   useEffect(() => {
@@ -346,6 +349,9 @@ export default function LinkBuildFormDialog({
   const renderField = (field) => {
     if (!field) return null;
 
+    // Hidden fields don't render anything
+    if (field.type === "hidden") return null;
+
     const fieldId = `field-${field.name}`;
     const value = formData[field.name] ?? "";
     const baseClasses =
@@ -560,9 +566,9 @@ export default function LinkBuildFormDialog({
 
         <div className="space-y-6">
           {jobConfig.sections?.map((section, index) => {
-            // Skip status, week, and quote_no in sections since they're in header
+            // Skip status, week, quote_no, and hidden fields in sections since they're handled elsewhere
             const sectionFields = section.fields.filter(
-              (f) => f.name !== "status" && f.name !== "week" && f.name !== "quote_no"
+              (f) => f.name !== "status" && f.name !== "week" && f.name !== "quote_no" && f.type !== "hidden"
             );
             if (sectionFields.length === 0) return null;
 
