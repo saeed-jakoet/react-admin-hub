@@ -121,6 +121,7 @@ export default function StaffDetailPage({ params }) {
     try {
       setSaving(true);
       // Only send fields allowed by backend update schema
+      // Note: 'role' is updated separately via /auth endpoint, not here
       const allowedFields = [
         "phone_number",
         "date_of_birth",
@@ -134,7 +135,6 @@ export default function StaffDetailPage({ params }) {
         "emergency_contact_phone",
         "national_id",
         "notes",
-        "role",
       ];
       const payload = allowedFields.reduce((acc, key) => {
         if (Object.prototype.hasOwnProperty.call(formData, key)) {
@@ -153,6 +153,8 @@ export default function StaffDetailPage({ params }) {
         }
         return acc;
       }, {});
+      console.log(payload);
+      
 
       await put(`/staff/${resolvedParams.id}`, payload);
       await mutate(`/staff/${resolvedParams.id}`);
