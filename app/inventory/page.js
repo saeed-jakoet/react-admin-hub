@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,7 @@ import Header from "@/components/shared/Header";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "@/components/shared/Toast";
 
-export default function InventoryPage() {
+function InventoryPageContent() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") || "inventory";
   const [dialogMode, setDialogMode] = useState("add"); // 'add' or 'edit'
@@ -442,5 +442,13 @@ export default function InventoryPage() {
         initialData={editInventory}
       />
     </div>
+  );
+}
+
+export default function InventoryPage() {
+  return (
+    <Suspense fallback={<Loader variant="bars" text="Loading inventory..." />}>
+      <InventoryPageContent />
+    </Suspense>
   );
 }
