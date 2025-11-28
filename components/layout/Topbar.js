@@ -41,6 +41,7 @@ export function Topbar() {
   const pendingCount = countData?.data?.count || 0;
   const pendingRequests = (requestsData?.data || []).slice(0, 5); // Show max 5 in dropdown
 
+
   return (
     <header className="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm sticky top-0 z-10">
       <div className="flex h-full items-center justify-between px-8">
@@ -93,9 +94,9 @@ export function Topbar() {
               <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Package className="h-4 w-4 text-blue-500" />
+                    <Bell className="h-4 w-4 text-blue-500" />
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      Inventory Requests
+                      Notifications
                     </h3>
                   </div>
                   {pendingCount > 0 && (
@@ -115,9 +116,9 @@ export function Topbar() {
                   </div>
                 ) : pendingRequests.length === 0 ? (
                   <div className="px-4 py-8 text-center">
-                    <Package className="h-10 w-10 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
+                    <Bell className="h-10 w-10 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                      No pending requests
+                      No pending Notifications
                     </p>
                   </div>
                 ) : (
@@ -125,11 +126,11 @@ export function Topbar() {
                     <DropdownMenuItem
                       key={request.id}
                       className="px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700/50 last:border-0"
-                      onClick={() => router.push("/inventory")}
+                      onClick={() => router.push("/inventory?tab=requests")}
                     >
                       <div className="flex gap-3 w-full">
                         <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-                          <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                          <Package className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -139,6 +140,9 @@ export function Topbar() {
                           </div>
                           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             {request.items?.length || 0} item(s) • {request.job_type?.replace(/_/g, " ")}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            {request.circuit_number} - {request.site_name}
                           </p>
                           <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                             {formatDistanceToNow(new Date(request.requested_at), { addSuffix: true })}
@@ -187,13 +191,13 @@ export function Topbar() {
                   <span className="text-sm font-semibold text-slate-900 dark:text-white">
                     {user?.user_metadata?.firstName
                       ? `${user.user_metadata.firstName
-                          .charAt(0)
-                          .toUpperCase()}${user.user_metadata.firstName.slice(1)}`
+                        .charAt(0)
+                        .toUpperCase()}${user.user_metadata.firstName.slice(1)}`
                       : "User"}{" "}
                     {user?.user_metadata?.surname
                       ? `${user.user_metadata.surname
-                          .charAt(0)
-                          .toUpperCase()}${user.user_metadata.surname.slice(1)}`
+                        .charAt(0)
+                        .toUpperCase()}${user.user_metadata.surname.slice(1)}`
                       : ""}
                   </span>
                   <span className="text-xs text-slate-500 dark:text-slate-400">
@@ -220,13 +224,13 @@ export function Topbar() {
                     <p className="text-sm font-bold text-slate-900 dark:text-white">
                       {user?.user_metadata?.firstName
                         ? `${user.user_metadata.firstName
-                            .charAt(0)
-                            .toUpperCase()}${user.user_metadata.firstName.slice(1)}`
+                          .charAt(0)
+                          .toUpperCase()}${user.user_metadata.firstName.slice(1)}`
                         : "User"}{" "}
                       {user?.user_metadata?.surname
                         ? `${user.user_metadata.surname
-                            .charAt(0)
-                            .toUpperCase()}${user.user_metadata.surname.slice(1)}`
+                          .charAt(0)
+                          .toUpperCase()}${user.user_metadata.surname.slice(1)}`
                         : ""}
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">

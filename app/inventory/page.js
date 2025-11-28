@@ -5,12 +5,10 @@ import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import {
   Plus,
-  MoreVertical,
   Package,
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Edit,
   MapPin,
   Truck,
   TrendingUp,
@@ -20,12 +18,6 @@ import {
   History,
 } from "lucide-react";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { get } from "@/lib/api/fetcher";
 import useSWR, { mutate } from "swr";
 import { AddInventoryDialog } from "@/components/inventory/AddInventoryDialog";
@@ -34,15 +26,18 @@ import { InventoryRequestsPanel } from "@/components/inventory/InventoryRequests
 import { InventoryHistoryPanel } from "@/components/inventory/InventoryHistoryPanel";
 import { Loader } from "@/components/shared/Loader";
 import Header from "@/components/shared/Header";
+import { useSearchParams } from "next/navigation";
 import { useToast } from "@/components/shared/Toast";
 
 export default function InventoryPage() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") || "inventory";
   const [dialogMode, setDialogMode] = useState("add"); // 'add' or 'edit'
   const [editInventory, setEditInventory] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState("table"); // table, grid
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("inventory"); // inventory, history, requests
+  const [activeTab, setActiveTab] = useState(initialTab); // inventory, history, requests
   const toast = useToast();
 
   // SWR for inventory

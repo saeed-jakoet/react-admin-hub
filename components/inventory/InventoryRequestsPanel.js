@@ -148,11 +148,6 @@ export function InventoryRequestsPanel({ className = "" }) {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Inventory Requests
             </h2>
-            {pendingCount > 0 && (
-              <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                {pendingCount}
-              </span>
-            )}
           </div>
         </div>
 
@@ -163,8 +158,8 @@ export function InventoryRequestsPanel({ className = "" }) {
               key={status}
               onClick={() => setStatusFilter(status)}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${statusFilter === status
-                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                  : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
                 }`}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
