@@ -16,6 +16,8 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  ClipboardList,
+  History,
 } from "lucide-react";
 
 import {
@@ -28,6 +30,8 @@ import { get } from "@/lib/api/fetcher";
 import useSWR, { mutate } from "swr";
 import { AddInventoryDialog } from "@/components/inventory/AddInventoryDialog";
 import { InventoryGridView } from "@/components/inventory/InventoryGridView";
+import { InventoryRequestsPanel } from "@/components/inventory/InventoryRequestsPanel";
+import { InventoryHistoryPanel } from "@/components/inventory/InventoryHistoryPanel";
 import { Loader } from "@/components/shared/Loader";
 import Header from "@/components/shared/Header";
 import { useToast } from "@/components/shared/Toast";
@@ -38,6 +42,7 @@ export default function InventoryPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState("table"); // table, grid
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("inventory"); // inventory, history, requests
   const toast = useToast();
 
   // SWR for inventory
@@ -375,41 +380,56 @@ export default function InventoryPage() {
             Add Item
           </Button>
         }
-        // showStatsCards={true}
         statsCards={statsCards}
+        tabs={[
+          { id: "inventory", label: "Inventory", icon: Package },
+          { id: "history", label: "Usage History", icon: History },
+          { id: "requests", label: "Requests", icon: ClipboardList },
+        ]}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
 
       {/* Content */}
-      <div className="space-y-6">
-        {/* Inventory Display */}
-        {viewMode === "grid" ? (
-          <InventoryGridView
-            items={filteredInventory}
-            getCategoryColor={getCategoryColor}
-            getCategoryDotColor={getCategoryDotColor}
-            getStockIcon={getStockIcon}
-            getStockStatus={getStockStatus}
-            onViewModeChange={setViewMode}
-          />
-        ) : (
-          <DataTable
-            columns={allColumns}
-            data={filteredInventory}
-            searchEnabled={true}
-            searchTerm={searchTerm}
-            onSearch={(e) => setSearchTerm(e.target.value)}
-            searchPlaceholder="Search inventory..."
-            exportEnabled={true}
-            exportData={filteredInventory}
-            exportColumns={exportColumns}
-            exportFilename="inventory-export"
-            exportTitle="Inventory Report"
-            viewModeEnabled={true}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            onRowClick={handleInventoryEdit}
-          />
+      <div className="space-y-6 px-6 pb-6">
+        {/* Tab Content */}
+        {activeTab === "inventory" && (
+          <>
+            {/* Inventory Display */}
+            {viewMode === "grid" ? (
+              <InventoryGridView
+                items={filteredInventory}
+                getCategoryColor={getCategoryColor}
+                getCategoryDotColor={getCategoryDotColor}
+                getStockIcon={getStockIcon}
+                getStockStatus={getStockStatus}
+                onViewModeChange={setViewMode}
+              />
+            ) : (
+              <DataTable
+                columns={allColumns}
+                data={filteredInventory}
+                searchEnabled={true}
+                searchTerm={searchTerm}
+                onSearch={(e) => setSearchTerm(e.target.value)}
+                searchPlaceholder="Search inventory..."
+                exportEnabled={true}
+                exportData={filteredInventory}
+                exportColumns={exportColumns}
+                exportFilename="inventory-export"
+                exportTitle="Inventory Report"
+                viewModeEnabled={true}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                onRowClick={handleInventoryEdit}
+              />
+            )}
+          </>
         )}
+
+        {activeTab === "history" && <InventoryHistoryPanel />}
+
+        {activeTab === "requests" && <InventoryRequestsPanel />}
       </div>
 
       <AddInventoryDialog

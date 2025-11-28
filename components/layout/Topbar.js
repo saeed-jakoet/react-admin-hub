@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Bell, Settings, User, LogOut, Zap } from "lucide-react";
+import { Search, Bell, Settings, User, LogOut, Zap, Package, Clock, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider.js";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import useSWR from "swr";
+import { getPendingRequestsCount, getInventoryRequests } from "@/lib/api/inventoryRequests";
+import { formatDistanceToNow } from "date-fns";
 
 export function Topbar() {
   const { logout, user } = useAuth();
   const router = useRouter();
 
-  const notificationCount = 3; // This would come from your state/API
+  // Fetch pending inventory requests count
+  const { data: countData } = useSWR(
+    "/inventory-requests/pending/count",
+    getPendingRequestsCount,
+    { refreshInterval: 30000 }
+  );
+
+  // Fetch recent pending requests for the dropdown
+  const { data: requestsData, isLoading: requestsLoading } = useSWR(
+    ["/inventory-requests", "pending"],
+    () => getInventoryRequests("pending"),
+    { refreshInterval: 30000 }
+  );
+
+  const pendingCount = countData?.data?.count || 0;
+  const pendingRequests = (requestsData?.data || []).slice(0, 5); // Show max 5 in dropdown
 
   return (
     <header className="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm sticky top-0 z-10">
@@ -49,7 +67,7 @@ export function Topbar() {
             <Zap className="h-5 w-5" />
           </Button> */}
 
-          {/* Notifications */}
+          {/* Notifications - Inventory Requests */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -58,64 +76,87 @@ export function Topbar() {
                 className="h-11 w-11 rounded-xl text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 relative transition-all"
               >
                 <Bell className="h-5 w-5" />
-                {notificationCount > 0 && (
+                {pendingCount > 0 && (
                   <Badge
                     variant="destructive"
                     className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs font-bold bg-gradient-to-r from-red-500 to-red-600 border-2 border-white dark:border-slate-900"
                   >
-                    {notificationCount}
+                    {pendingCount > 9 ? "9+" : pendingCount}
                   </Badge>
                 )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-80 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-xl rounded-xl p-0"
+              className="w-96 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-xl rounded-xl p-0"
             >
               <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    Notifications
-                  </h3>
-                  <Badge
-                    variant="secondary"
-                    className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-semibold"
-                  >
-                    {notificationCount} new
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4 text-blue-500" />
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Inventory Requests
+                    </h3>
+                  </div>
+                  {pendingCount > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-semibold"
+                    >
+                      {pendingCount} pending
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="max-h-96 overflow-y-auto">
-                {/* Sample Notification Items */}
-                {[1, 2, 3].map((i) => (
-                  <DropdownMenuItem
-                    key={i}
-                    className="px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700/50 last:border-0"
-                  >
-                    <div className="flex gap-3">
-                      <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">
-                          New job assigned
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          Drop cable installation for Site B
-                        </p>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                          2 hours ago
-                        </p>
+                {requestsLoading ? (
+                  <div className="px-4 py-8 flex items-center justify-center">
+                    <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                  </div>
+                ) : pendingRequests.length === 0 ? (
+                  <div className="px-4 py-8 text-center">
+                    <Package className="h-10 w-10 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      No pending requests
+                    </p>
+                  </div>
+                ) : (
+                  pendingRequests.map((request) => (
+                    <DropdownMenuItem
+                      key={request.id}
+                      className="px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700/50 last:border-0"
+                      onClick={() => router.push("/inventory")}
+                    >
+                      <div className="flex gap-3 w-full">
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                          <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                              {request.technician?.first_name} {request.technician?.surname}
+                            </p>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            {request.items?.length || 0} item(s) • {request.job_type?.replace(/_/g, " ")}
+                          </p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                            {formatDistanceToNow(new Date(request.requested_at), { addSuffix: true })}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </DropdownMenuItem>
-                ))}
+                    </DropdownMenuItem>
+                  ))
+                )}
               </div>
               <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700">
                 <Button
                   variant="ghost"
                   size="sm"
                   className="w-full text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium"
+                  onClick={() => router.push("/inventory")}
                 >
-                  View all notifications
+                  View all requests
                 </Button>
               </div>
             </DropdownMenuContent>
