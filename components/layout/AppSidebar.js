@@ -41,6 +41,13 @@ const navigationSections = [
         icon: Command,
         notification: null,
       },
+      {
+        id: "map",
+        label: "Map",
+        href: "/map",
+        icon: Network,
+        notification: null,
+      },
       // {
       //   id: "operations",
       //   label: "Live Operations",

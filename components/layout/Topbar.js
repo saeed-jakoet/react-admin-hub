@@ -41,7 +41,6 @@ export function Topbar() {
   const pendingCount = countData?.data?.count || 0;
   const pendingRequests = (requestsData?.data || []).slice(0, 5); // Show max 5 in dropdown
 
-
   return (
     <header className="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm sticky top-0 z-10">
       <div className="flex h-full items-center justify-between px-8">
