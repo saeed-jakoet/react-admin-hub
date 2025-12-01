@@ -13,11 +13,11 @@ const locationFetcher = async () => {
             id: loc.id,
             name: `${loc.first_name || ""} ${loc.last_name || ""}`.trim() || "Unknown",
             position: { lat: loc.latitude, lng: loc.longitude },
-            status: loc.location_updated_at && 
-                    new Date(loc.location_updated_at) > new Date(Date.now() - 10 * 60 * 1000) 
-                    ? "Active" : "Idle", // Active if updated in last 10 minutes
-            lastUpdate: loc.location_updated_at 
-                ? formatTimeAgo(new Date(loc.location_updated_at)) 
+            status: loc.location_updated_at &&
+                new Date(loc.location_updated_at) > new Date(Date.now() - 10 * 60 * 1000)
+                ? "Active" : "Idle", // Active if updated in last 10 minutes
+            lastUpdate: loc.location_updated_at
+                ? formatTimeAgo(new Date(loc.location_updated_at))
                 : "Unknown",
             role: loc.role || "technician",
         }));
@@ -79,7 +79,7 @@ const createCustomIcon = (status) => {
 
 export default function MapView() {
     const capeTown = [-33.9249, 18.4241];
-    
+
     // Fetch real technician locations, poll every 30 seconds
     const { data: technicians, error, isLoading, mutate } = useSWR(
         "staff-locations",
@@ -165,23 +165,19 @@ export default function MapView() {
                         <Popup>
                             <div className="p-2 min-w-[200px]">
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className={`p-2 rounded-full ${
-                                        tech.status === "Active" ? "bg-blue-100" : "bg-amber-100"
-                                    }`}>
-                                        <User className={`w-5 h-5 ${
-                                            tech.status === "Active" ? "text-blue-600" : "text-amber-600"
-                                        }`} />
+                                    <div className={`p-2 rounded-full ${tech.status === "Active" ? "bg-blue-100" : "bg-amber-100"
+                                        }`}>
+                                        <User className={`w-5 h-5 ${tech.status === "Active" ? "text-blue-600" : "text-amber-600"
+                                            }`} />
                                     </div>
                                     <div>
                                         <div className="font-bold text-lg text-slate-900">{tech.name}</div>
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                            tech.status === "Active" 
-                                                ? "bg-blue-100 text-blue-800" 
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${tech.status === "Active"
+                                                ? "bg-blue-100 text-blue-800"
                                                 : "bg-amber-100 text-amber-800"
-                                        }`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                                                tech.status === "Active" ? "bg-blue-500" : "bg-amber-500"
-                                            }`}></span>
+                                            }`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${tech.status === "Active" ? "bg-blue-500" : "bg-amber-500"
+                                                }`}></span>
                                             {tech.status}
                                         </span>
                                     </div>

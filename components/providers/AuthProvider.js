@@ -19,17 +19,28 @@ export function AuthProvider({ children }) {
   const fetchCurrentUser = async () => {
     try {
       const res = await axiosInstance.get("/auth/me");
-      if (res.status === 200 && res.data?.data) {
-        setUser(res.data.data);
+      
+      // Handle case where response might be a string (needs parsing)
+      let data = res.data;
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data);
+        } catch (e) {
+          setUser(null);
+          return null;
+        }
+      }
+      
+      if (res.status === 200 && data?.data) {
+        setUser(data.data);
+        return data.data;
       } else {
         setUser(null);
+        return null;
       }
     } catch (err) {
-      // Only log errors in development
-      if (process.env.NODE_ENV === "development") {
-        console.error("fetchCurrentUser error:", err);
-      }
       setUser(null);
+      return null;
     }
   };
 
@@ -133,7 +144,9 @@ export function AuthProvider({ children }) {
     const onPublic = publicPages.includes(pathname);
 
     if (!user) {
-      if (!onPublic) router.push("/auth/login");
+      if (!onPublic) {
+        router.push("/auth/login");
+      }
       return;
     }
 

@@ -109,19 +109,20 @@ async function proxy(method, req, ctx) {
   // Ensure CSRF header is present for mutating requests
   const lowerMethod = method.toLowerCase();
   const isMutating = ["post", "put", "patch", "delete"].includes(lowerMethod);
-  if (isMutating && !incomingHeaders.get("x-csrf-token")) {
-    // Try to get CSRF from browser cookies first
-    const browserCookies = req.headers.get("cookie") || "";
-    const csrfMatch = browserCookies.match(/csrfToken=([^;]+)/);
-    if (csrfMatch) {
-      incomingHeaders.set("x-csrf-token", csrfMatch[1]);
-    }
+  
+  // Get CSRF token from server-side cookies
+  const serverCookies = await nextCookies();
+  const csrfToken = serverCookies.get("csrfToken")?.value;
+  
+  if (isMutating && !incomingHeaders.get("x-csrf-token") && csrfToken) {
+    incomingHeaders.set("x-csrf-token", csrfToken);
   }
   
-  // Attach Cookie header from browser request (NOT from Next.js server cookies)
-  const browserCookieHeader = req.headers.get("cookie");
-  if (browserCookieHeader) {
-    incomingHeaders.set("Cookie", browserCookieHeader);
+  // Use server-side Next.js cookies for all requests to Hono
+  // This is crucial because cookies are now stored server-side, not in browser
+  const serverCookieHeader = await buildCookieHeaderFromNext();
+  if (serverCookieHeader) {
+    incomingHeaders.set("Cookie", serverCookieHeader);
   }
 
   // Body handling
@@ -142,30 +143,62 @@ async function proxy(method, req, ctx) {
       cache: "no-store",
     });
 
-  const resBody = await signinRes.text();
-  const contentType = signinRes.headers.get("content-type") || "application/json";
+    const resBody = await signinRes.text();
+    const contentType = signinRes.headers.get("content-type") || "application/json";
 
     if (!signinRes.ok) {
       return new Response(resBody, { status: signinRes.status, headers: { "Content-Type": contentType } });
     }
 
-    // Forward Set-Cookie headers from Hono so browser stores cookies on Next domain
-    const outHeaders = new Headers();
-    outHeaders.set("Content-Type", contentType);
-    // append all set-cookie headers
-    signinRes.headers.forEach((value, key) => {
-      if (key.toLowerCase() === "set-cookie") {
-        outHeaders.append("set-cookie", value);
+    // Parse cookies from Hono and set them on the Next.js domain
+    // This is crucial for cross-origin (localhost -> Render) to work
+    const cookieStore = await nextCookies();
+    const isProduction = process.env.NODE_ENV === "production";
+    
+    // Use getSetCookie() to properly get all Set-Cookie headers
+    const setCookieHeaders = signinRes.headers.getSetCookie ? signinRes.headers.getSetCookie() : [];
+    
+    for (const cookieHeader of setCookieHeaders) {
+      const cookieParts = cookieHeader.split(";")[0];
+      const eqIndex = cookieParts.indexOf("=");
+      if (eqIndex === -1) continue;
+      
+      const cookieName = cookieParts.substring(0, eqIndex);
+      const cookieValue = cookieParts.substring(eqIndex + 1);
+      
+      if (cookieName === "accessToken" && cookieValue) {
+        cookieStore.set("accessToken", cookieValue, {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: isProduction,
+          maxAge: 60 * 60,
+          path: "/",
+        });
+      } else if (cookieName === "refreshToken" && cookieValue) {
+        cookieStore.set("refreshToken", cookieValue, {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: isProduction,
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        });
+      } else if (cookieName === "csrfToken" && cookieValue) {
+        cookieStore.set("csrfToken", cookieValue, {
+          httpOnly: false,
+          sameSite: "lax",
+          secure: isProduction,
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        });
       }
-    });
+    }
 
-    // Also attempt a server-side refresh to ensure our server has fresh tokens in Next cookies
-    await tryServerRefresh();
-
-    return new Response(resBody, { status: signinRes.status, headers: outHeaders });
+    // Return response without forwarding Hono's Set-Cookie headers
+    // The cookies are now set on the Next.js domain via cookieStore
+    return new Response(resBody, { status: signinRes.status, headers: { "Content-Type": contentType } });
   }
 
-  // Special handling for logout: forward Set-Cookie clears
+  // Special handling for logout: clear cookies on Next.js domain
   const isLogout = path === "auth/logout" && lowerMethod === "post";
   if (isLogout) {
     const loRes = await fetch(url.toString(), {
@@ -176,14 +209,34 @@ async function proxy(method, req, ctx) {
     });
     const resBody = await loRes.text();
     const contentType = loRes.headers.get("content-type") || "application/json";
-    const outHeaders = new Headers();
-    outHeaders.set("Content-Type", contentType);
-    loRes.headers.forEach((value, key) => {
-      if (key.toLowerCase() === "set-cookie") {
-        outHeaders.append("set-cookie", value);
-      }
+    
+    // Clear cookies on the Next.js domain
+    const cookieStore = await nextCookies();
+    const isProduction = process.env.NODE_ENV === "production";
+    
+    cookieStore.set("accessToken", "", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isProduction,
+      maxAge: 0,
+      path: "/",
     });
-    return new Response(resBody, { status: loRes.status, headers: outHeaders });
+    cookieStore.set("refreshToken", "", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isProduction,
+      maxAge: 0,
+      path: "/",
+    });
+    cookieStore.set("csrfToken", "", {
+      httpOnly: false,
+      sameSite: "lax",
+      secure: isProduction,
+      maxAge: 0,
+      path: "/",
+    });
+    
+    return new Response(resBody, { status: loRes.status, headers: { "Content-Type": contentType } });
   }
 
   // Special handling for csrf/refresh: forward Set-Cookie to update CSRF token
@@ -279,12 +332,14 @@ async function proxy(method, req, ctx) {
     }
   }
 
-  // Stream back the response
-  const finalBody = upstreamRes.body;
-  const finalHeaders = new Headers(upstreamRes.headers);
-  // Prevent upstream Set-Cookie from leaking; we manage cookies on Next
-  finalHeaders.delete("set-cookie");
-  return new Response(finalBody, { status: upstreamRes.status, headers: finalHeaders });
+  // Read and return the response with proper headers
+  const responseText = await upstreamRes.text();
+  const contentType = upstreamRes.headers.get("content-type") || "application/json";
+  
+  return new Response(responseText, { 
+    status: upstreamRes.status, 
+    headers: { "Content-Type": contentType } 
+  });
 }
 
 export async function GET(req, ctx) {
