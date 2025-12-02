@@ -13,8 +13,12 @@ import {
   Upload,
   UserPlus,
   Calendar,
-  DollarSign,
 } from "lucide-react";
+
+// Custom Rand icon for South African currency
+const RandIcon = (props) => (
+  <span {...props} style={{ fontWeight: 700, fontSize: '1.1em', fontFamily: 'monospace' }}>R</span>
+);
 
 export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
   // Toast logic moved to staff page. Just call onSuccess/onError.
@@ -138,9 +142,9 @@ export function AddStaffDialog({ open, onOpenChange, onSuccess, disabled }) {
           {
             id: "salary",
             type: "number",
-            label: "Salary",
+            label: "Salary (R)",
             placeholder: "Enter salary amount",
-            icon: DollarSign,
+            icon: RandIcon,
             step: "0.01",
           },
         ],

@@ -216,8 +216,8 @@ export default function LinkBuildPage() {
   ];
 
   const handleRowClick = (job) => {
-    setEditFormData({ ...job });
-    setDialogOpen(true);
+    // Navigate to the order detail page instead of opening dialog
+    router.push(`/clients/${clientId}/link_build/${job.id}`);
   };
 
   const handleUploadDocument = (job) => {
@@ -537,10 +537,10 @@ export default function LinkBuildPage() {
             </Badge>
           </div>
         }
-        onBack={() => router.back()}
+        onBack={() => router.push(`/clients/${clientId}`)}
         actions={
           <Button
-            onClick={() => setNewJobModalOpen(true)}
+            onClick={() => router.push(`/clients/${clientId}/link_build/new`)}
             className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20 gap-2"
           >
             <Plus className="w-4 h-4" />

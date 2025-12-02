@@ -524,11 +524,11 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
                         <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "7%" }}>
                           Dist (m)
                         </th>
-                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "8%" }}>
-                          Splices
-                        </th>
                         <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "10%" }}>
                           Base
+                        </th>
+                        <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "8%" }}>
+                         No of Splices
                         </th>
                         <th className="border border-gray-300 px-1 py-1 text-center font-semibold" style={{ width: "10%" }}>
                           Splices Cost
@@ -592,13 +592,13 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
                             {item.fiber_pairs || item.no_of_fiber_pairs || 0}
                           </td>
                           <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
-                            {((item.link_distance || 0) * 1000).toLocaleString()}
-                          </td>
-                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
-                            {item.no_of_splices_after_15km || 0}
+                            {item.link_distance}m
                           </td>
                           <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
                             {formatCurrency(item.base_cost || 0)}
+                          </td>
+                          <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
+                            {item.splices_after_15km || 0}
                           </td>
                           <td className="border border-gray-300 px-1 py-1 text-center text-gray-700">
                             {formatCurrency(item.splices_cost || 0)}

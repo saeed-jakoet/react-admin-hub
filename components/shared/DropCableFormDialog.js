@@ -545,20 +545,7 @@ export default function DropCableFormDialog({
 
     switch (field.type) {
       case "checkbox":
-        const needsMultiplier = ["survey_planning", "callout"].includes(
-          field.name
-        );
         const isChecked = Boolean(formData[field.name]);
-
-        let multiplierValue = 1;
-        let setMultiplierValue = () => {};
-        if (field.name === "survey_planning") {
-          multiplierValue = surveyMultiplier;
-          setMultiplierValue = setSurveyMultiplier;
-        } else if (field.name === "callout") {
-          multiplierValue = calloutMultiplier;
-          setMultiplierValue = setCalloutMultiplier;
-        }
 
         return (
           <div className="space-y-2">
@@ -576,27 +563,6 @@ export default function DropCableFormDialog({
                 {field.checkboxLabel || field.label}
               </span>
             </label>
-            {needsMultiplier && isChecked && (
-              <div className="ml-8 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-                <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                  Multiply by:
-                </label>
-                <select
-                  value={multiplierValue}
-                  onChange={(e) =>
-                    setMultiplierValue(parseInt(e.target.value))
-                  }
-                  className="text-sm px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value={1}>1x</option>
-                  <option value={2}>2x</option>
-                  <option value={3}>3x</option>
-                </select>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  (for quote calculation)
-                </span>
-              </div>
-            )}
           </div>
         );
 
@@ -862,6 +828,69 @@ export default function DropCableFormDialog({
               </Card>
             );
           })}
+
+          {/* Service Multipliers Section */}
+          {(Boolean(formData.survey_planning) || Boolean(formData.callout)) && (
+            <Card className="p-6 shadow-sm border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-purple-100 dark:bg-purple-800/50 rounded-lg">
+                  <Activity className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Service Multipliers
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Adjust multipliers for quote calculations
+                  </p>
+                </div>
+              </div>
+              <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                {Boolean(formData.survey_planning) && (
+                  <div className="p-4 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-gray-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Survey Planning Multiplier
+                      </Label>
+                      <span className="text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded">
+                        Active
+                      </span>
+                    </div>
+                    <select
+                      value={surveyMultiplier}
+                      onChange={(e) => setSurveyMultiplier(parseInt(e.target.value))}
+                      className="w-full p-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value={1}>1x (Standard)</option>
+                      <option value={2}>2x (Double)</option>
+                      <option value={3}>3x (Triple)</option>
+                    </select>
+                  </div>
+                )}
+                {Boolean(formData.callout) && (
+                  <div className="p-4 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-gray-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Callout Multiplier
+                      </Label>
+                      <span className="text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded">
+                        Active
+                      </span>
+                    </div>
+                    <select
+                      value={calloutMultiplier}
+                      onChange={(e) => setCalloutMultiplier(parseInt(e.target.value))}
+                      className="w-full p-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value={1}>1x (Standard)</option>
+                      <option value={2}>2x (Double)</option>
+                      <option value={3}>3x (Triple)</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
         </div>
 
         <DialogFooter className="flex gap-3 pt-6">

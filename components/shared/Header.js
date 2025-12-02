@@ -24,6 +24,7 @@ import Image from "next/image";
  * - tabs: array (optional) - [{ id, label, icon }]
  * - activeTab: string (optional) - current active tab id
  * - onTabChange: function (optional) - callback when tab changes
+ * - accentColor: string (optional) - color theme: "blue" (default), "purple", "green", "orange"
  */
 export default function Header({
   title,
@@ -40,7 +41,16 @@ export default function Header({
   tabs = [],
   activeTab = "",
   onTabChange = null,
+  accentColor = "blue",
 }) {
+  // Accent color classes
+  const accentColors = {
+    blue: "from-blue-500 to-blue-600 shadow-blue-500/20",
+    purple: "from-purple-500 to-purple-600 shadow-purple-500/20",
+    green: "from-green-500 to-green-600 shadow-green-500/20",
+    orange: "from-orange-500 to-orange-600 shadow-orange-500/20",
+  };
+  const accentClass = accentColors[accentColor] || accentColors.blue;
   return (
     <>
       <div className="rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 mb-4">
@@ -75,7 +85,7 @@ export default function Header({
                         />
                       </div>
                     ) : logo.fallbackIcon ? (
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                      <div className={`w-16 h-16 bg-gradient-to-br ${accentClass} rounded-2xl flex items-center justify-center shadow-lg`}>
                         <logo.fallbackIcon className="w-8 h-8 text-white" />
                       </div>
                     ) : null}

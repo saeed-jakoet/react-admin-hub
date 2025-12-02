@@ -258,8 +258,8 @@ export default function DropCablePage() {
   ];
 
   const handleRowClick = (job) => {
-    setEditFormData({ ...job });
-    setDialogOpen(true);
+    // Navigate to the order detail page instead of opening dialog
+    router.push(`/clients/${clientId}/drop_cable/${job.id}`);
   };
 
   const handleUploadDocument = (job) => {
@@ -669,10 +669,10 @@ export default function DropCablePage() {
             </Badge>
           </div>
         }
-        onBack={() => router.back()}
+        onBack={() => router.push(`/clients/${clientId}`)}
         actions={
           <Button
-            onClick={() => setNewJobModalOpen(true)}
+            onClick={() => router.push(`/clients/${clientId}/drop_cable/new`)}
             className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
           >
             <Plus className="w-4 h-4" />

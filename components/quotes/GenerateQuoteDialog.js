@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, FileText } from "lucide-react";
 import { post } from "@/lib/api/fetcher";
 import { useToast } from "@/components/shared/Toast";
-import DropCableQuote from "./DropCableQuote";
+import Quote from "./Quote";
 
 export default function GenerateQuoteDialog({ open, onOpenChange, clientId, clientInfo }) {
   const [selectedOrderType, setSelectedOrderType] = useState("");
@@ -49,6 +49,9 @@ export default function GenerateQuoteDialog({ open, onOpenChange, clientId, clie
         week: selectedWeek,
       });
 
+      console.log(response);
+      
+
       if (response.status === "success" && response.data) {
         setQuoteData({
           ...response.data,
@@ -75,7 +78,7 @@ export default function GenerateQuoteDialog({ open, onOpenChange, clientId, clie
 
   if (quoteData) {
     return (
-      <DropCableQuote
+      <Quote
         quoteData={quoteData}
         clientInfo={clientInfo}
         onClose={handleClose}
