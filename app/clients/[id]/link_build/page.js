@@ -7,13 +7,13 @@ import {
   Plus,
   Activity,
   MoreVertical,
-  Upload,
   Cable,
   MapPin,
   User,
   Hash,
   BarChart,
   Trash2,
+  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,13 +26,11 @@ import {
 import { DataTable } from "@/components/shared/DataTable";
 import { get, post, del } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
-import LinkBuildFormDialog from "@/components/shared/LinkBuildFormDialog";
-import UploadDocumentDialog from "@/components/shared/UploadDocumentDialog";
-import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
 import { getLinkBuildStatusColor, formatStatusText } from "@/lib/utils/linkBuildColors";
 import Header from "@/components/shared/Header";
 import { useToast } from "@/components/shared/Toast";
 import InventoryUsageDialog from "@/components/inventory/InventoryUsageDialog";
+import GenerateWeeklyQuoteDialog from "@/components/quotes/GenerateWeeklyQuoteDialog";
 
 export default function LinkBuildPage() {
   const params = useParams();
@@ -69,54 +67,27 @@ export default function LinkBuildPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [weekFilter, setWeekFilter] = useState("all");
-  const [editFormData, setEditFormData] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
-
-  // New Job Modal State
-  const [newJobModalOpen, setNewJobModalOpen] = useState(false);
-  const [clientNameForModal, setClientNameForModal] = useState("");
-
-  // Upload Document Modal State
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [selectedJobForUpload, setSelectedJobForUpload] = useState(null);
-  const [uploading, setUploading] = useState(false);
 
   // Inventory usage dialog state
   const [usageOpen, setUsageOpen] = useState(false);
   const [selectedJobForUsage, setSelectedJobForUsage] = useState(null);
 
-  // Check URL parameters for new job creation
-  useEffect(() => {
-    const isNew = searchParams.get("new") === "true";
-    const clientNameParam = searchParams.get("clientName");
+  // Quote dialog state
+  const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
 
-    if (isNew) {
-      setNewJobModalOpen(true);
-      if (clientNameParam) {
-        setClientNameForModal(decodeURIComponent(clientNameParam));
-      }
+  // Check URL parameters for status filter
+  useEffect(() => {
+    const statusParam = searchParams.get("status");
+    if (statusParam) {
+      setStatusFilter(statusParam);
+      // Clean up the URL
       const newUrl = window.location.pathname;
       window.history.replaceState({}, "", newUrl);
     }
   }, [searchParams]);
 
-  // Open edit dialog if edit=true and jobId are present in query params
-  useEffect(() => {
-    const isEdit = searchParams.get("edit") === "true";
-    const jobId = searchParams.get("jobId");
-    if (isEdit && jobId && jobs.length > 0) {
-      const job = jobs.find((j) => String(j.id) === String(jobId));
-      if (job) {
-        setEditFormData({ ...job });
-        setDialogOpen(true);
-        // Clean up the URL so dialog can be closed without params
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, "", newUrl);
-      }
-    }
-  }, [searchParams, jobs]);
+
 
   const handleDeleteOrder = (job) => {
     const title = "Delete order?";
@@ -220,97 +191,9 @@ export default function LinkBuildPage() {
     router.push(`/clients/${clientId}/link_build/${job.id}`);
   };
 
-  const handleUploadDocument = (job) => {
-    setSelectedJobForUpload(job);
-    setUploadModalOpen(true);
-  };
-
   const handleInventoryUsage = (job) => {
     setSelectedJobForUsage(job);
     setUsageOpen(true);
-  };
-
-  // Handler for job create/edit success
-  const handleJobSuccess = (job, mode) => {
-    if (clientName) {
-      mutate([`/link-build/client/${encodeURIComponent(clientName)}`]);
-    }
-    if (mode === "edit") {
-      toast.success("Success", "Order updated successfully.");
-    } else {
-      toast.success("Success", "Order created successfully.");
-    }
-  };
-
-  const uploadDocument = async ({ file, category, jobData }) => {
-    setUploading(true);
-    try {
-      if (!jobData?.id) throw new Error("Missing job id");
-      if (!clientId) throw new Error("Missing client id in route");
-      if (
-        !jobData?.circuit_number ||
-        String(jobData.circuit_number).trim() === ""
-      ) {
-        throw new Error(
-          "This job is missing a circuit number. Please add it before uploading."
-        );
-      }
-
-      const toIdentifier = (s) =>
-        String(s || "")
-          .trim()
-          .replace(/[\\/]+/g, "-")
-          .replace(/\s+/g, "_")
-          .replace(/[^a-zA-Z0-9_-]/g, "");
-
-      let clientNameStr = "";
-      let clientIdentifier = "";
-      try {
-        const resp = await get(`/client/${clientId}`);
-        const client = resp?.data || {};
-        const baseName =
-          client.company_name ||
-          [client.first_name, client.last_name].filter(Boolean).join(" ");
-        clientNameStr = String(baseName || "Client").trim();
-        clientIdentifier = toIdentifier(baseName || "client");
-      } catch (e) {
-        const fallbackName =
-          (jobData.client && String(jobData.client).trim()) || "Client";
-        clientNameStr = fallbackName;
-        clientIdentifier =
-          (jobData.client_identifier &&
-            String(jobData.client_identifier).trim()) ||
-          toIdentifier(fallbackName);
-      }
-
-      if (!clientNameStr || !clientIdentifier) {
-        throw new Error(
-          "Missing client details (name/identifier). Please ensure the client has a name."
-        );
-      }
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("clientName", clientNameStr);
-      formData.append("clientIdentifier", clientIdentifier);
-      formData.append("circuitNumber", String(jobData.circuit_number));
-      formData.append("jobType", "link_build");
-      formData.append("category", category);
-      formData.append("linkBuildJobId", String(jobData.id));
-      formData.append("clientId", String(clientId));
-
-      const result = await post("/documents/upload", formData);
-      toast.success("Success", "Document uploaded successfully.");
-      if (clientName) {
-        mutate([`/link-build/client/${encodeURIComponent(clientName)}`]);
-      }
-    } catch (error) {
-      toast.error("Error", error.message || "Upload failed.");
-      console.error("Upload error:", error);
-      throw error;
-    } finally {
-      setUploading(false);
-    }
   };
 
   const columns = [
@@ -448,13 +331,6 @@ export default function LinkBuildPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => handleUploadDocument(job)}
-                  className="flex items-center gap-2"
-                >
-                  <Upload className="h-4 w-4" />
-                  Upload Document
-                </DropdownMenuItem>
-                <DropdownMenuItem
                   onClick={() => handleInventoryUsage(job)}
                   className="flex items-center gap-2"
                 >
@@ -539,13 +415,23 @@ export default function LinkBuildPage() {
         }
         onBack={() => router.push(`/clients/${clientId}`)}
         actions={
-          <Button
-            onClick={() => router.push(`/clients/${clientId}/link_build/new`)}
-            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20 gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            New Order
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setQuoteDialogOpen(true)}
+              className="gap-2"
+            >
+              <Receipt className="w-4 h-4" />
+              Generate Quote
+            </Button>
+            <Button
+              onClick={() => router.push(`/clients/${clientId}/link_build/new`)}
+              className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20 gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              New Order
+            </Button>
+          </div>
         }
       />
 
@@ -582,45 +468,6 @@ export default function LinkBuildPage() {
         </div>
       </div>
 
-      {/* Edit Dialog */}
-      <LinkBuildFormDialog
-        mode="edit"
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        jobData={editFormData}
-        jobConfig={jobTypeConfigs["link-build"]}
-        onSuccess={(updatedJob) => {
-          handleJobSuccess(updatedJob, "edit");
-          setEditFormData({});
-        }}
-        saving={saving}
-      />
-
-      {/* New Job Creation Modal */}
-      <LinkBuildFormDialog
-        mode="create"
-        open={newJobModalOpen}
-        onOpenChange={setNewJobModalOpen}
-        jobConfig={jobTypeConfigs["link-build"]}
-        clientId={clientId}
-        clientName={clientName || clientNameForModal}
-        clientContactName={clientContactName}
-        clientContactPhone={clientContactPhone}
-        onSuccess={(newJob) => {
-          handleJobSuccess(newJob, "create");
-          setClientNameForModal("");
-        }}
-      />
-
-      {/* Upload Document Modal */}
-      <UploadDocumentDialog
-        open={uploadModalOpen}
-        onOpenChange={setUploadModalOpen}
-        onUpload={uploadDocument}
-        jobData={selectedJobForUpload}
-        uploading={uploading}
-      />
-
       {/* Inventory Usage Dialog */}
       <InventoryUsageDialog
         open={usageOpen}
@@ -634,6 +481,16 @@ export default function LinkBuildPage() {
           mutate([`/inventory`]);
           toast.success("Success", "Inventory usage applied.");
         }}
+      />
+
+      {/* Generate Quote Dialog */}
+      <GenerateWeeklyQuoteDialog
+        open={quoteDialogOpen}
+        onOpenChange={setQuoteDialogOpen}
+        clientId={clientId}
+        clientInfo={client}
+        orderType="link_build"
+        orderTypeLabel="Link Build"
       />
     </div>
   );

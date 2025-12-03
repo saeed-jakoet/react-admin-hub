@@ -21,6 +21,11 @@ import {
   Download,
   Eye,
   Network,
+  File,
+  Plus,
+  Trash2,
+  MoreVertical,
+  ExternalLink,
 } from "lucide-react";
 
 // Custom Rand icon for South African currency
@@ -32,11 +37,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { get, post, put } from "@/lib/api/fetcher";
+import { get, post, put, del } from "@/lib/api/fetcher";
 import { getLinkBuildStatusColor } from "@/lib/utils/linkBuildColors";
 import { useToast } from "@/components/shared/Toast";
 import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
 import Header from "@/components/shared/Header";
+import UploadDocumentDialog from "@/components/shared/UploadDocumentDialog";
+import DocumentCard from "@/components/shared/DocumentCard";
+import OrderCostBreakdown from "@/components/shared/OrderCostBreakdown";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const jobConfig = jobTypeConfigs["link-build"];
 
@@ -55,6 +69,10 @@ export default function LinkBuildOrderPage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("operations");
   const [week, setWeek] = useState("");
+
+  // Upload document state
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Staff dropdowns
   const [technicians, setTechnicians] = useState([]);
@@ -138,11 +156,11 @@ export default function LinkBuildOrderPage() {
 
   const preparePayload = () => {
     const payload = { ...formData };
-    
+
     if (!isNewOrder && orderId) {
       payload.id = orderId;
     }
-    
+
     if (isNewOrder && clientId) {
       payload.client_id = clientId;
     }
@@ -174,7 +192,7 @@ export default function LinkBuildOrderPage() {
     setSaving(true);
     try {
       const payload = preparePayload();
-      
+
       if (isNewOrder) {
         const result = await post("/link-build", payload);
         toast.success("Success", "Order created successfully");
@@ -194,6 +212,49 @@ export default function LinkBuildOrderPage() {
 
   const handleBack = () => {
     router.push(`/clients/${clientId}/link_build`);
+  };
+
+  // Helper to create identifier from string
+  const toIdentifier = (s) =>
+    String(s || "")
+      .trim()
+      .replace(/[\\/]+/g, "-")
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9_-]/g, "");
+
+  // Upload document handler
+  const handleUploadDocument = async ({ file, fileName }) => {
+    setUploading(true);
+    try {
+      // Get client name for path building
+      const clientName = client?.company_name ||
+        `${client?.first_name || ""} ${client?.last_name || ""}`.trim() ||
+        formData.client || "Client";
+      const clientIdentifier = toIdentifier(clientName);
+
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", file);
+      formDataUpload.append("fileName", fileName);
+      formDataUpload.append("clientName", clientName);
+      formDataUpload.append("clientIdentifier", clientIdentifier);
+      if (formData.circuit_number) {
+        formDataUpload.append("circuitNumber", formData.circuit_number);
+      }
+      formDataUpload.append("linkBuildJobId", orderId);
+      formDataUpload.append("clientId", clientId);
+      formDataUpload.append("jobType", "link_build");
+
+      const result = await post("/documents/upload", formDataUpload);
+
+      toast.success("Success", "Document uploaded successfully");
+      mutate(`/documents/link-build/${orderId}`);
+      setUploadModalOpen(false);
+    } catch (err) {
+      toast.error("Error", err.message || "Failed to upload document");
+      throw err;
+    } finally {
+      setUploading(false);
+    }
   };
 
   // Get status color
@@ -253,8 +314,8 @@ export default function LinkBuildOrderPage() {
                 </option>
               ))}
             </select>
-            <Button 
-              onClick={handleSave} 
+            <Button
+              onClick={handleSave}
               disabled={saving}
               className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20"
             >
@@ -465,7 +526,7 @@ export default function LinkBuildOrderPage() {
                   >
                     {serviceTypeOptions.map((opt) => (
                       <option key={opt.value} value={opt.value}>
-                        {opt.label}
+                        {opt.label.split('(')[0].trim()}
                       </option>
                     ))}
                   </select>
@@ -552,6 +613,16 @@ export default function LinkBuildOrderPage() {
         {/* Finances Tab */}
         {activeTab === "finances" && (
           <div className="space-y-6">
+            {/* Cost Breakdown */}
+            {!isNewOrder && (
+              <OrderCostBreakdown
+                orderId={orderId}
+                orderType="link_build"
+                clientId={clientId}
+                accentColor="purple"
+              />
+            )}
+
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -577,7 +648,7 @@ export default function LinkBuildOrderPage() {
 
                 {/* Pricing Summary */}
                 <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Cost Summary</h4>
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Order Details</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Service Type</span>
@@ -605,66 +676,86 @@ export default function LinkBuildOrderPage() {
         {/* Documents Tab */}
         {activeTab === "documents" && (
           <div className="space-y-6">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                    <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            {/* Header */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Documents</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {documents.length} {documents.length === 1 ? "file" : "files"}
+              </p>
+            </div>
+
+            {isNewOrder ? (
+              <Card className="p-12">
+                <div className="text-center text-gray-500 dark:text-gray-400">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                    <FileText className="w-8 h-8 opacity-50" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Documents</h3>
+                  <p className="font-medium">Save the order first</p>
+                  <p className="text-sm mt-1">You can upload documents after saving</p>
                 </div>
-                {!isNewOrder && (
-                  <Button variant="outline" size="sm">
+              </Card>
+            ) : loadingDocuments ? (
+              <Card className="p-12">
+                <div className="flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                </div>
+              </Card>
+            ) : documents.length === 0 ? (
+              <Card className="p-12 border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <div className="text-center text-gray-500 dark:text-gray-400">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                    <Upload className="w-8 h-8 opacity-50" />
+                  </div>
+                  <p className="font-medium">No documents yet</p>
+                  <p className="text-sm mt-1 mb-4">Upload your first document to get started</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setUploadModalOpen(true)}
+                  >
                     <Upload className="w-4 h-4 mr-2" />
                     Upload Document
                   </Button>
-                )}
-              </div>
+                </div>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {documents.map((doc) => (
+                  <DocumentCard
+                    key={doc.id}
+                    doc={doc}
+                    onDelete={() => {
+                      toast.success("Success", "Document deleted");
+                      mutate(`/documents/link-build/${orderId}`);
+                    }}
+                    onError={(msg) => toast.error("Error", msg)}
+                    accentColor="purple"
+                  />
+                ))}
 
-              {isNewOrder ? (
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                  <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Save the order first to upload documents</p>
+                {/* Upload New Card */}
+                <div
+                  onClick={() => setUploadModalOpen(true)}
+                  className="aspect-auto min-h-[180px] bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 cursor-pointer flex flex-col items-center justify-center"
+                >
+                  <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-2">
+                    <Plus className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Add Document</p>
                 </div>
-              ) : loadingDocuments ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                </div>
-              ) : documents.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                  <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No documents uploaded yet</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {documents.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-gray-500" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">{doc.name || doc.file_name}</p>
-                          <p className="text-xs text-gray-500">{new Date(doc.created_at).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Upload Document Dialog */}
+      <UploadDocumentDialog
+        open={uploadModalOpen}
+        onOpenChange={setUploadModalOpen}
+        onUpload={handleUploadDocument}
+        jobData={formData}
+        uploading={uploading}
+      />
     </div>
   );
 }

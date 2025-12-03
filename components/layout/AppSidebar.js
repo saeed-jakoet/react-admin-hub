@@ -180,6 +180,29 @@ export function AppSidebar() {
     }))
     .filter((section) => section.items.length > 0);
 
+  // Close any open select dropdowns when sidebar is hovered
+  useEffect(() => {
+    const handleMouseEnter = () => {
+      // Blur any focused element (closes select dropdowns)
+      if (document.activeElement && document.activeElement.tagName === 'SELECT') {
+        document.activeElement.blur();
+      }
+      // Also blur any other focused input elements
+      const activeEl = document.activeElement;
+      if (activeEl && activeEl !== document.body) {
+        activeEl.blur();
+      }
+    };
+
+    const sidebar = document.querySelector('aside.group');
+    if (sidebar) {
+      sidebar.addEventListener('mouseenter', handleMouseEnter);
+      return () => {
+        sidebar.removeEventListener('mouseenter', handleMouseEnter);
+      };
+    }
+  }, []);
+
   return (
     <>
       <style jsx>{`
@@ -194,7 +217,7 @@ export function AppSidebar() {
           }
         }
       `}</style>
-      <aside className="group fixed left-0 top-0 z-50 h-screen bg-white dark:bg-slate-950 border-r border-slate-200/80 dark:border-slate-800/80 backdrop-blur-xl w-20 hover:w-72 transition-all duration-300 ease-in-out">
+      <aside className="group fixed left-0 top-0 z-[9999] h-screen bg-white dark:bg-slate-950 border-r border-slate-200/80 dark:border-slate-800/80 w-20 hover:w-72 transition-[width] duration-300 ease-in-out">
         {/* Header */}
         <div className="h-16 border-b border-slate-200/80 dark:border-slate-800/80">
           <div className="flex items-center h-full px-5 mt-4">

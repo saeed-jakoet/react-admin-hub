@@ -320,15 +320,9 @@ export default function OverviewPage() {
 
     const route = orderTypeRoutes[selectedOrderType];
 
-    if (clientId && route) {
-      // Navigate to client page with edit parameters
-      const params = new URLSearchParams({
-        edit: "true",
-        jobId: order.id,
-        eventType: order.eventType || "",
-      });
-
-      router.push(`/clients/${clientId}/${route}?${params.toString()}`);
+    if (clientId && route && order.id) {
+      // Navigate directly to the order page
+      router.push(`/clients/${clientId}/${route}/${order.id}`);
     } else {
       // Fallback to details dialog if navigation fails
       setSelectedEvent(order);
@@ -391,15 +385,9 @@ export default function OverviewPage() {
 
         const route = jobTypeRoutes[selectedJobTypeForNew];
 
-        // Navigate to client page with job type and client info
-        const params = new URLSearchParams({
-          new: "true",
-          jobType: selectedJobTypeForNew,
-          clientId: client.id,
-          clientName: client.company_name,
-        });
-
-        router.push(`/clients/${client.id}/${route}?${params.toString()}`);
+        // Navigate directly to the new order page
+        router.push(`/clients/${client.id}/${route}/new`);
+        resetDialog();
       }
     }
   };

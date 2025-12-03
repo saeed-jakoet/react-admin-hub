@@ -7,13 +7,13 @@ import {
   Plus,
   Activity,
   MoreVertical,
-  Upload,
   FileText,
   Cable,
   MapPin,
   User,
   Mail,
   BarChart,
+  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,16 +27,14 @@ import { DataTable } from "@/components/shared/DataTable";
 import { get, post } from "@/lib/api/fetcher";
 import { del } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
-import DropCableFormDialog from "@/components/shared/DropCableFormDialog";
-import UploadDocumentDialog from "@/components/shared/UploadDocumentDialog";
 import AsBuiltDocumentDialog from "@/components/shared/AsBuiltDocumentDialog";
 import { EmailDropCableDialog } from "@/components/clients/EmailDropCableDialog";
-import { jobTypeConfigs } from "@/lib/jobTypeConfigs";
 import { getDropCableStatusColor } from "@/lib/utils/dropCableColors";
 import { Trash2 } from "lucide-react";
 import Header from "@/components/shared/Header";
 import { useToast } from "@/components/shared/Toast";
 import InventoryUsageDialog from "@/components/inventory/InventoryUsageDialog";
+import GenerateWeeklyQuoteDialog from "@/components/quotes/GenerateWeeklyQuoteDialog";
 
 export default function DropCablePage() {
   const handleDeleteOrder = (job) => {
@@ -95,19 +93,7 @@ export default function DropCablePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [weekFilter, setWeekFilter] = useState("all");
-  const [editFormData, setEditFormData] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
-
-  // New Job Modal State
-  const [newJobModalOpen, setNewJobModalOpen] = useState(false);
-  const [clientNameForModal, setClientNameForModal] = useState("");
-
-  // Upload Document Modal State
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [selectedJobForUpload, setSelectedJobForUpload] = useState(null);
-  const [uploading, setUploading] = useState(false);
 
   // As-Built Document Modal State
   const [asBuiltModalOpen, setAsBuiltModalOpen] = useState(false);
@@ -122,36 +108,21 @@ export default function DropCablePage() {
   const [usageOpen, setUsageOpen] = useState(false);
   const [selectedJobForUsage, setSelectedJobForUsage] = useState(null);
 
-  // Check URL parameters for new job creation
-  useEffect(() => {
-    const isNew = searchParams.get("new") === "true";
-    const clientName = searchParams.get("clientName");
+  // Quote dialog state
+  const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
 
-    if (isNew) {
-      setNewJobModalOpen(true);
-      if (clientName) {
-        setClientNameForModal(decodeURIComponent(clientName));
-      }
+  // Check URL parameters for status filter
+  useEffect(() => {
+    const statusParam = searchParams.get("status");
+    if (statusParam) {
+      setStatusFilter(statusParam);
+      // Clean up the URL
       const newUrl = window.location.pathname;
       window.history.replaceState({}, "", newUrl);
     }
   }, [searchParams]);
 
-  // Open edit dialog if edit=true and jobId are present in query params
-  useEffect(() => {
-    const isEdit = searchParams.get("edit") === "true";
-    const jobId = searchParams.get("jobId");
-    if (isEdit && jobId && jobs.length > 0) {
-      const job = jobs.find((j) => String(j.id) === String(jobId));
-      if (job) {
-        setEditFormData({ ...job });
-        setDialogOpen(true);
-        // Clean up the URL so dialog can be closed without params
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, "", newUrl);
-      }
-    }
-  }, [searchParams, jobs]);
+
 
   // Format status for display
   const formatDropCableStatus = (status) => {
@@ -262,11 +233,6 @@ export default function DropCablePage() {
     router.push(`/clients/${clientId}/drop_cable/${job.id}`);
   };
 
-  const handleUploadDocument = (job) => {
-    setSelectedJobForUpload(job);
-    setUploadModalOpen(true);
-  };
-
   const handleGenerateAsBuilt = (job) => {
     setSelectedJobForAsBuilt(job);
     setAsBuiltModalOpen(true);
@@ -289,85 +255,6 @@ export default function DropCablePage() {
       // Still open dialog with empty client data
       setClientForEmail(null);
       setEmailModalOpen(true);
-    }
-  };
-
-  // Handler for job create/edit success
-  const handleJobSuccess = (job, mode) => {
-    mutate([`/drop-cable/client/${clientId}`]);
-    if (mode === "edit") {
-      toast.success("Success", "Order updated successfully.");
-    } else {
-      toast.success("Success", "Order created successfully.");
-    }
-  };
-
-  const uploadDocument = async ({ file, category, jobData }) => {
-    setUploading(true);
-    try {
-      if (!jobData?.id) throw new Error("Missing job id");
-      if (!clientId) throw new Error("Missing client id in route");
-      if (
-        !jobData?.circuit_number ||
-        String(jobData.circuit_number).trim() === ""
-      ) {
-        throw new Error(
-          "This job is missing a circuit number. Please add it before uploading."
-        );
-      }
-
-      const toIdentifier = (s) =>
-        String(s || "")
-          .trim()
-          .replace(/[\\/]+/g, "-")
-          .replace(/\s+/g, "_")
-          .replace(/[^a-zA-Z0-9_-]/g, "");
-
-      let clientName = "";
-      let clientIdentifier = "";
-      try {
-        const resp = await get(`/client/${clientId}`);
-        const client = resp?.data || {};
-        const baseName =
-          client.company_name ||
-          [client.first_name, client.last_name].filter(Boolean).join(" ");
-        clientName = String(baseName || "Client").trim();
-        clientIdentifier = toIdentifier(baseName || "client");
-      } catch (e) {
-        const fallbackName =
-          (jobData.client && String(jobData.client).trim()) || "Client";
-        clientName = fallbackName;
-        clientIdentifier =
-          (jobData.client_identifier &&
-            String(jobData.client_identifier).trim()) ||
-          toIdentifier(fallbackName);
-      }
-
-      if (!clientName || !clientIdentifier) {
-        throw new Error(
-          "Missing client details (name/identifier). Please ensure the client has a name."
-        );
-      }
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("clientName", clientName);
-      formData.append("clientIdentifier", clientIdentifier);
-      formData.append("circuitNumber", String(jobData.circuit_number));
-      formData.append("jobType", "drop_cable");
-      formData.append("category", category);
-      formData.append("dropCableJobId", String(jobData.id));
-      formData.append("clientId", String(clientId));
-
-      const result = await post("/documents/upload", formData);
-      toast.success("Success", "Document uploaded successfully.");
-      mutate([`/drop-cable/client/${clientId}`]);
-    } catch (error) {
-      toast.error("Error", error.message || "Upload failed.");
-      console.error("Upload error:", error);
-      throw error;
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -570,13 +457,6 @@ export default function DropCablePage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => handleUploadDocument(job)}
-                  className="flex items-center gap-2"
-                >
-                  <Upload className="h-4 w-4" />
-                  Upload Document
-                </DropdownMenuItem>
-                <DropdownMenuItem
                   onClick={() => handleInventoryUsage(job)}
                   className="flex items-center gap-2"
                 >
@@ -671,13 +551,23 @@ export default function DropCablePage() {
         }
         onBack={() => router.push(`/clients/${clientId}`)}
         actions={
-          <Button
-            onClick={() => router.push(`/clients/${clientId}/drop_cable/new`)}
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            New Order
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setQuoteDialogOpen(true)}
+              className="gap-2"
+            >
+              <Receipt className="w-4 h-4" />
+              Generate Quote
+            </Button>
+            <Button
+              onClick={() => router.push(`/clients/${clientId}/drop_cable/new`)}
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              New Order
+            </Button>
+          </div>
         }
       />
 
@@ -714,45 +604,6 @@ export default function DropCablePage() {
         </div>
       </div>
 
-      {/* Edit Dialog */}
-      <DropCableFormDialog
-        mode="edit"
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        jobData={editFormData}
-        jobConfig={jobTypeConfigs["drop-cable"]}
-        onSuccess={(updatedJob) => {
-          handleJobSuccess(updatedJob, "edit");
-          setEditFormData({});
-        }}
-        saving={saving}
-      />
-
-      {/* New Job Creation Modal */}
-      <DropCableFormDialog
-        mode="create"
-        open={newJobModalOpen}
-        onOpenChange={setNewJobModalOpen}
-        jobConfig={jobTypeConfigs["drop-cable"]}
-        clientId={clientId}
-        clientName={clientCompanyName || clientNameForModal}
-        clientContactName={clientContactName}
-        clientContactPhone={clientContactPhone}
-        onSuccess={(newJob) => {
-          handleJobSuccess(newJob, "create");
-          setClientNameForModal("");
-        }}
-      />
-
-      {/* Upload Document Modal */}
-      <UploadDocumentDialog
-        open={uploadModalOpen}
-        onOpenChange={setUploadModalOpen}
-        onUpload={uploadDocument}
-        jobData={selectedJobForUpload}
-        uploading={uploading}
-      />
-
       {/* As-Built Document Generation Modal */}
       <AsBuiltDocumentDialog
         open={asBuiltModalOpen}
@@ -780,6 +631,16 @@ export default function DropCablePage() {
           mutate([`/inventory`]);
           toast.success("Success", "Inventory usage applied.");
         }}
+      />
+
+      {/* Generate Quote Dialog */}
+      <GenerateWeeklyQuoteDialog
+        open={quoteDialogOpen}
+        onOpenChange={setQuoteDialogOpen}
+        clientId={clientId}
+        clientInfo={client}
+        orderType="drop_cable"
+        orderTypeLabel="Drop Cable"
       />
     </div>
   );

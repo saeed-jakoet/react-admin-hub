@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Upload, File, X, Check, AlertCircle } from "lucide-react";
 import {
   Dialog,
@@ -12,19 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-
-const documentCategories = [
-  { value: "as-built", label: "As-Built", description: "As-built documentation" },
-  { value: "planning", label: "Planning", description: "Planning documents" },
-  { value: "happy_letter", label: "Happy Letter", description: "Client satisfaction confirmation" },
-];
 
 export default function UploadDocumentDialog({ 
   open, 
@@ -34,9 +22,18 @@ export default function UploadDocumentDialog({
   uploading = false 
 }) {
   const [file, setFile] = useState(null);
-  const [category, setCategory] = useState("");
+  const [fileName, setFileName] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState("");
+
+  // Update fileName when file is selected
+  useEffect(() => {
+    if (file) {
+      // Remove extension and use as default name
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+      setFileName(nameWithoutExt);
+    }
+  }, [file]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -84,7 +81,6 @@ export default function UploadDocumentDialog({
     }
 
     setFile(selectedFile);
-    // Filename is derived from category server-side; no manual naming here
   };
 
   const handleSubmit = async (e) => {
@@ -96,15 +92,15 @@ export default function UploadDocumentDialog({
       return;
     }
 
-    if (!category) {
-      setError("Please select a document category.");
+    if (!fileName.trim()) {
+      setError("Please enter a file name.");
       return;
     }
 
     try {
       await onUpload({
         file,
-        category,
+        fileName: fileName.trim(),
         jobData
       });
       
@@ -117,15 +113,10 @@ export default function UploadDocumentDialog({
 
   const handleClose = () => {
     setFile(null);
-    setCategory("");
+    setFileName("");
     setError("");
     setDragActive(false);
     onOpenChange(false);
-  };
-
-  const getCategoryDisplay = () => {
-    const cat = documentCategories.find(c => c.value === category);
-    return cat ? cat.label : "Select category";
   };
 
   return (
@@ -184,7 +175,11 @@ export default function UploadDocumentDialog({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => setFile(null)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFile(null);
+                        setFileName("");
+                      }}
                       className="ml-auto text-gray-500 hover:text-gray-700"
                     >
                       <X className="w-4 h-4" />
@@ -210,43 +205,20 @@ export default function UploadDocumentDialog({
             </div>
           </div>
 
-          {/* Auto-named based on category */}
-          <div className="rounded-lg bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 p-3 text-sm text-gray-600 dark:text-gray-300">
-            The file will be automatically named based on the selected category:
-            <ul className="list-disc ml-6 mt-2">
-              <li>As-Built → asbuilt.pdf</li>
-              <li>Planning → planning.pdf</li>
-              <li>Happy Letter → happyletter.pdf</li>
-            </ul>
-          </div>
-
-          {/* Category Selection */}
+          {/* File Name Input */}
           <div className="space-y-2">
-            <Label>Document Category</Label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between bg-white dark:bg-gray-950"
-                  disabled={uploading}
-                >
-                  {getCategoryDisplay()}
-                  <Upload className="w-4 h-4 opacity-50" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-full">
-                {documentCategories.map((cat) => (
-                  <DropdownMenuItem
-                    key={cat.value}
-                    onClick={() => setCategory(cat.value)}
-                    className="group flex flex-col items-start p-3 cursor-pointer hover:bg-gray-100 focus:bg-gray-100 hover:text-black focus:text-black dark:hover:bg-gray-700 dark:focus:bg-gray-700 dark:hover:text-white dark:focus:text-white"
-                  >
-                    <div className="font-medium group-hover:text-black group-focus:text-black dark:group-hover:text-white dark:group-focus:text-white">{cat.label}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-300 group-hover:text-black group-focus:text-black dark:group-hover:text-white dark:group-focus:text-white">{cat.description}</div>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Label htmlFor="fileName">Document Name</Label>
+            <Input
+              id="fileName"
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+              placeholder="Enter document name"
+              disabled={uploading || !file}
+              className="w-full"
+            />
+            <p className="text-xs text-gray-500">
+              The file will be saved as: {fileName ? `${fileName}.pdf` : "..."}
+            </p>
           </div>
 
           {/* Error Message */}
@@ -270,7 +242,7 @@ export default function UploadDocumentDialog({
             </Button>
             <Button
               type="submit"
-              disabled={!file || !category || uploading}
+              disabled={!file || !fileName.trim() || uploading}
               className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
               {uploading ? (

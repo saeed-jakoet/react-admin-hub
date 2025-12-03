@@ -2,10 +2,11 @@
 
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
+import { Loader } from "@/components/shared/Loader";
 
 const MapComponent = dynamic(() => import("@/components/map/MapView"), {
   ssr: false,
-  loading: () => <div className="flex justify-center items-center h-full">Loading map...</div>,
+  loading: () => <div className="w-full h-full"><Loader variant="bars" text="Loading map..." /></div>,
 });
 
 export default function MapPage() {
@@ -15,7 +16,7 @@ export default function MapPage() {
         className="flex-1 flex rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 mx-6 my-4"
         style={{ minHeight: 0, zIndex: 0 }}
       >
-        <Suspense fallback={<div className="flex justify-center items-center w-full h-full">Loading map...</div>}>
+        <Suspense fallback={<div className="w-full h-full"><Loader variant="bars" text="Loading map..." /></div>}>
           <MapComponent />
         </Suspense>
       </div>

@@ -33,13 +33,19 @@ import {
   Clock,
   ArrowRight,
   MoreVertical,
+  Cable,
+  Network,
+  Waves,
+  Radio,
+  GitBranch,
+  Layers,
+  Move,
+  Wrench,
 } from "lucide-react";
 import { get, put } from "@/lib/api/fetcher";
 import { Loader } from "@/components/shared/Loader";
-import DocumentsTreeView from "@/components/shared/DocumentsTreeView";
 import Header from "@/components/shared/Header";
 import { useToast } from "@/components/shared/Toast";
-import GenerateQuoteDialog from "@/components/quotes/GenerateQuoteDialog";
 
 export default function ClientDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -98,6 +104,9 @@ export default function ClientDetailPage({ params }) {
 
   // Quote dialog state
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
+
+  // Selected order type tab for Projects
+  const [selectedOrderType, setSelectedOrderType] = useState("drop_cable");
 
   // Reset logo error/index when company changes
   useEffect(() => {
@@ -201,82 +210,114 @@ export default function ClientDetailPage({ params }) {
 
     const jobCategories = [
       {
-        name: "Drop Cable Installations",
+        name: "Drop Cable",
         type: "drop_cable",
         totalCount: dropCableJobs.length,
         statusCounts: dropCableStatusCounts,
-        icon: Activity,
+        icon: Cable,
         color: "blue",
+        bgColor: "bg-blue-500",
+        lightBg: "bg-blue-50 dark:bg-blue-900/20",
+        textColor: "text-blue-600 dark:text-blue-400",
+        borderColor: "border-blue-500",
       },
       {
         name: "Link Build",
         type: "link_build",
         totalCount: linkBuildJobs.length,
         statusCounts: linkBuildStatusCounts,
-        icon: Activity,
+        icon: Network,
         color: "purple",
+        bgColor: "bg-purple-500",
+        lightBg: "bg-purple-50 dark:bg-purple-900/20",
+        textColor: "text-purple-600 dark:text-purple-400",
+        borderColor: "border-purple-500",
       },
       {
         name: "Floating",
         type: "floating",
         totalCount: 0,
         statusCounts: {},
-        icon: Activity,
+        icon: Waves,
         color: "green",
+        bgColor: "bg-green-500",
+        lightBg: "bg-green-50 dark:bg-green-900/20",
+        textColor: "text-green-600 dark:text-green-400",
+        borderColor: "border-green-500",
       },
       {
-        name: "Civils (ADW)",
-        type: "civils_adw",
+        name: "ADW",
+        type: "adw",
         totalCount: 0,
         statusCounts: {},
-        icon: Activity,
+        icon: Radio,
         color: "orange",
+        bgColor: "bg-orange-500",
+        lightBg: "bg-orange-50 dark:bg-orange-900/20",
+        textColor: "text-orange-600 dark:text-orange-400",
+        borderColor: "border-orange-500",
       },
       {
         name: "Access Build",
         type: "access_build",
         totalCount: 0,
         statusCounts: {},
-        icon: Activity,
+        icon: GitBranch,
         color: "teal",
+        bgColor: "bg-teal-500",
+        lightBg: "bg-teal-50 dark:bg-teal-900/20",
+        textColor: "text-teal-600 dark:text-teal-400",
+        borderColor: "border-teal-500",
       },
       {
         name: "Root Build",
         type: "root_build",
         totalCount: 0,
         statusCounts: {},
-        icon: Activity,
+        icon: Layers,
         color: "indigo",
+        bgColor: "bg-indigo-500",
+        lightBg: "bg-indigo-50 dark:bg-indigo-900/20",
+        textColor: "text-indigo-600 dark:text-indigo-400",
+        borderColor: "border-indigo-500",
       },
       {
         name: "Relocations",
         type: "relocations",
         totalCount: 0,
         statusCounts: {},
-        icon: Activity,
+        icon: Move,
         color: "pink",
+        bgColor: "bg-pink-500",
+        lightBg: "bg-pink-50 dark:bg-pink-900/20",
+        textColor: "text-pink-600 dark:text-pink-400",
+        borderColor: "border-pink-500",
       },
       {
         name: "Maintenance",
         type: "maintenance",
         totalCount: 0,
         statusCounts: {},
-        icon: Activity,
+        icon: Wrench,
         color: "red",
+        bgColor: "bg-red-500",
+        lightBg: "bg-red-50 dark:bg-red-900/20",
+        textColor: "text-red-600 dark:text-red-400",
+        borderColor: "border-red-500",
       },
     ];
 
     // Calculate totals including both drop cables and link builds
     const totalJobs = dropCableJobs.length + linkBuildJobs.length;
-    
+
     // Drop cable completed: installation_completed or closed
     const completedDropCables =
       (dropCableStatusCounts.closed || 0) +
       (dropCableStatusCounts.installation_completed || 0);
-    
+
     // Link build completed: complete status
     const completedLinkBuilds = linkBuildStatusCounts.completed || 0;
-    
+
     // Total completed across all job types
     const totalCompleted = completedDropCables + completedLinkBuilds;
 
@@ -400,14 +441,6 @@ export default function ClientDetailPage({ params }) {
                   <MoreVertical className="w-4 h-4" />
                 </Button>
                 <Button
-                  onClick={() => setQuoteDialogOpen(true)}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <FileText className="w-4 h-4" />
-                  Generate Quote
-                </Button>
-                <Button
                   onClick={handleEdit}
                   className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 gap-2"
                 >
@@ -421,7 +454,6 @@ export default function ClientDetailPage({ params }) {
           tabs={[
             { id: "overview", label: "Overview", icon: User },
             { id: "projects", label: "Projects", icon: Briefcase },
-            { id: "documents", label: "Documents", icon: FileText },
           ]}
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -457,15 +489,14 @@ export default function ClientDetailPage({ params }) {
               },
               {
                 label: "Success Rate",
-                value: `${
-                  jobStats.totalJobs
-                    ? Math.round(
-                        (jobStats.totalCompleted /
-                          jobStats.totalJobs) *
-                          100
-                      )
-                    : 0
-                }%`,
+                value: `${jobStats.totalJobs
+                  ? Math.round(
+                    (jobStats.totalCompleted /
+                      jobStats.totalJobs) *
+                    100
+                  )
+                  : 0
+                  }%`,
                 icon: TrendingUp,
                 color: "purple",
                 bgGradient: "from-purple-500/10 to-purple-600/10",
@@ -550,9 +581,8 @@ export default function ClientDetailPage({ params }) {
                     ].map((item, i) => (
                       <div
                         key={i}
-                        className={`space-y-2 ${
-                          item.fullWidth ? "md:col-span-2" : ""
-                        }`}
+                        className={`space-y-2 ${item.fullWidth ? "md:col-span-2" : ""
+                          }`}
                       >
                         <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                           {item.label}
@@ -748,13 +778,13 @@ export default function ClientDetailPage({ params }) {
                       <span className="text-slate-900 dark:text-white text-sm">
                         {client.created_at
                           ? new Date(client.created_at).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }
-                            )
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            }
+                          )
                           : "Unknown"}
                       </span>
                     </div>
@@ -819,93 +849,137 @@ export default function ClientDetailPage({ params }) {
           {/* Projects Tab */}
           {activeTab === "projects" && (
             <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-                  Order
-                </h2>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">
-                  Track different types of work and installations
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                {jobStats.jobCategories.map((category, index) => (
-                  <Card
-                    key={index}
-                    className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all cursor-pointer hover:border-blue-300 dark:hover:border-blue-700"
-                    onClick={() => {
-                      router.push(
-                        `/clients/${resolvedParams.id}/${category.type}`
+              {/* Order Type Tabs */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                {/* Scrollable Tab Navigation */}
+                <div className="border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex overflow-x-auto scrollbar-hide">
+                    {jobStats.jobCategories.map((category) => {
+                      const isSelected = selectedOrderType === category.type;
+                      const IconComponent = category.icon;
+                      return (
+                        <button
+                          key={category.type}
+                          onClick={() => setSelectedOrderType(category.type)}
+                          className={`relative flex items-center gap-2 px-5 py-4 text-sm font-medium whitespace-nowrap transition-all duration-200 border-b-2 ${
+                            isSelected
+                              ? `${category.textColor} ${category.borderColor} bg-slate-50 dark:bg-slate-800/50`
+                              : "text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/30"
+                          }`}
+                        >
+                          <IconComponent className="w-4 h-4" />
+                          <span>{category.name}</span>
+                          {category.totalCount > 0 && (
+                            <span className={`ml-1.5 px-2 py-0.5 text-xs font-semibold rounded-full ${
+                              isSelected 
+                                ? `${category.bgColor} text-white` 
+                                : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                            }`}>
+                              {category.totalCount}
+                            </span>
+                          )}
+                        </button>
                       );
-                    }}
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div
-                        className={`w-12 h-12 bg-${category.color}-50 dark:bg-${category.color}-900/10 rounded-xl flex items-center justify-center`}
-                      >
-                        <category.icon
-                          className={`w-6 h-6 text-${category.color}-600 dark:text-${category.color}-400`}
-                        />
-                      </div>
-                      {category.totalCount > 0 && (
-                        <ArrowRight className="w-5 h-5 text-slate-400 dark:text-slate-600 group-hover:translate-x-1 transition-transform" />
-                      )}
-                    </div>
+                    })}
+                  </div>
+                </div>
 
-                    <div className="mb-4">
-                      <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
-                        {category.name}
-                      </h3>
-                      <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                        {category.totalCount}
-                      </p>
-                    </div>
-
-                    {category.totalCount > 0 ? (
-                      <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-slate-800">
-                        {Object.entries(category.statusCounts)
-                          .sort(([a], [b]) => a.localeCompare(b))
-                          .map(([status, count]) => (
-                            <div
-                              key={status}
-                              className="flex items-center justify-between text-sm"
-                            >
-                              <span className="text-xs px-2 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                {formatStatusText(status)}
-                              </span>
-                              <Badge variant="outline" className="text-xs">
-                                {count}
-                              </Badge>
+                {/* Tab Content */}
+                <div className="p-6">
+                  {jobStats.jobCategories
+                    .filter((category) => category.type === selectedOrderType)
+                    .map((category) => {
+                      const IconComponent = category.icon;
+                      const statusEntries = Object.entries(category.statusCounts).sort(([a], [b]) => a.localeCompare(b));
+                      
+                      return (
+                        <div key={category.type} className="space-y-6">
+                          {/* Header with Summary */}
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-14 h-14 ${category.lightBg} rounded-2xl flex items-center justify-center`}>
+                                <IconComponent className={`w-7 h-7 ${category.textColor}`} />
+                              </div>
+                              <div>
+                                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
+                                  {category.name}
+                                </h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                  {category.totalCount} {category.totalCount === 1 ? "order" : "orders"} total
+                                </p>
+                              </div>
                             </div>
-                          ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-slate-500 dark:text-slate-400 pt-4 border-t border-slate-200 dark:border-slate-800">
-                        No orders in this category
-                      </p>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+                            <Button
+                              onClick={() => router.push(`/clients/${resolvedParams.id}/${category.type}`)}
+                              className={`${category.bgColor} hover:opacity-90 text-white shadow-lg`}
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              View All Orders
+                            </Button>
+                          </div>
 
-          {/* Documents Tab */}
-          {activeTab === "documents" && (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
-              <DocumentsTreeView clientId={resolvedParams.id} />
+                          {/* Status Breakdown */}
+                          {category.totalCount > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                              {statusEntries.map(([status, count]) => {
+                                const percentage = Math.round((count / category.totalCount) * 100);
+                                return (
+                                  <div
+                                    key={status}
+                                    className="group relative bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 hover:shadow-md transition-all cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                                    onClick={() => router.push(`/clients/${resolvedParams.id}/${category.type}?status=${status}`)}
+                                  >
+                                    <div className="flex items-center justify-between mb-3">
+                                      <span className={`text-2xl font-bold ${category.textColor}`}>
+                                        {count}
+                                      </span>
+                                      <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+                                        {percentage}%
+                                      </span>
+                                    </div>
+                                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                      {formatStatusText(status)}
+                                    </p>
+                                    {/* Progress bar */}
+                                    <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                      <div 
+                                        className={`h-full ${category.bgColor} rounded-full transition-all duration-500`}
+                                        style={{ width: `${percentage}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+                              <div className={`w-16 h-16 mx-auto mb-4 ${category.lightBg} rounded-2xl flex items-center justify-center`}>
+                                <IconComponent className={`w-8 h-8 ${category.textColor} opacity-50`} />
+                              </div>
+                              <h4 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
+                                No {category.name} Orders
+                              </h4>
+                              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                                Get started by creating your first {category.name.toLowerCase()} order
+                              </p>
+                              <Button
+                                variant="outline"
+                                onClick={() => router.push(`/clients/${resolvedParams.id}/${category.type}`)}
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Create Order
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
-
-      {/* Generate Quote Dialog */}
-      <GenerateQuoteDialog
-        open={quoteDialogOpen}
-        onOpenChange={setQuoteDialogOpen}
-        clientId={resolvedParams.id}
-        clientInfo={client}
-      />
     </div>
   );
 }
