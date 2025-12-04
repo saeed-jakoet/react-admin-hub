@@ -45,12 +45,7 @@ import Header from "@/components/shared/Header";
 import UploadDocumentDialog from "@/components/shared/UploadDocumentDialog";
 import DocumentCard from "@/components/shared/DocumentCard";
 import OrderCostBreakdown from "@/components/shared/OrderCostBreakdown";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Loader } from "@/components/shared/Loader";
 
 const jobConfig = jobTypeConfigs["link-build"];
 
@@ -271,11 +266,8 @@ export default function LinkBuildOrderPage() {
     ?.find((f) => f.name === "service_type")?.options || [];
 
   if (!isNewOrder && loadingOrder) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
+    return <Loader variant="bars" text="Loading client data..." />;
+
   }
 
   return (
@@ -613,16 +605,6 @@ export default function LinkBuildOrderPage() {
         {/* Finances Tab */}
         {activeTab === "finances" && (
           <div className="space-y-6">
-            {/* Cost Breakdown */}
-            {!isNewOrder && (
-              <OrderCostBreakdown
-                orderId={orderId}
-                orderType="link_build"
-                clientId={clientId}
-                accentColor="purple"
-              />
-            )}
-
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -670,6 +652,16 @@ export default function LinkBuildOrderPage() {
                 </div>
               </div>
             </Card>
+
+            {/* Cost Breakdown */}
+            {!isNewOrder && (
+              <OrderCostBreakdown
+                orderId={orderId}
+                orderType="link_build"
+                clientId={clientId}
+                accentColor="purple"
+              />
+            )}
           </div>
         )}
 

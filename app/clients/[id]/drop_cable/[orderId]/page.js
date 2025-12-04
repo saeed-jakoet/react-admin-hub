@@ -29,10 +29,6 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-// Custom Rand icon for South African currency
-const RandIcon = ({ className, ...props }) => (
-  <span className={className} style={{ fontWeight: 700, fontSize: '1em', fontFamily: 'sans-serif', lineHeight: 1 }} {...props}>R</span>
-);
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,8 +48,14 @@ import Header from "@/components/shared/Header";
 import UploadDocumentDialog from "@/components/shared/UploadDocumentDialog";
 import DocumentCard from "@/components/shared/DocumentCard";
 import OrderCostBreakdown from "@/components/shared/OrderCostBreakdown";
+import { Loader } from "@/components/shared/Loader";
 
 const jobConfig = jobTypeConfigs["drop-cable"];
+
+// Custom Rand icon for South African currency
+const RandIcon = ({ className, ...props }) => (
+  <span className={className} style={{ fontWeight: 700, fontSize: '1em', fontFamily: 'sans-serif', lineHeight: 1 }} {...props}>R</span>
+);
 
 export default function DropCableOrderPage() {
   const params = useParams();
@@ -289,8 +291,8 @@ export default function DropCableOrderPage() {
     setUploading(true);
     try {
       // Get client name for path building
-      const clientName = client?.company_name || 
-        `${client?.first_name || ""} ${client?.last_name || ""}`.trim() || 
+      const clientName = client?.company_name ||
+        `${client?.first_name || ""} ${client?.last_name || ""}`.trim() ||
         formData.client || "Client";
       const clientIdentifier = toIdentifier(clientName);
 
@@ -309,7 +311,7 @@ export default function DropCableOrderPage() {
       formDataUpload.append("jobType", "drop_cable");
 
       const result = await post("/documents/upload", formDataUpload);
-      
+
       toast.success("Success", "Document uploaded successfully");
       mutate(`/documents/drop-cable/${orderId}`);
       setUploadModalOpen(false);
@@ -330,11 +332,7 @@ export default function DropCableOrderPage() {
     ?.find((f) => f.name === "status")?.options || [];
 
   if (!isNewOrder && loadingOrder) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
+    return <Loader variant="bars" text="Loading client data..." />;
   }
 
   return (
@@ -829,23 +827,6 @@ export default function DropCableOrderPage() {
         {/* Finances Tab */}
         {activeTab === "finances" && (
           <div className="space-y-6">
-            {/* Cost Breakdown - Only show for existing orders */}
-            {!isNewOrder && orderId && (
-              <OrderCostBreakdown orderId={orderId} orderType="drop_cable" />
-            )}
-
-            {isNewOrder && (
-              <Card className="p-12">
-                <div className="text-center text-gray-500 dark:text-gray-400">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                    <Banknote className="w-8 h-8 opacity-50" />
-                  </div>
-                  <p className="font-medium">Save the order first</p>
-                  <p className="text-sm mt-1">Cost breakdown will be available after saving</p>
-                </div>
-              </Card>
-            )}
-
             {/* Additional Charges - Always editable */}
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-6">
@@ -881,8 +862,8 @@ export default function DropCableOrderPage() {
             {/* Service Multipliers */}
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                  <Hash className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                  <Hash className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Service Multipliers</h3>
               </div>
@@ -890,7 +871,7 @@ export default function DropCableOrderPage() {
                 Adjust multipliers for quote calculations when services are performed multiple times.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className={`p-4 rounded-lg border ${Boolean(formData.survey_planning) ? 'border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-60'}`}>
+                <div className={`p-4 rounded-lg border ${Boolean(formData.survey_planning) ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-60'}`}>
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Survey Planning</Label>
                     {Boolean(formData.survey_planning) ? (
@@ -912,7 +893,7 @@ export default function DropCableOrderPage() {
                     <option value={3}>3x (Triple)</option>
                   </select>
                 </div>
-                <div className={`p-4 rounded-lg border ${Boolean(formData.callout) ? 'border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-60'}`}>
+                <div className={`p-4 rounded-lg border ${Boolean(formData.callout) ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-60'}`}>
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Callout</Label>
                     {Boolean(formData.callout) ? (
@@ -936,6 +917,23 @@ export default function DropCableOrderPage() {
                 </div>
               </div>
             </Card>
+
+            {/* Cost Breakdown - Only show for existing orders */}
+            {!isNewOrder && orderId && (
+              <OrderCostBreakdown orderId={orderId} orderType="drop_cable" />
+            )}
+
+            {isNewOrder && (
+              <Card className="p-12">
+                <div className="text-center text-gray-500 dark:text-gray-400">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                    <Banknote className="w-8 h-8 opacity-50" />
+                  </div>
+                  <p className="font-medium">Save the order first</p>
+                  <p className="text-sm mt-1">Cost breakdown will be available after saving</p>
+                </div>
+              </Card>
+            )}
           </div>
         )}
 
@@ -974,7 +972,7 @@ export default function DropCableOrderPage() {
                   </div>
                   <p className="font-medium">No documents yet</p>
                   <p className="text-sm mt-1 mb-4">Upload your first document to get started</p>
-                  <Button 
+                  <Button
                     variant="outline"
                     onClick={() => setUploadModalOpen(true)}
                   >
@@ -997,7 +995,7 @@ export default function DropCableOrderPage() {
                     accentColor="blue"
                   />
                 ))}
-                
+
                 {/* Upload New Card */}
                 <div
                   onClick={() => setUploadModalOpen(true)}

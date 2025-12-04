@@ -14,6 +14,7 @@ import {
   Mail,
   BarChart,
   Receipt,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -290,9 +291,8 @@ export default function DropCablePage() {
       if (result.success && result.downloadUrl) {
         const link = document.createElement("a");
         link.href = result.downloadUrl;
-        link.download = `AsBuilt_${documentData.circuitNumber}_${
-          new Date().toISOString().split("T")[0]
-        }.pdf`;
+        link.download = `AsBuilt_${documentData.circuitNumber}_${new Date().toISOString().split("T")[0]
+          }.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -438,6 +438,36 @@ export default function DropCablePage() {
             <User className="w-4 h-4 text-slate-400" />
             <span className="text-slate-600 dark:text-slate-400">
               {job.technician_name || "-"}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "updated_at",
+      header: "Last Modified",
+      cell: ({ row }) => {
+        const job = row.original;
+        let formatted = "-";
+        if (job.updated_at) {
+          try {
+            const date = new Date(job.updated_at);
+            formatted = date.toLocaleString("en-ZA", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: "Africa/Johannesburg",
+              hour12: false,
+            });
+          } catch { }
+        }
+        return (
+          <div className="flex items-center space-x-2">
+            <Calendar className="w-4 h-4 text-slate-400" />
+            <span className="text-slate-600 dark:text-slate-400">
+              {formatted}
             </span>
           </div>
         );
