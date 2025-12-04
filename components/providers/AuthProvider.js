@@ -12,7 +12,7 @@ const PUBLIC_PAGES = ["/auth/login", "/auth/forgot-password", "/auth/reset-passw
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [authState, setAuthState] = useState("loading"); // "loading" | "authenticated" | "unauthenticated"
+  const [authChecked, setAuthChecked] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const hasCheckedAuth = useRef(false);
@@ -49,31 +49,24 @@ export function AuthProvider({ children }) {
   // ---------------------------
   useEffect(() => {
     const checkAuth = async () => {
-      // Skip auth check on public pages - just mark as ready
-      if (isPublicPage) {
-        setAuthState("unauthenticated");
-        hasCheckedAuth.current = true;
-        return;
-      }
-
-      // Only check once per mount
+      // Skip if already checked
       if (hasCheckedAuth.current) return;
       hasCheckedAuth.current = true;
 
-      try {
-        const userData = await fetchCurrentUser();
-        if (userData) {
-          setUser(userData);
-          setAuthState("authenticated");
-        } else {
-          setUser(null);
-          setAuthState("unauthenticated");
-          // Redirect to login immediately
-          router.replace("/auth/login");
-        }
-      } catch {
-        setUser(null);
-        setAuthState("unauthenticated");
+      // On public pages, no need to check auth
+      if (isPublicPage) {
+        setAuthChecked(true);
+        return;
+      }
+
+      // Check auth for protected pages
+      const userData = await fetchCurrentUser();
+      if (userData) {
+        setUser(userData);
+        setAuthChecked(true);
+      } else {
+        // Not authenticated - redirect to login
+        setAuthChecked(true);
         router.replace("/auth/login");
       }
     };
@@ -82,72 +75,62 @@ export function AuthProvider({ children }) {
   }, [isPublicPage, router]);
 
   // ---------------------------
-  // Handle pathname changes for authenticated users
+  // Handle RBAC for authenticated users
   // ---------------------------
   useEffect(() => {
-    if (authState !== "authenticated" || !user) return;
+    if (!authChecked || !user || isPublicPage) return;
 
-    // Check RBAC
     const role = user?.role || user?.user_metadata?.role;
     if (!isAllowed(role, pathname)) {
       router.replace("/403");
     }
-  }, [pathname, authState, user, router]);
+  }, [pathname, authChecked, user, isPublicPage, router]);
 
   // ---------------------------
   // Redirect logged-in users away from login page
   // ---------------------------
   useEffect(() => {
-    if (authState === "authenticated" && pathname === "/auth/login") {
+    if (authChecked && user && pathname === "/auth/login") {
       router.replace("/");
     }
-  }, [authState, pathname, router]);
+  }, [authChecked, user, pathname, router]);
 
   // ---------------------------
   // Login
   // ---------------------------
   const login = async (email, password) => {
-    try {
-      const res = await axiosInstance.post("/auth/signin", {
-        email,
-        password,
-      });
-      
-      if (res.status !== 200) {
-        throw new Error("Invalid email or password");
-      }
-
-      // Fetch user profile (cookies are now set)
-      const fetchedUser = await fetchCurrentUser();
-      
-      if (!fetchedUser) {
-        throw new Error("Failed to fetch user after login");
-      }
-      
-      setUser(fetchedUser);
-      setAuthState("authenticated");
-      
-      // Get user role
-      const userRole = fetchedUser?.role || fetchedUser?.user_metadata?.role;
-      
-      // Technicians should use the mobile app - redirect to 403
-      if (userRole === "technician") {
-        router.replace("/403");
-      } else {
-        router.replace("/");
-      }
-      
-      return true;
-    } catch (err) {
-      throw err;
+    const res = await axiosInstance.post("/auth/signin", {
+      email,
+      password,
+    });
+    
+    if (res.status !== 200) {
+      throw new Error("Invalid email or password");
     }
+
+    const fetchedUser = await fetchCurrentUser();
+    
+    if (!fetchedUser) {
+      throw new Error("Failed to fetch user after login");
+    }
+    
+    setUser(fetchedUser);
+    
+    const userRole = fetchedUser?.role || fetchedUser?.user_metadata?.role;
+    
+    if (userRole === "technician") {
+      router.replace("/403");
+    } else {
+      router.replace("/");
+    }
+    
+    return true;
   };
 
   // ---------------------------
   // Logout
   // ---------------------------
   const logout = async () => {
-    // Clear UI state persistence keys from localStorage
     if (typeof window !== "undefined") {
       window.localStorage.removeItem("clientsViewMode");
       Object.keys(window.localStorage).forEach((key) => {
@@ -162,16 +145,15 @@ export function AuthProvider({ children }) {
     } catch {}
     
     setUser(null);
-    setAuthState("unauthenticated");
     hasCheckedAuth.current = false;
     router.replace("/auth/login");
   };
 
   // ---------------------------
-  // CRITICAL: Block rendering until auth is determined
+  // Render logic
   // ---------------------------
   
-  // On public pages, render immediately
+  // Public pages - always render immediately
   if (isPublicPage) {
     return (
       <AuthContext.Provider
@@ -188,31 +170,15 @@ export function AuthProvider({ children }) {
     );
   }
 
-  // On protected pages, show loading until auth is verified
-  if (authState === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B1426]">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#07B857]"></div>
-      </div>
-    );
-  }
-
-  // If not authenticated on protected page, show nothing (redirect is in progress)
-  if (authState === "unauthenticated" && !isPublicPage) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B1426]">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#07B857]"></div>
-      </div>
-    );
-  }
-
-  // Authenticated - render children
+  // Protected pages - render children immediately
+  // If not authenticated, the useEffect will redirect
+  // This avoids showing a loader on every refresh
   return (
     <AuthContext.Provider
       value={{
         isAuthenticated: !!user,
         user,
-        isBootstrapping: false,
+        isBootstrapping: !authChecked,
         login,
         logout,
       }}
