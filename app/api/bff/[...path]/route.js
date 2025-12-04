@@ -99,6 +99,8 @@ async function proxy(method, req, ctx) {
   incomingHeaders.delete("host");
   incomingHeaders.delete("connection");
   incomingHeaders.delete("content-length");
+  // Remove Accept-Encoding to prevent compressed responses that we can't easily forward
+  incomingHeaders.delete("accept-encoding");
   
   // Add ngrok bypass header (for ngrok free tier during development)
   // Safe to keep in production - ignored by non-ngrok backends
@@ -151,19 +153,42 @@ async function proxy(method, req, ctx) {
     }
 
     // Parse cookies from Hono and set them on the Next.js domain
-    // This is crucial for cross-origin (localhost -> Render) to work
+    // This is crucial for cross-origin (localhost -> Render/Fly.io) to work
     const cookieStore = await nextCookies();
     const isProduction = process.env.NODE_ENV === "production";
     
-    // Use getSetCookie() to properly get all Set-Cookie headers
-    const setCookieHeaders = signinRes.headers.getSetCookie ? signinRes.headers.getSetCookie() : [];
+    // Try multiple methods to get Set-Cookie headers (different Node/runtime versions handle this differently)
+    let setCookieHeaders = [];
+    
+    // Method 1: getSetCookie() - standard way in newer Node versions
+    if (typeof signinRes.headers.getSetCookie === 'function') {
+      setCookieHeaders = signinRes.headers.getSetCookie();
+    }
+    
+    // Method 2: Fallback - iterate through all headers
+    if (setCookieHeaders.length === 0) {
+      signinRes.headers.forEach((value, key) => {
+        if (key.toLowerCase() === 'set-cookie') {
+          setCookieHeaders.push(value);
+        }
+      });
+    }
+    
+    // Method 3: Try raw header access
+    if (setCookieHeaders.length === 0) {
+      const rawSetCookie = signinRes.headers.get('set-cookie');
+      if (rawSetCookie) {
+        // Split on comma, but be careful with cookie date formats
+        setCookieHeaders = rawSetCookie.split(/,(?=\s*[^;]+=[^;]+)/);
+      }
+    }
     
     for (const cookieHeader of setCookieHeaders) {
       const cookieParts = cookieHeader.split(";")[0];
       const eqIndex = cookieParts.indexOf("=");
       if (eqIndex === -1) continue;
       
-      const cookieName = cookieParts.substring(0, eqIndex);
+      const cookieName = cookieParts.substring(0, eqIndex).trim();
       const cookieValue = cookieParts.substring(eqIndex + 1);
       
       if (cookieName === "accessToken" && cookieValue) {

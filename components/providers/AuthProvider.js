@@ -1,88 +1,144 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { isAllowed } from "./accessControl";
 import { axiosInstance } from "@/lib/api/fetcher";
 
 const AuthContext = createContext(undefined);
 
+// Public pages that don't require authentication
+const PUBLIC_PAGES = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/403"];
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [isBootstrapping, setIsBootstrapping] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const [authState, setAuthState] = useState("loading"); // "loading" | "authenticated" | "unauthenticated"
   const router = useRouter();
   const pathname = usePathname();
+  const hasCheckedAuth = useRef(false);
+
+  const isPublicPage = PUBLIC_PAGES.includes(pathname);
+
   // ---------------------------
-  // Fetch user info from /auth/me/:id
+  // Fetch user info from /auth/me
   // ---------------------------
   const fetchCurrentUser = async () => {
     try {
       const res = await axiosInstance.get("/auth/me");
       
-      // Handle case where response might be a string (needs parsing)
       let data = res.data;
       if (typeof data === "string") {
         try {
           data = JSON.parse(data);
         } catch (e) {
-          setUser(null);
           return null;
         }
       }
       
       if (res.status === 200 && data?.data) {
-        setUser(data.data);
         return data.data;
-      } else {
-        setUser(null);
-        return null;
       }
+      return null;
     } catch (err) {
-      setUser(null);
       return null;
     }
   };
 
   // ---------------------------
+  // Initial auth check on mount
+  // ---------------------------
+  useEffect(() => {
+    const checkAuth = async () => {
+      // Skip auth check on public pages - just mark as ready
+      if (isPublicPage) {
+        setAuthState("unauthenticated");
+        hasCheckedAuth.current = true;
+        return;
+      }
+
+      // Only check once per mount
+      if (hasCheckedAuth.current) return;
+      hasCheckedAuth.current = true;
+
+      try {
+        const userData = await fetchCurrentUser();
+        if (userData) {
+          setUser(userData);
+          setAuthState("authenticated");
+        } else {
+          setUser(null);
+          setAuthState("unauthenticated");
+          // Redirect to login immediately
+          router.replace("/auth/login");
+        }
+      } catch {
+        setUser(null);
+        setAuthState("unauthenticated");
+        router.replace("/auth/login");
+      }
+    };
+
+    checkAuth();
+  }, [isPublicPage, router]);
+
+  // ---------------------------
+  // Handle pathname changes for authenticated users
+  // ---------------------------
+  useEffect(() => {
+    if (authState !== "authenticated" || !user) return;
+
+    // Check RBAC
+    const role = user?.role || user?.user_metadata?.role;
+    if (!isAllowed(role, pathname)) {
+      router.replace("/403");
+    }
+  }, [pathname, authState, user, router]);
+
+  // ---------------------------
+  // Redirect logged-in users away from login page
+  // ---------------------------
+  useEffect(() => {
+    if (authState === "authenticated" && pathname === "/auth/login") {
+      router.replace("/");
+    }
+  }, [authState, pathname, router]);
+
+  // ---------------------------
   // Login
   // ---------------------------
   const login = async (email, password) => {
-    setIsLoading(true);
     try {
       const res = await axiosInstance.post("/auth/signin", {
         email,
         password,
       });
+      
       if (res.status !== 200) {
         throw new Error("Invalid email or password");
       }
 
       // Fetch user profile (cookies are now set)
-      await fetchCurrentUser();
+      const fetchedUser = await fetchCurrentUser();
       
-      // Wait a bit to ensure user state is updated
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      setIsLoading(false);
+      if (!fetchedUser) {
+        throw new Error("Failed to fetch user after login");
+      }
       
-      // Get user role from state (already fetched by fetchCurrentUser)
-      const userData = await axiosInstance.get("/auth/me");
-      const userRole = userData?.data?.data?.role || userData?.data?.data?.user_metadata?.role;
+      setUser(fetchedUser);
+      setAuthState("authenticated");
+      
+      // Get user role
+      const userRole = fetchedUser?.role || fetchedUser?.user_metadata?.role;
       
       // Technicians should use the mobile app - redirect to 403
       if (userRole === "technician") {
-        router.push("/403");
+        router.replace("/403");
       } else {
-        router.push("/");
+        router.replace("/");
       }
       
       return true;
     } catch (err) {
-      setIsLoading(false);
-      if (process.env.NODE_ENV === "development") {
-        console.error("Login error:", err);
-      }
       throw err;
     }
   };
@@ -93,87 +149,70 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     // Clear UI state persistence keys from localStorage
     if (typeof window !== "undefined") {
-      // Remove clients view mode
       window.localStorage.removeItem("clientsViewMode");
-      // Remove all client-[id]-activeTab keys
       Object.keys(window.localStorage).forEach((key) => {
         if (key.startsWith("client-") && key.endsWith("-activeTab")) {
           window.localStorage.removeItem(key);
         }
       });
     }
+    
     try {
       await axiosInstance.post("/auth/logout", {});
     } catch {}
+    
     setUser(null);
-    setIsLoading(false);
-    router.push("/auth/login");
+    setAuthState("unauthenticated");
+    hasCheckedAuth.current = false;
+    router.replace("/auth/login");
   };
 
   // ---------------------------
-  // On mount, check for existing session
+  // CRITICAL: Block rendering until auth is determined
   // ---------------------------
-  useEffect(() => {
-    const publicPages = ["/auth/login", "/auth/forgot-password", "/auth/reset-password"]; 
+  
+  // On public pages, render immediately
+  if (isPublicPage) {
+    return (
+      <AuthContext.Provider
+        value={{
+          isAuthenticated: !!user,
+          user,
+          isBootstrapping: false,
+          login,
+          logout,
+        }}
+      >
+        {children}
+      </AuthContext.Provider>
+    );
+  }
 
-    if (publicPages.includes(pathname)) {
-      setIsBootstrapping(false);
-      return;
-    }
+  // On protected pages, show loading until auth is verified
+  if (authState === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0B1426]">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#07B857]"></div>
+      </div>
+    );
+  }
 
-    const checkSession = async () => {
-      try {
-        await fetchCurrentUser();
-      } catch {
-        setUser(null);
-      } finally {
-        setIsBootstrapping(false);
-      }
-    };
+  // If not authenticated on protected page, show nothing (redirect is in progress)
+  if (authState === "unauthenticated" && !isPublicPage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0B1426]">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#07B857]"></div>
+      </div>
+    );
+  }
 
-    checkSession();
-  }, [pathname]);
-
-  // ---------------------------
-  // Route protection
-  // ---------------------------
-  useEffect(() => {
-    if (isBootstrapping || isLoading) return;
-
-    const publicPages = ["/auth/login", "/auth/forgot-password", "/auth/reset-password", "/403"]; 
-    const onPublic = publicPages.includes(pathname);
-
-    if (!user) {
-      if (!onPublic) {
-        router.push("/auth/login");
-      }
-      return;
-    }
-
-    // If user is logged in and on public login page, redirect home
-    if (onPublic && pathname === "/auth/login") {
-      router.push("/");
-      return;
-    }
-
-    // Enforce RBAC on non-public pages
-    const role = user?.role || user?.user_metadata?.role;
-    if (!isAllowed(role, pathname)) {
-      router.push("/403");
-    }
-  }, [user, isBootstrapping, isLoading, pathname, router]);
-
-  // ---------------------------
-  // No loader on page refresh - better UX
-  // Content renders immediately, auth happens in background
-  // ---------------------------
-
+  // Authenticated - render children
   return (
     <AuthContext.Provider
       value={{
         isAuthenticated: !!user,
         user,
-        isBootstrapping,
+        isBootstrapping: false,
         login,
         logout,
       }}

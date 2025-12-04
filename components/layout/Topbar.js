@@ -28,14 +28,14 @@ export function Topbar() {
   const { data: countData } = useSWR(
     "/inventory-requests/pending/count",
     getPendingRequestsCount,
-    { refreshInterval: 30000 }
+    { refreshInterval: 60000, revalidateOnFocus: false }
   );
 
   // Fetch recent pending requests for the dropdown
   const { data: requestsData, isLoading: requestsLoading } = useSWR(
     ["/inventory-requests", "pending"],
     () => getInventoryRequests("pending"),
-    { refreshInterval: 30000 }
+    { refreshInterval: 60000, revalidateOnFocus: false }
   );
 
   const pendingCount = countData?.data?.count || 0;
