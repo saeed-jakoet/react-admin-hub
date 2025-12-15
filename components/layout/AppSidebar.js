@@ -34,113 +34,39 @@ const navigationSections = [
   {
     label: "Command Center",
     items: [
-      {
-        id: "overview",
-        label: "Mission Control",
-        href: "/",
-        icon: Command,
-        notification: null,
-      },
-      {
-        id: "map",
-        label: "Map",
-        href: "/map",
-        icon: Network,
-        notification: null,
-      },
-      // {
-      //   id: "operations",
-      //   label: "Live Operations",
-      //   href: "/operations",
-      //   icon: Activity,
-      //   notification: "3",
-      // },
-      // {
-      //   id: "network",
-      //   label: "Network Map",
-      //   href: "/network",
-      //   icon: Network,
-      //   notification: null,
-      // },
+      { id: "overview", label: "Schedule", href: "/", icon: Calendar },
+      { id: "map", label: "Live Operations", href: "/map", icon: Network },
+      // { id: "planning", label: "Planning", href: "/planning", icon: Calendar }, // If planning is operational, move here
+      // { id: "operations", label: "Live Operations", href: "/operations", icon: Activity },
     ],
   },
   {
     label: "Operations",
     items: [
-      {
-        id: "inventory",
-        label: "Inventory",
-        href: "/inventory",
-        icon: Package,
-        notification: null,
-      },
-      {
-        id: "staff",
-        label: "Staff",
-        href: "/staff",
-        icon: Users,
-        notification: null,
-      },
-      {
-        id: "teams",
-        label: "Field Teams",
-        href: "/teams",
-        icon: Layers,
-        notification: null,
-      },
-      {
-        id: "fleet",
-        label: "Fleet Management",
-        href: "/fleet",
-        icon: Truck,
-        notification: null,
-      },
-      {
-        id: "clients",
-        label: "Clients",
-        href: "/clients",
-        icon: Building2,
-        notification: null,
-      },
+      { id: "inventory", label: "Inventory", href: "/inventory", icon: Package },
+      { id: "staff", label: "Staff", href: "/staff", icon: Users },
+      { id: "teams", label: "Field Teams", href: "/teams", icon: Layers },
+      { id: "fleet", label: "Fleet Management", href: "/fleet", icon: Truck },
+      { id: "clients", label: "Clients", href: "/clients", icon: Building2 },
     ],
   },
   {
     label: "Analytics",
     items: [
-      // {
-      //   id: "reports",
-      //   label: "Reports",
-      //   href: "/reports",
-      //   icon: BarChart3,
-      //   notification: null,
-      // },
-      {
-        id: "planning",
-        label: "Planning",
-        href: "/planning",
-        icon: Calendar,
-        notification: null,
-      },
-      {
-        id: "documents",
-        label: "Documents",
-        href: "/documents",
-        icon: FileText,
-        notification: null,
-      },
+      // { id: "reports", label: "Reports", href: "/reports", icon: BarChart3 },
+      // { id: "documents", label: "Documents", href: "/documents", icon: FileText }, // If documents are analytics/reports
+    ],
+  },
+  {
+    label: "Resources",
+    items: [
+      { id: "documents", label: "Documents", href: "/documents", icon: FileText }, // If documents are files/resources
     ],
   },
   {
     label: "Administration",
     items: [
-      {
-        id: "logs",
-        label: "Audit Logs",
-        href: "/logs",
-        icon: Shield,
-        notification: null,
-        roleRequired: "super_admin",
-      },
+      { id: "logs", label: "Audit Logs", href: "/logs", icon: Shield, roleRequired: "super_admin" },
     ],
   },
 ];
@@ -421,7 +347,7 @@ export function AppSidebar() {
         </nav>
         {/* Version at the very bottom */}
         <div className="absolute bottom-0 left-0 w-full py-2 text-center text-xs text-gray-400 dark:text-gray-600 select-none">
-         v.{APP_VERSION}
+          v.{APP_VERSION}
         </div>
       </aside>
     </>

@@ -4,6 +4,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import useSWR from "swr";
 import { get } from "@/lib/api/fetcher";
+import { useState } from "react";
 
 // Fetcher for staff locations
 const locationFetcher = async () => {
@@ -77,6 +78,59 @@ const createCustomIcon = (status) => {
     });
 };
 
+function useReverseGeocode(lat, lng) {
+    const [vicinity, setVicinity] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    async function fetchVicinity() {
+        setLoading(true);
+        try {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            // Prefer suburb, city, town, village, then display_name
+            const area = data.address?.suburb || data.address?.city || data.address?.town || data.address?.village || data.display_name;
+            setVicinity(area || "Unknown area");
+        } catch {
+            setVicinity("Unknown area");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    return [vicinity, loading, fetchVicinity];
+}
+
+function VicinityPopup({ lat, lng, tech }) {
+    const [vicinity, loading, fetchVicinity] = useReverseGeocode(lat, lng);
+    useState(() => { fetchVicinity(); }, [lat, lng]);
+    return (
+        <div className="p-2 min-w-[200px]">
+            <div className="flex items-center gap-3 mb-3">
+                <div className={`p-2 rounded-full ${tech.status === "Active" ? "bg-blue-100" : "bg-amber-100"}`}>
+                    <User className={`w-5 h-5 ${tech.status === "Active" ? "text-blue-600" : "text-amber-600"}`} />
+                </div>
+                <div>
+                    <div className="font-bold text-lg text-slate-900">{tech.name}</div>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${tech.status === "Active" ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800"}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${tech.status === "Active" ? "bg-blue-500" : "bg-amber-500"}`}></span>
+                        {tech.status}
+                    </span>
+                </div>
+            </div>
+            <div className="space-y-1.5 text-sm text-slate-600">
+                <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    <span>{loading ? "Loading area..." : vicinity}</span>
+                </div>
+                <div className="text-xs text-slate-400">
+                    Last updated: {tech.lastUpdate}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function MapView() {
     const capeTown = [-33.9249, 18.4241];
 
@@ -94,8 +148,8 @@ export default function MapView() {
     return (
         <div className="fixed inset-0 w-full h-full overflow-hidden">
             {/* Status overlay */}
-            <div className="absolute top-4 left-4 z-[1000] bg-white dark:bg-slate-800 rounded-xl shadow-lg p-4 border border-slate-200 dark:border-slate-700">
-                {/* <div className="flex items-center gap-4">
+            <div className="absolute bottom-4 right-4 z-[1000] bg-white dark:bg-slate-800 rounded-xl shadow-lg p-4 border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-4">
                     <div className="text-center">
                         <div className="text-2xl font-bold text-blue-500">{activeCount}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">Active</div>
@@ -112,7 +166,7 @@ export default function MapView() {
                     >
                         <RefreshCw className={`w-4 h-4 text-slate-500 ${isLoading ? 'animate-spin' : ''}`} />
                     </button>
-                </div> */}
+                </div>
                 {error && (
                     <div className="mt-2 text-xs text-red-500">Failed to load locations</div>
                 )}
@@ -149,49 +203,8 @@ export default function MapView() {
                         position={tech.position}
                         icon={createCustomIcon(tech.status)}
                     >
-                        {/* Tooltip on hover */}
-                        <Tooltip
-                            direction="top"
-                            offset={[0, -24]}
-                            opacity={1}
-                            permanent={false}
-                        >
-                            <div className="space-y-1">
-                                <div className="font-semibold text-sm">{tech.name}</div>
-                                <div className="text-xs text-slate-500">{tech.role}</div>
-                                <div className="text-xs text-slate-400">Updated: {tech.lastUpdate}</div>
-                            </div>
-                        </Tooltip>
                         <Popup>
-                            <div className="p-2 min-w-[200px]">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className={`p-2 rounded-full ${tech.status === "Active" ? "bg-blue-100" : "bg-amber-100"
-                                        }`}>
-                                        <User className={`w-5 h-5 ${tech.status === "Active" ? "text-blue-600" : "text-amber-600"
-                                            }`} />
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-lg text-slate-900">{tech.name}</div>
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${tech.status === "Active"
-                                                ? "bg-blue-100 text-blue-800"
-                                                : "bg-amber-100 text-amber-800"
-                                            }`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${tech.status === "Active" ? "bg-blue-500" : "bg-amber-500"
-                                                }`}></span>
-                                            {tech.status}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="space-y-1.5 text-sm text-slate-600">
-                                    <div className="flex items-center gap-2">
-                                        <MapPin className="w-4 h-4" />
-                                        <span>{tech.position.lat.toFixed(4)}, {tech.position.lng.toFixed(4)}</span>
-                                    </div>
-                                    <div className="text-xs text-slate-400">
-                                        Last updated: {tech.lastUpdate}
-                                    </div>
-                                </div>
-                            </div>
+                            <VicinityPopup lat={tech.position.lat} lng={tech.position.lng} tech={tech} />
                         </Popup>
                     </Marker>
                 ))}
