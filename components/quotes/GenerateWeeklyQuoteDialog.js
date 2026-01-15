@@ -23,10 +23,15 @@ export default function GenerateWeeklyQuoteDialog({
   orderType, // "drop_cable" or "link_build"
   orderTypeLabel, // "Drop Cable" or "Link Build"
 }) {
-  const [selectedWeek, setSelectedWeek] = useState("");
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedWeekNum, setSelectedWeekNum] = useState("");
   const [loading, setLoading] = useState(false);
   const [quoteData, setQuoteData] = useState(null);
   const { error } = useToast();
+
+  // Build the week value from year + week number
+  const selectedWeek = selectedWeekNum ? `${selectedYear}-${selectedWeekNum}` : "";
 
   const handleGenerate = async () => {
     if (!selectedWeek) {
@@ -45,6 +50,9 @@ export default function GenerateWeeklyQuoteDialog({
         order_type: orderType,
         week: selectedWeek,
       });
+
+    console.log(selectedWeek);
+    
 
       if (response.status === "success" && response.data) {
         setQuoteData({
@@ -65,7 +73,8 @@ export default function GenerateWeeklyQuoteDialog({
 
   const handleClose = () => {
     setQuoteData(null);
-    setSelectedWeek("");
+    setSelectedYear(currentYear);
+    setSelectedWeekNum("");
     onOpenChange(false);
   };
 
@@ -97,28 +106,50 @@ export default function GenerateWeeklyQuoteDialog({
         </DialogHeader>
 
         <div className="py-6 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="week" className="text-sm font-medium">
-              Week Number
-            </Label>
-            <select
-              id="week"
-              value={selectedWeek}
-              onChange={(e) => setSelectedWeek(e.target.value)}
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            >
-              <option value="">Select a week</option>
-              {Array.from({ length: 52 }, (_, i) => {
-                const year = new Date().getFullYear();
-                const weekNum = i + 1;
-                const val = `${year}-${String(weekNum).padStart(2, "0")}`;
-                return (
-                  <option key={weekNum} value={val}>
-                    Week {weekNum}
-                  </option>
-                );
-              })}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="year" className="text-sm font-medium">
+                Year
+              </Label>
+              <select
+                id="year"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              >
+                {Array.from({ length: 5 }, (_, i) => {
+                  const year = currentYear - i;
+                  return (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="week" className="text-sm font-medium">
+                Week Number
+              </Label>
+              <select
+                id="week"
+                value={selectedWeekNum}
+                onChange={(e) => setSelectedWeekNum(e.target.value)}
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              >
+                <option value="">Select a week</option>
+                {Array.from({ length: 52 }, (_, i) => {
+                  const weekNum = i + 1;
+                  const val = String(weekNum).padStart(2, "0");
+                  return (
+                    <option key={weekNum} value={val}>
+                      Week {weekNum}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
           </div>
 
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -137,7 +168,7 @@ export default function GenerateWeeklyQuoteDialog({
           </Button>
           <Button
             onClick={handleGenerate}
-            disabled={loading || !selectedWeek}
+            disabled={loading || !selectedWeekNum}
             className="bg-blue-600 hover:bg-blue-700 gap-2"
           >
             {loading ? (

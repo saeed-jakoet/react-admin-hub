@@ -397,50 +397,6 @@ export default function DropCableOrderPage() {
         {/* Operations Tab */}
         {activeTab === "operations" && (
           <div className="space-y-6">
-            {/* Quick Info Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <Label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Quote #</Label>
-                <Input
-                  value={formData.quote_no || ""}
-                  onChange={(e) => handleInputChange("quote_no", e.target.value)}
-                  placeholder="Quote number"
-                  className="mt-2 border-gray-200 dark:border-gray-600"
-                />
-              </Card>
-              <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <Label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Week</Label>
-                <select
-                  value={week}
-                  onChange={(e) => setWeek(e.target.value)}
-                  className="w-full mt-2 p-2 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
-                >
-                  <option value="">Select week</option>
-                  {Array.from({ length: 52 }, (_, i) => {
-                    const year = new Date().getFullYear();
-                    const val = `${year}-${String(i + 1).padStart(2, "0")}`;
-                    return (
-                      <option key={i + 1} value={val}>
-                        Week {i + 1}
-                      </option>
-                    );
-                  })}
-                </select>
-              </Card>
-              <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <Label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">County</Label>
-                <select
-                  value={formData.county || ""}
-                  onChange={(e) => handleInputChange("county", e.target.value)}
-                  className="w-full mt-2 p-2 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
-                >
-                  <option value="">Select County</option>
-                  <option value="tablebay">Tablebay</option>
-                  <option value="falsebay">Falsebay</option>
-                </select>
-              </Card>
-            </div>
-
             {/* Client Information */}
             <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3 mb-5">
@@ -449,7 +405,7 @@ export default function DropCableOrderPage() {
                 </div>
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white">Client Information</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
                   <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Client Name</Label>
                   <Input
@@ -458,6 +414,18 @@ export default function DropCableOrderPage() {
                     placeholder="Client name"
                     className="mt-1.5 rounded-lg"
                   />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">County</Label>
+                  <select
+                    value={formData.county || ""}
+                    onChange={(e) => handleInputChange("county", e.target.value)}
+                    className="w-full mt-1 p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+                  >
+                    <option value="">Select County</option>
+                    <option value="tablebay">Tablebay</option>
+                    <option value="falsebay">Falsebay</option>
+                  </select>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Client Contact</Label>
@@ -474,6 +442,46 @@ export default function DropCableOrderPage() {
                     value={formData.pm || ""}
                     onChange={(e) => handleInputChange("pm", e.target.value)}
                     placeholder="PM name"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </Card>
+
+            {/* End Client Contact */}
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <Phone className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">End Client Contact</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contact Name</Label>
+                  <Input
+                    value={formData.end_client_contact_name || ""}
+                    onChange={(e) => handleInputChange("end_client_contact_name", e.target.value)}
+                    placeholder="Contact name"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</Label>
+                  <Input
+                    type="email"
+                    value={formData.end_client_contact_email || ""}
+                    onChange={(e) => handleInputChange("end_client_contact_email", e.target.value)}
+                    placeholder="Email address"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone</Label>
+                  <Input
+                    value={formData.end_client_contact_phone || ""}
+                    onChange={(e) => handleInputChange("end_client_contact_phone", e.target.value)}
+                    placeholder="+27..."
                     className="mt-1"
                   />
                 </div>
@@ -530,6 +538,62 @@ export default function DropCableOrderPage() {
                     className="mt-1"
                   />
                 </div>
+              </div>
+
+              {/* Services Sub-section */}
+              <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                    <Activity className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <h4 className="text-base font-semibold text-gray-900 dark:text-white">Services</h4>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {[
+                    { name: "survey_planning", label: "Survey Planning" },
+                    { name: "callout", label: "Callout" },
+                    { name: "installation", label: "Installation" },
+                    { name: "spon_budi_opti", label: "SPON Budi Opti" },
+                    { name: "splitter_install", label: "Splitter Install" },
+                    { name: "mousepad_install", label: "Mousepad Install" },
+                  ].map((service) => (
+                    <div key={service.name} className="space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(formData[service.name])}
+                          onChange={(e) => handleInputChange(service.name, e.target.checked)}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{service.label}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                {Boolean(formData.installation) && (
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={installPercentEnabled}
+                        onChange={(e) => setInstallPercentEnabled(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Track Installation Completion %</span>
+                    </label>
+                    {installPercentEnabled && (
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={formData.install_completion_percent || ""}
+                        onChange={(e) => handleInputChange("install_completion_percent", e.target.value)}
+                        placeholder="0-100"
+                        className="mt-2 w-32"
+                      />
+                    )}
+                  </div>
+                )}
               </div>
             </Card>
 
@@ -594,46 +658,6 @@ export default function DropCableOrderPage() {
                       ))}
                     </select>
                   )}
-                </div>
-              </div>
-            </Card>
-
-            {/* End Client Contact */}
-            <Card className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                  <Phone className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">End Client Contact</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contact Name</Label>
-                  <Input
-                    value={formData.end_client_contact_name || ""}
-                    onChange={(e) => handleInputChange("end_client_contact_name", e.target.value)}
-                    placeholder="Contact name"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</Label>
-                  <Input
-                    type="email"
-                    value={formData.end_client_contact_email || ""}
-                    onChange={(e) => handleInputChange("end_client_contact_email", e.target.value)}
-                    placeholder="Email address"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone</Label>
-                  <Input
-                    value={formData.end_client_contact_phone || ""}
-                    onChange={(e) => handleInputChange("end_client_contact_phone", e.target.value)}
-                    placeholder="+27..."
-                    className="mt-1"
-                  />
                 </div>
               </div>
             </Card>
@@ -731,62 +755,6 @@ export default function DropCableOrderPage() {
               </div>
             </Card>
 
-            {/* Services */}
-            <Card className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                  <Activity className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Services</h3>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {[
-                  { name: "survey_planning", label: "Survey Planning" },
-                  { name: "callout", label: "Callout" },
-                  { name: "installation", label: "Installation" },
-                  { name: "spon_budi_opti", label: "SPON Budi Opti" },
-                  { name: "splitter_install", label: "Splitter Install" },
-                  { name: "mousepad_install", label: "Mousepad Install" },
-                ].map((service) => (
-                  <div key={service.name} className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(formData[service.name])}
-                        onChange={(e) => handleInputChange(service.name, e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{service.label}</span>
-                    </label>
-                  </div>
-                ))}
-              </div>
-              {Boolean(formData.installation) && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={installPercentEnabled}
-                      onChange={(e) => setInstallPercentEnabled(e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Track Installation Completion %</span>
-                  </label>
-                  {installPercentEnabled && (
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={formData.install_completion_percent || ""}
-                      onChange={(e) => handleInputChange("install_completion_percent", e.target.value)}
-                      placeholder="0-100"
-                      className="mt-2 w-32"
-                    />
-                  )}
-                </div>
-              )}
-            </Card>
-
             {/* Notes */}
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-6">
@@ -827,6 +795,46 @@ export default function DropCableOrderPage() {
         {/* Finances Tab */}
         {activeTab === "finances" && (
           <div className="space-y-6">
+            {/* Quote & Week Info */}
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Quote Information</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quote #</Label>
+                  <Input
+                    value={formData.quote_no || ""}
+                    onChange={(e) => handleInputChange("quote_no", e.target.value)}
+                    placeholder="Quote number"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Week</Label>
+                  <select
+                    value={week}
+                    onChange={(e) => setWeek(e.target.value)}
+                    className="w-full mt-1 p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+                  >
+                    <option value="">Select week</option>
+                    {Array.from({ length: 52 }, (_, i) => {
+                      const year = new Date().getFullYear();
+                      const val = `${year}-${String(i + 1).padStart(2, "0")}`;
+                      return (
+                        <option key={i + 1} value={val}>
+                          Week {i + 1}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+            </Card>
+
             {/* Additional Charges - Always editable */}
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-6">

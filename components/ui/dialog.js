@@ -15,7 +15,7 @@ const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
     ref={ref}
     className={cn(
       // Use simple, stable opacity transition to avoid repaint flicker
-      "fixed inset-0 z-50 bg-black/60 transition-opacity duration-150 data-[state=open]:opacity-100 data-[state=closed]:opacity-0",
+      "fixed inset-0 z-[10000] bg-black/60 transition-opacity duration-150 data-[state=open]:opacity-100 data-[state=closed]:opacity-0",
       className
     )}
     {...props}
@@ -30,7 +30,7 @@ const DialogContent = React.forwardRef(({ className, children, ...props }, ref) 
       ref={ref}
       className={cn(
         // Explicit background colors to avoid theme var flickers, and simple transitions
-        "fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 border bg-white dark:bg-slate-900 p-6 shadow-lg rounded-xl outline-none transition-all duration-150 data-[state=open]:opacity-100 data-[state=closed]:opacity-0 data-[state=closed]:scale-95 data-[state=open]:scale-100",
+        "fixed left-1/2 top-1/2 z-[10001] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 border bg-white dark:bg-slate-900 p-6 shadow-lg rounded-xl outline-none transition-all duration-150 data-[state=open]:opacity-100 data-[state=closed]:opacity-0 data-[state=closed]:scale-95 data-[state=open]:scale-100",
         className
       )}
       {...props}

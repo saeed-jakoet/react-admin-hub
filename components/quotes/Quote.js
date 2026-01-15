@@ -230,7 +230,7 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
     .join("");
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4 overflow-y-auto">
       <div className="bg-white rounded-lg shadow-2xl max-w-6xl w-full my-8">
         {/* Action Bar */}
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-slate-100">
@@ -487,7 +487,24 @@ export default function DropCableQuote({ quoteData, clientInfo, onClose }) {
             {/* Quote Title */}
             <div className="font-semibold text-xs bg-blue-50 px-3 py-1.5 rounded border-l-4 border-blue-600 mb-3">
               <h3 className="mb-2">
-                {`${quoteData.orderType === 'link_build' ? 'Link Build' : 'Drop Cable'}_${countyLabel}_${pmInitials} (Week ${quoteData.week}) - ${new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" })}`}
+                {(() => {
+                  // Parse week string (e.g., "2025-43") to get the month for that week
+                  const [year, weekNum] = (quoteData.week || "").split("-").map(Number);
+                  let monthLabel = "";
+                  if (year && weekNum) {
+                    // Calculate the date of the Monday of the given ISO week
+                    const jan4 = new Date(year, 0, 4);
+                    const dayOfWeek = jan4.getDay() || 7;
+                    const firstMonday = new Date(jan4);
+                    firstMonday.setDate(jan4.getDate() - dayOfWeek + 1);
+                    const targetDate = new Date(firstMonday);
+                    targetDate.setDate(firstMonday.getDate() + (weekNum - 1) * 7);
+                    monthLabel = targetDate.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+                  } else {
+                    monthLabel = new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" });
+                  }
+                  return `${quoteData.orderType === 'link_build' ? 'Link Build' : 'Drop Cable'}_${countyLabel}_${pmInitials} (Week ${quoteData.week}) - ${monthLabel}`;
+                })()}
               </h3>
             </div>
 

@@ -333,60 +333,6 @@ export default function LinkBuildOrderPage() {
         {/* Operations Tab */}
         {activeTab === "operations" && (
           <div className="space-y-6">
-            {/* Quick Info Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <Label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Quote #</Label>
-                <Input
-                  value={formData.quote_no || ""}
-                  onChange={(e) => handleInputChange("quote_no", e.target.value)}
-                  placeholder="Quote number"
-                  className="mt-2 border-0 bg-gray-50 dark:bg-gray-900/50 rounded-lg font-medium"
-                />
-              </Card>
-              <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <Label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Week</Label>
-                <select
-                  value={week}
-                  onChange={(e) => setWeek(e.target.value)}
-                  className="w-full mt-2 p-2 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
-                >
-                  <option value="">Select week</option>
-                  {Array.from({ length: 52 }, (_, i) => {
-                    const year = new Date().getFullYear();
-                    const val = `${year}-${String(i + 1).padStart(2, "0")}`;
-                    return (
-                      <option key={i + 1} value={val}>
-                        Week {i + 1}
-                      </option>
-                    );
-                  })}
-                </select>
-              </Card>
-              <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <Label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">County</Label>
-                <select
-                  value={formData.county || ""}
-                  onChange={(e) => handleInputChange("county", e.target.value)}
-                  className="w-full mt-2 p-2 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
-                >
-                  <option value="">Select County</option>
-                  <option value="tablebay">Tablebay</option>
-                  <option value="falsebay">Falsebay</option>
-                </select>
-              </Card>
-              <Card className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <Label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Link Distance (km)</Label>
-                <Input
-                  type="number"
-                  value={formData.link_distance || ""}
-                  onChange={(e) => handleInputChange("link_distance", e.target.value)}
-                  placeholder="0"
-                  className="mt-2 border-gray-200 dark:border-gray-600"
-                />
-              </Card>
-            </div>
-
             {/* Client Information */}
             <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3 mb-5">
@@ -424,6 +370,20 @@ export default function LinkBuildOrderPage() {
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">County</Label>
+                  <select
+                    value={formData.county || ""}
+                    onChange={(e) => handleInputChange("county", e.target.value)}
+                    className="w-full mt-1 p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+                  >
+                    <option value="">Select County</option>
+                    <option value="tablebay">Tablebay</option>
+                    <option value="falsebay">Falsebay</option>
+                  </select>
+                </div>
+              </div>
             </Card>
 
             {/* Job Details */}
@@ -434,7 +394,7 @@ export default function LinkBuildOrderPage() {
                 </div>
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white">Job Details</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Circuit Number <span className="text-red-500">*</span>
@@ -455,16 +415,62 @@ export default function LinkBuildOrderPage() {
                     className="mt-1"
                   />
                 </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Link Distance (km)</Label>
+                  <Input
+                    type="number"
+                    value={formData.link_distance || ""}
+                    onChange={(e) => handleInputChange("link_distance", e.target.value)}
+                    placeholder="0"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Number of Fiber Pairs</Label>
+                  <Input
+                    type="number"
+                    value={formData.no_of_fiber_pairs || ""}
+                    onChange={(e) => handleInputChange("no_of_fiber_pairs", e.target.value)}
+                    placeholder="0"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Splices After 15km</Label>
+                  <Input
+                    type="number"
+                    value={formData.no_of_splices_after_15km || ""}
+                    onChange={(e) => handleInputChange("no_of_splices_after_15km", e.target.value)}
+                    placeholder="0"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Service Type</Label>
+                  <select
+                    value={formData.service_type || ""}
+                    onChange={(e) => handleInputChange("service_type", e.target.value)}
+                    className="w-full mt-1 p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+                  >
+                    {serviceTypeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label.split('(')[0].trim()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </Card>
 
-            {/* Technical Details */}
+            {/* Project Management */}
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                   <Network className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Technical Details</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Project Management</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
@@ -488,40 +494,6 @@ export default function LinkBuildOrderPage() {
                       ))}
                     </select>
                   )}
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Number of Fiber Pairs</Label>
-                  <Input
-                    type="number"
-                    value={formData.no_of_fiber_pairs || ""}
-                    onChange={(e) => handleInputChange("no_of_fiber_pairs", e.target.value)}
-                    placeholder="0"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Splices After 15km</Label>
-                  <Input
-                    type="number"
-                    value={formData.no_of_splices_after_15km || ""}
-                    onChange={(e) => handleInputChange("no_of_splices_after_15km", e.target.value)}
-                    placeholder="0"
-                    className="mt-1"
-                  />
-                </div>
-                <div className="md:col-span-3">
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Service Type</Label>
-                  <select
-                    value={formData.service_type || ""}
-                    onChange={(e) => handleInputChange("service_type", e.target.value)}
-                    className="w-full mt-1 p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-                  >
-                    {serviceTypeOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label.split('(')[0].trim()}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               </div>
             </Card>
@@ -605,6 +577,46 @@ export default function LinkBuildOrderPage() {
         {/* Finances Tab */}
         {activeTab === "finances" && (
           <div className="space-y-6">
+            {/* Quote & Week Info */}
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Quote Information</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quote #</Label>
+                  <Input
+                    value={formData.quote_no || ""}
+                    onChange={(e) => handleInputChange("quote_no", e.target.value)}
+                    placeholder="Quote number"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Week</Label>
+                  <select
+                    value={week}
+                    onChange={(e) => setWeek(e.target.value)}
+                    className="w-full mt-1 p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+                  >
+                    <option value="">Select week</option>
+                    {Array.from({ length: 52 }, (_, i) => {
+                      const year = new Date().getFullYear();
+                      const val = `${year}-${String(i + 1).padStart(2, "0")}`;
+                      return (
+                        <option key={i + 1} value={val}>
+                          Week {i + 1}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+            </Card>
+
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
