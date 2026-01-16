@@ -416,18 +416,6 @@ export default function DropCableOrderPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">County</Label>
-                  <select
-                    value={formData.county || ""}
-                    onChange={(e) => handleInputChange("county", e.target.value)}
-                    className="w-full mt-1 p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-                  >
-                    <option value="">Select County</option>
-                    <option value="tablebay">Tablebay</option>
-                    <option value="falsebay">Falsebay</option>
-                  </select>
-                </div>
-                <div>
                   <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Client Contact</Label>
                   <Input
                     value={formData.client_contact_name || ""}
@@ -444,6 +432,20 @@ export default function DropCableOrderPage() {
                     placeholder="PM name"
                     className="mt-1"
                   />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">County</Label>
+                  <select
+                    value={formData.county || ""}
+                    onChange={(e) => handleInputChange("county", e.target.value)}
+                    className="w-full mt-1 p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+                  >
+                    <option value="">Select County</option>
+                    <option value="tablebay">Tablebay</option>
+                    <option value="falsebay">Falsebay</option>
+                  </select>
                 </div>
               </div>
             </Card>
@@ -479,8 +481,8 @@ export default function DropCableOrderPage() {
                 <div>
                   <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone</Label>
                   <Input
-                    value={formData.end_client_contact_phone || ""}
-                    onChange={(e) => handleInputChange("end_client_contact_phone", e.target.value)}
+                    value={""}
+                    onChange={(e) => handleInputChange(e.target.value)}
                     placeholder="+27..."
                     className="mt-1"
                   />
